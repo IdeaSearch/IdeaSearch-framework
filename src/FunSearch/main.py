@@ -1,9 +1,9 @@
 # main.py
-from modules import ProblemConfig
-from modules import ModelLoader
-from modules import CodeGenerator
-from modules import CodeEvaluator 
-from modules import IslandManager
+from src.FunSearch.modules import ProblemConfig
+from src.FunSearch.modules import ModelLoader
+from src.FunSearch.modules import CodeGenerator
+from src.FunSearch.modules import CodeEvaluator 
+from src.FunSearch.modules import IslandManager
 import numpy as np
 import os 
 import datetime
