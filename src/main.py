@@ -38,7 +38,7 @@ if __name__ == "__main__":
             "# 6. 将最终代码包裹在Python代码块中\n"
             r"</answer>"
         ),
-        max_interaction_num = 10,
+        max_interaction_num = 3,
         evaluate_func = FeynmanIntegralReduction.evaluate,
     )
     

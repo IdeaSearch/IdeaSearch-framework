@@ -34,7 +34,7 @@ class Database:
             
     def _check_threshold(self):
         if self.interaction_count >= self.max_interaction_num:
-            print("[DB] Threshold reached, initiating shutdown.")
+            print("【数据库】 采样次数已分发完毕，FunSearch将在各采样器完成手头任务后结束。")
             self.status = "Terminated"
 
     def save_data(self, key, value):

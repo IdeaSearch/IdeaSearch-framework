@@ -2,6 +2,8 @@ import time
 import random
 from threading import Lock
 from src.API4LLMs.get_answer import get_answer
+from src.FunSearch.evaluator import Evaluator
+from src.FunSearch.database import Database
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait
 
 
@@ -12,9 +14,9 @@ class Sampler:
         model,
         prologue_section,
         epilogue_section,
-        evaluators,
+        evaluators : Evaluator,
         generate_num,
-        database,
+        database : Database,
     ):
         self.id = sampler_id + 1
         self.database = database
@@ -27,10 +29,13 @@ class Sampler:
 
     def run(self):
         
+        print(f"【{self.id}号采样器】 已开始工作！")
+        
         while self.database.get_status() == "Running":
             
             examples = self.database.get_examples()
             if examples is None: 
+                print(f"【{self.id}号采样器】 工作结束。")
                 break
             
             # TODO:
@@ -51,19 +56,23 @@ class Sampler:
                     try:
                         llm_answers[i] = future.result()
                     except Exception as e:
-                        print(f"尝试获取{self.model}的回答时发生错误: {e}")
+                        print(f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}")
             
             # 寻找空闲 evaluator
             evaluator = self._get_idle_evaluator()
             if evaluator:
                 evaluator.evaluate(llm_answers)
+                print(f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。")
                 evaluator.release()
             else:
-                print(f"{self.id}号采样器没有找到空闲的评估器，此次采样失败...")
+                print(f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...")
+                
+        print(f"【{self.id}号采样器】 工作结束。")
 
 
-    def _get_idle_evaluator(self):
+    def _get_idle_evaluator(self) -> Evaluator:
         for evaluator in self.evaluators:
             if evaluator.try_acquire():
+                print(f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。")
                 return evaluator
         return None

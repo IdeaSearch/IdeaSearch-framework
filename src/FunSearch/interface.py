@@ -16,6 +16,8 @@ def FunSearchInterface(
     max_interaction_num,
     evaluate_func,
 ):
+    
+    print(f"现在开始{program_name}的FunSearch！")
 
     database = Database(
         program_name = program_name,

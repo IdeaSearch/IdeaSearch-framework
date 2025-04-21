@@ -1,4 +1,5 @@
 from threading import Lock
+from src.FunSearch.database import Database
 
 
 class Evaluator:
@@ -6,7 +7,7 @@ class Evaluator:
     def __init__(
         self, 
         evaluator_id,
-        database,
+        database : Database,
         evaluate_func,
     ):
         
@@ -28,12 +29,7 @@ class Evaluator:
         return False
 
     def evaluate(self, llm_answers):
-        print(
-            f"[Evaluator {self.id}]\n"
-            f"Evaluating result:\n"
-        )
-        for index, llm_answer in enumerate(llm_answers):
-            print(f"{index+1}：{llm_answer}")
+        print(f"【{self.id}号评估器】 已完成一轮评估。")
     
     def release(self):
         assert self.status == "Busy"
