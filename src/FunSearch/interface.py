@@ -2,6 +2,7 @@ from src.FunSearch.database import Database
 from src.FunSearch.sampler import Sampler
 from src.FunSearch.evaluator import Evaluator
 import concurrent.futures
+from threading import Lock
 
 
 def FunSearchInterface(
@@ -18,17 +19,22 @@ def FunSearchInterface(
 ):
     
     print(f"现在开始{program_name}的FunSearch！")
+    
+    console_lock = Lock()
 
     database = Database(
         program_name = program_name,
         max_interaction_num = max_interaction_num,
         examples_num = examples_num,
+        evaluate_func = evaluate_func,
+        console_lock = console_lock,
     )
     evaluators = [
         Evaluator(
             evaluator_id = i,
             database = database,
             evaluate_func = evaluate_func,
+            console_lock = console_lock,
         ) 
         for i in range(evaluators_num)
     ]
@@ -40,7 +46,8 @@ def FunSearchInterface(
             epilogue_section = epilogue_section,
             evaluators = evaluators,
             generate_num = generate_num,
-            database = database
+            database = database,
+            console_lock = console_lock,
         )
         for i in range(samplers_num)
     ]

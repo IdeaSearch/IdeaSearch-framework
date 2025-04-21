@@ -1,10 +1,10 @@
 # please implement your evaluator here
-def evaluate(llm_answer: str) -> tuple[float, str]:
+def evaluate(idea: str) -> tuple[float, str]:
     """
     对语言模型生成的答案进行评估，返回分数和评语。
 
     Args:
-        llm_answer (str): 语言模型生成的回答文本。
+        idea (str): 语言模型生成的程序/文本。
 
     Returns:
         tuple[float, str]: 包含两个元素的元组：

@@ -17,6 +17,7 @@ class Sampler:
         evaluators : Evaluator,
         generate_num,
         database : Database,
+        console_lock : Lock,
     ):
         self.id = sampler_id + 1
         self.database = database
@@ -26,24 +27,36 @@ class Sampler:
         self.epilogue_section = epilogue_section
         self.generate_num = generate_num
         self.evaluators = evaluators
+        self.console_lock = console_lock
 
     def run(self):
         
-        print(f"【{self.id}号采样器】 已开始工作！")
+        with self.console_lock:
+            print(f"【{self.id}号采样器】 已开始工作！")
         
         while self.database.get_status() == "Running":
             
             examples = self.database.get_examples()
             if examples is None: 
-                print(f"【{self.id}号采样器】 工作结束。")
+                with self.console_lock:
+                    print(f"【{self.id}号采样器】 工作结束。")
                 break
+            else:
+                with self.console_lock:
+                    print(f"【{self.id}号采样器】 已从数据库采样{len(examples)}个idea！")
             
-            # TODO:
             examples_section = ""
+            for index, example in enumerate(examples):
+                examples_section += f"[Example {index + 1}]\n"
+                examples_section += f"Score: {example.score}\n"
+                if example.info is not None:
+                    examples_section += f"Info: {example.info}\n"
+                examples_section += f"Content:\n"
+                examples_section += f"{example.content}\n"
             
             prompt = self.prologue_section + examples_section + self.epilogue_section
                 
-            llm_answers = [None] * self.generate_num
+            generated_ideas = [None] * self.generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
@@ -54,25 +67,30 @@ class Sampler:
                 for future in as_completed(future_to_index):
                     i = future_to_index[future]
                     try:
-                        llm_answers[i] = future.result()
+                        generated_ideas[i] = future.result()
                     except Exception as e:
-                        print(f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}")
+                        with self.console_lock:
+                            print(f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}")
             
             # 寻找空闲 evaluator
             evaluator = self._get_idle_evaluator()
             if evaluator:
-                evaluator.evaluate(llm_answers)
-                print(f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。")
+                evaluator.evaluate(generated_ideas)
+                with self.console_lock:
+                    print(f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。")
                 evaluator.release()
             else:
-                print(f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...")
-                
-        print(f"【{self.id}号采样器】 工作结束。")
+                with self.console_lock:
+                    print(f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...")
+        
+        with self.console_lock:    
+            print(f"【{self.id}号采样器】 工作结束。")
 
 
     def _get_idle_evaluator(self) -> Evaluator:
         for evaluator in self.evaluators:
             if evaluator.try_acquire():
-                print(f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。")
+                with self.console_lock:
+                    print(f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。")
                 return evaluator
         return None
