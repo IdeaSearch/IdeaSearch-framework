@@ -7,11 +7,13 @@ class Evaluator:
         self, 
         evaluator_id,
         database,
+        evaluate_func,
     ):
         
         self.id = evaluator_id + 1
         self.database = database
         self.program_name = database.program_name
+        self.evaluate_func = evaluate_func
         self.lock = Lock()
         self.status = "Vacant"
         
@@ -25,11 +27,13 @@ class Evaluator:
             self.lock.release()
         return False
 
-    def evaluate(self, result):
-        print(f"[Evaluator {self.id}] Evaluating result: {result}")
-        # 模拟处理
-        evaluated = f"{result}_evaluated_by_{self.id}"
-        return evaluated
+    def evaluate(self, llm_answers):
+        print(
+            f"[Evaluator {self.id}]\n"
+            f"Evaluating result:\n"
+        )
+        for index, llm_answer in enumerate(llm_answers):
+            print(f"{index+1}：{llm_answer}")
     
     def release(self):
         assert self.status == "Busy"

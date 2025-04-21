@@ -6,7 +6,8 @@ class Database:
     def __init__(
         self, 
         program_name, 
-        max_interaction_num
+        max_interaction_num,
+        examples_num,
     ):
         
         self.program_name = program_name
@@ -14,18 +15,21 @@ class Database:
         
         self.interaction_count = 0
         self.max_interaction_num = max_interaction_num
+        self.examples_num = examples_num
         
         self.lock = Lock()
         self.status = "Running"
 
-    def get_data(self, key):
+    def get_examples(self):
+        
         with self.lock:
+            
             if self.status == "Terminated":
                 return None
             self.interaction_count += 1
             self._check_threshold()
-            print(f"[DB] Getting data for {key} | Total interactions: {self.interaction_count}")
-            return f"data_for_{key}"
+            examples = [11, 22, 33]
+            return examples
             
             
     def _check_threshold(self):
