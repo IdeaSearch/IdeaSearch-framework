@@ -38,4 +38,6 @@ class ModelManager:
                 
 model_manager = ModelManager()
 
+if not os.path.exists("src/API4LLMs/api_keys.json"):
+    print("请仿照 api_keys_example.json 在同目录下自行创建 api_keys.json，并填写自己的 api_key！")
 model_manager.load_from("src/API4LLMs/api_keys.json")
