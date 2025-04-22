@@ -1,0 +1,42 @@
+{
+  "Deepseek_V3": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://api.deepseek.com/v1",
+    "model": "deepseek-chat"
+  },
+  "Deepseek_R1": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://api.deepseek.com/v1",
+    "model": "deepseek-reasoner"
+  },
+  "Qwen_Plus": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "model": "qwen-plus"
+  },
+  "Qwen_Max": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "model": "qwen-max"
+  },
+  "Gemini_2.0_Flash_Thinking_Experimental": {
+    "api_key": "AIzaSyXXXX-XXXXXXXXXXXXXXXXXXXXXXXX",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/",
+    "model": "gemini-2.0-flash-thinking-exp"
+  },
+  "Gemini_1.5_Flash": {
+    "api_key": "AIzaSyXXXX-XXXXXXXXXXXXXXXXXXXXXXXX",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/",
+    "model": "gemini-1.5-flash"
+  },
+  "Moonshot_V1_32k": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://api.moonshot.cn/v1",
+    "model": "moonshot-v1-32k"
+  },
+  "Moonshot_V1_8k": {
+    "api_key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "base_url": "https://api.moonshot.cn/v1",
+    "model": "moonshot-v1-32k"
+  }
+}
