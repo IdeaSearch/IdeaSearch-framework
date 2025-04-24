@@ -14,10 +14,10 @@ if __name__ == "__main__":
         evaluators_num = 3,
         prologue_section = SysYCompilerTest_prologue_section,
         examples_num = 3,
-        generate_num = 3,
+        generate_num = 2,
         model = "Deepseek_V3",
         epilogue_section = SysYCompilerTest_epilogue_section,
-        max_interaction_num = 9,
+        max_interaction_num = 100,
         evaluate_func = SysYCompilerTest_evaluate,
     )
     

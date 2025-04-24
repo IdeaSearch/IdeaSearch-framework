@@ -4,6 +4,8 @@ import random
 import os
 import string
 import json
+from numpy import exp
+import numpy as np
 
 class Idea:
     
@@ -67,9 +69,16 @@ class Database:
                     print("【数据库】 发生异常：ideas列表为空！")
                 exit()
             
-            return random.sample(
+            # 使用 score 的 softmax 作为采样权重
+            scores = np.array([idea.score for idea in self.ideas])
+            exp_scores = exp(scores)
+            total = sum(exp_scores)
+            weights = exp_scores / total
+
+            return random.choices(
                 self.ideas,
-                min(len(self.ideas), self.examples_num),
+                weights=weights,
+                k=min(len(self.ideas), self.examples_num)
             )
             
     def _sync_score_sheet(self):
