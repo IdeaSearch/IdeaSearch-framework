@@ -12,7 +12,7 @@ class Idea:
     def __init__(self, path, evaluate_func, content = None, score = None, info = None):
         self.path = str(path)
         if evaluate_func is not None:
-            with open(path, 'r') as file:
+            with open(path, 'r', encoding = "UTF-8") as file:
                 self.content = file.read()
             self.score, self.info = evaluate_func(self.content) 
         else:
@@ -38,14 +38,21 @@ class Database:
         
         self.ideas = []
         for path in Path(self.path).rglob('*.idea'):
-            self.ideas.append(
-                Idea(
-                    path = path, 
-                    evaluate_func = evaluate_func,
-                )
+            
+            idea = Idea(
+                path = path, 
+                evaluate_func = evaluate_func,
             )
-            with self.console_lock:
-                print(f"【数据库】 初始文件{path}已评分并加入数据库。")
+            
+            if idea.score == 0:
+                path.unlink()
+                with self.console_lock:
+                    print(f"【数据库】 初始文件{path}得分为零，已删除。")
+            else:
+                self.ideas.append(idea)
+                with self.console_lock:
+                    print(f"【数据库】 初始文件{path}已评分并加入数据库。")
+                    
         self._sync_score_sheet()
         
         self.interaction_count = 0
@@ -54,6 +61,8 @@ class Database:
         
         self.lock = Lock()
         self.status = "Running"
+        
+        
 
     def get_examples(self) -> list[Idea]:
         
@@ -69,11 +78,11 @@ class Database:
                     print("【数据库】 发生异常：ideas列表为空！")
                 exit()
             
-            # 使用 score 的 softmax 作为采样权重
+            # 使用 score 的 softmax 作为采样权重，数值稳定写法
             scores = np.array([idea.score for idea in self.ideas])
-            exp_scores = exp(scores)
-            total = sum(exp_scores)
-            weights = exp_scores / total
+            shifted_scores = scores - np.max(scores)
+            exp_scores = np.exp(shifted_scores)
+            weights = exp_scores / np.sum(exp_scores)
 
             return random.choices(
                 self.ideas,
