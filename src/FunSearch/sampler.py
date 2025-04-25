@@ -17,6 +17,7 @@ class Sampler:
         evaluators : Evaluator,
         generate_num,
         database : Database,
+        model_temperature : float,
         console_lock : Lock,
     ):
         self.id = sampler_id + 1
@@ -27,6 +28,7 @@ class Sampler:
         self.epilogue_section = epilogue_section
         self.generate_num = generate_num
         self.evaluators = evaluators
+        self.model_temperature = model_temperature
         self.console_lock = console_lock
 
     def run(self):
@@ -60,7 +62,7 @@ class Sampler:
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
-                    executor.submit(get_answer, self.model, prompt): i
+                    executor.submit(get_answer, self.model, prompt, self.model_temperature): i
                     for i in range(self.generate_num)
                 }
 

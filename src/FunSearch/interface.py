@@ -9,9 +9,11 @@ from typing import Callable
 def FunSearchInterface(
     program_name: str,
     samplers_num: int,
+    sample_temperature: float,
     evaluators_num: int,
     prologue_section: str,
     model: str,
+    model_temperature: float,
     examples_num: int,
     generate_num: int,
     epilogue_section: str,
@@ -27,9 +29,11 @@ def FunSearchInterface(
     Args:
         program_name (str): 当前程序或实验的名称。
         samplers_num (int): 要创建的采样器（Sampler）数量。
+        sample_temperature (float): 采样温度，诸idea被采样的概率正比于 exp (- score / sample_temperature)。
         evaluators_num (int): 要创建的评估器（Evaluator）数量。
         prologue_section (str): 用于提示模型采样的前导文本片段。
         model (str): 大语言模型的名字，应在API4LLMs/api_keys.json中出现。
+        model_temperature (float): 大语言模型的温度。
         examples_num (int): 每个prompt给大语言模型看的例子数量。
         generate_num (int): 每个 Sampler 每轮生成的候选程序数量。
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
@@ -49,6 +53,7 @@ def FunSearchInterface(
         max_interaction_num = max_interaction_num,
         examples_num = examples_num,
         evaluate_func = evaluate_func,
+        sample_temperature = sample_temperature,
         console_lock = console_lock,
     )
     evaluators = [
@@ -69,6 +74,7 @@ def FunSearchInterface(
             evaluators = evaluators,
             generate_num = generate_num,
             database = database,
+            model_temperature = model_temperature,
             console_lock = console_lock,
         )
         for i in range(samplers_num)

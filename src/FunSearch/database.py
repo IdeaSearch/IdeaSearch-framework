@@ -29,10 +29,12 @@ class Database:
         max_interaction_num,
         examples_num,
         evaluate_func,
+        sample_temperature : float,
         console_lock,
     ):
         
         self.program_name = program_name
+        self.sample_temperature = sample_temperature
         self.console_lock = console_lock
         self.path = f"programs/{program_name}/database/"
         
@@ -78,8 +80,9 @@ class Database:
                     print("【数据库】 发生异常：ideas列表为空！")
                 exit()
             
-            # 使用 score 的 softmax 作为采样权重，数值稳定写法
+            # 使用 score / sample_temperature 的 softmax 作为采样权重（数值稳定写法）
             scores = np.array([idea.score for idea in self.ideas])
+            scores = scores / self.sample_temperature
             shifted_scores = scores - np.max(scores)
             exp_scores = np.exp(shifted_scores)
             weights = exp_scores / np.sum(exp_scores)
