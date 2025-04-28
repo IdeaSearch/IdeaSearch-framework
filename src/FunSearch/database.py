@@ -46,7 +46,7 @@ class Database:
                 evaluate_func = evaluate_func,
             )
             
-            if idea.score == 0:
+            if idea.score == 0 and False:
                 path.unlink()
                 with self.console_lock:
                     print(f"【数据库】 初始文件{path}得分为零，已删除。")
@@ -125,7 +125,7 @@ class Database:
             with self.console_lock:
                 print(f"[DB] Saved data: {key} = {value}")
 
-    def receive_result(self, result : list[tuple[Idea, float, str]], evaluator_id : int):
+    def receive_result(self, result: list[tuple[Idea, float, str]], evaluator_id: int):
         
         def generate_random_string(length=4):
             return ''.join(random.choices(string.ascii_lowercase, k=length))
@@ -135,20 +135,20 @@ class Database:
             for idea_content, score, info in result:
                 
                 uid = generate_random_string()
-                path = "programs\\" + f"{self.program_name}" + "\\database\\" + f"idea_{uid}.idea"
+                path = os.path.join("programs", self.program_name, "database", f"idea_{uid}.idea")
                 while path in [idea.path for idea in self.ideas]:
                     uid = generate_random_string()
-                    path = "programs\\" + f"{self.program_name}" + "\\database\\" + f"idea_{uid}.idea"
+                    path = os.path.join("programs", self.program_name, "database", f"idea_{uid}.idea")
                 
                 with open(path, 'w', encoding='utf-8') as file:
                     file.write(idea_content)
                     
                 self.ideas.append(Idea(
-                    path = path,
-                    evaluate_func = None,
-                    content = idea_content,
-                    score = score,
-                    info = info,
+                    path=path,
+                    evaluate_func=None,
+                    content=idea_content,
+                    score=score,
+                    info=info,
                 ))
                 
             print(f"【数据库】 {evaluator_id}号评估器递交的{len(result)}个新文件已评分并加入数据库。")
