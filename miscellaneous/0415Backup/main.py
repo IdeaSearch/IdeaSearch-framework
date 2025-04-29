@@ -8,7 +8,7 @@ import numpy as np
 import os 
 import datetime
 
-class FunSearch:
+class IdeaSearch:
     def __init__(self):
         self.config = ProblemConfig()
         self.model_loader = ModelLoader(self.config)
@@ -121,5 +121,5 @@ class FunSearch:
             f.write("```\n\n")
 
 if __name__ == "__main__":
-    searcher = FunSearch()
+    searcher = IdeaSearch()
     searcher.run()

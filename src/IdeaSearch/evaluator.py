@@ -1,5 +1,6 @@
 from threading import Lock
-from src.FunSearch.database import Database
+from src.IdeaSearch.database import Database
+from src.utils import append_to_file
 
 
 class Evaluator:
@@ -10,6 +11,7 @@ class Evaluator:
         database : Database,
         evaluate_func,
         console_lock : Lock,
+        diary_path: str,
     ):
         
         self.id = evaluator_id + 1
@@ -19,6 +21,7 @@ class Evaluator:
         self.console_lock = console_lock
         self.lock = Lock()
         self.status = "Vacant"
+        self.diary_path = diary_path
         
 
     def try_acquire(self):
@@ -40,15 +43,28 @@ class Evaluator:
                 accepted_ideas.append((idea, score, info))
                 
         with self.console_lock:
-            print(f"【{self.id}号评估器】 已将{len(accepted_ideas)}/{len(generated_ideas)}个满足条件的idea递交给数据库！")
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = f"【{self.id}号评估器】 已将{len(accepted_ideas)}/{len(generated_ideas)}个满足条件的idea递交给数据库！",
+            )
                 
         self.database.receive_result(accepted_ideas, self.id)         
             
         with self.console_lock:
-            print(f"【{self.id}号评估器】 已完成一轮评估。")
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = f"【{self.id}号评估器】 已完成一轮评估。",
+            )
     
     def release(self):
+        
         with self.console_lock:
-            assert self.status == "Busy", f"【{self.id}号评估器】 发生异常！"
+            if self.status != "Busy":
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
+                )
+                exit()
+
         self.status = "Vacant"
         self.lock.release()

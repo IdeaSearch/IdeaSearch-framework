@@ -1,12 +1,13 @@
-from src.FunSearch.database import Database
-from src.FunSearch.sampler import Sampler
-from src.FunSearch.evaluator import Evaluator
+from src.utils import append_to_file, clear_file_content
+from src.IdeaSearch.database import Database
+from src.IdeaSearch.sampler import Sampler
+from src.IdeaSearch.evaluator import Evaluator
 import concurrent.futures
 from threading import Lock
 from typing import Callable
 
 
-def FunSearchInterface(
+def IdeaSearchInterface(
     program_name: str,
     samplers_num: int,
     sample_temperature: float,
@@ -19,9 +20,12 @@ def FunSearchInterface(
     epilogue_section: str,
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
+    diary_path: str,
+    initialization_cleanse_threshold: float,
+    delete_when_initial_cleanse: bool,
 ) -> None:
     """
-    启动并运行一个 FunSearch 搜索过程。
+    启动并运行一个 IdeaSearch 搜索过程。
 
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
     使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。
@@ -39,12 +43,20 @@ def FunSearchInterface(
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
         max_interaction_num (int): 数据库允许的最大评估交互次数，超过即终止。
         evaluate_func (Callable): 用于评估候选程序的函数，供 Evaluator 使用，返回score和info。
+        diary_path (str): IdeaSearch的日志文件路径。
+        initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的idea将会被清除/忽略
+        delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的idea的行为：True则删除文件；False则仅仅忽视不见
 
     Returns:
         None
     """
     
-    print(f"现在开始{program_name}的FunSearch！")
+    clear_file_content(diary_path)
+    
+    append_to_file(
+        file_path = diary_path,
+        content_str = f"现在开始{program_name}的IdeaSearch！",
+    )
     
     console_lock = Lock()
 
@@ -55,6 +67,9 @@ def FunSearchInterface(
         evaluate_func = evaluate_func,
         sample_temperature = sample_temperature,
         console_lock = console_lock,
+        diary_path = diary_path,
+        initialization_cleanse_threshold = initialization_cleanse_threshold,
+        delete_when_initial_cleanse = delete_when_initial_cleanse,
     )
     evaluators = [
         Evaluator(
@@ -62,6 +77,7 @@ def FunSearchInterface(
             database = database,
             evaluate_func = evaluate_func,
             console_lock = console_lock,
+            diary_path = diary_path,
         ) 
         for i in range(evaluators_num)
     ]
@@ -76,6 +92,7 @@ def FunSearchInterface(
             database = database,
             model_temperature = model_temperature,
             console_lock = console_lock,
+            diary_path = diary_path,
         )
         for i in range(samplers_num)
     ]
@@ -84,4 +101,7 @@ def FunSearchInterface(
         futures = [executor.submit(sampler.run) for sampler in samplers]
         concurrent.futures.wait(futures)
 
-    print(f"已达到最大采样次数，{program_name}的FunSearch结束！")
+    append_to_file(
+        file_path = diary_path,
+        content_str = f"已达到最大采样次数，{program_name}的IdeaSearch结束！",
+    )

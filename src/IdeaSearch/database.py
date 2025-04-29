@@ -6,6 +6,7 @@ import string
 import json
 from numpy import exp
 import numpy as np
+from src.utils import append_to_file
 
 class Idea:
     
@@ -31,12 +32,16 @@ class Database:
         evaluate_func,
         sample_temperature : float,
         console_lock,
+        diary_path: str,
+        initialization_cleanse_threshold: float,
+        delete_when_initial_cleanse: bool,
     ):
         
         self.program_name = program_name
         self.sample_temperature = sample_temperature
         self.console_lock = console_lock
         self.path = f"programs/{program_name}/database/"
+        self.diary_path = diary_path
         
         self.ideas = []
         for path in Path(self.path).rglob('*.idea'):
@@ -46,14 +51,27 @@ class Database:
                 evaluate_func = evaluate_func,
             )
             
-            if idea.score == 0 and False:
-                path.unlink()
-                with self.console_lock:
-                    print(f"【数据库】 初始文件{path}得分为零，已删除。")
+            if idea.score < initialization_cleanse_threshold:
+                if delete_when_initial_cleanse:
+                    path.unlink()
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已删除。",
+                        )
+                else:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已忽略。",
+                        )
             else:
                 self.ideas.append(idea)
                 with self.console_lock:
-                    print(f"【数据库】 初始文件{path}已评分并加入数据库。")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【数据库】 初始文件{path}已评分并加入数据库。",
+                    )
                     
         self._sync_score_sheet()
         
@@ -77,7 +95,10 @@ class Database:
             
             if len(self.ideas) == 0:
                 with self.console_lock:
-                    print("【数据库】 发生异常：ideas列表为空！")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = "【数据库】 发生异常：ideas列表为空！",
+                    )
                 exit()
             
             # 使用 score / sample_temperature 的 softmax 作为采样权重（数值稳定写法）
@@ -107,7 +128,10 @@ class Database:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
         
         with self.console_lock:   
-            print(f"【数据库】  {self.program_name}的score sheet已更新！")
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = f"【数据库】  {self.program_name}的score sheet已更新！",
+            )
             
     def sync_score_sheet(self):
         with self.lock:
@@ -116,14 +140,11 @@ class Database:
     def _check_threshold(self):
         if self.interaction_count >= self.max_interaction_num:
             with self.console_lock:
-                print("【数据库】 采样次数已分发完毕，FunSearch将在各采样器完成手头任务后结束。")
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = "【数据库】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
+                )
             self.status = "Terminated"
-
-    def save_data(self, key, value):
-        with self.lock:
-            self.data_store[key] = value
-            with self.console_lock:
-                print(f"[DB] Saved data: {key} = {value}")
 
     def receive_result(self, result: list[tuple[Idea, float, str]], evaluator_id: int):
         
@@ -151,9 +172,13 @@ class Database:
                     info=info,
                 ))
                 
-            print(f"【数据库】 {evaluator_id}号评估器递交的{len(result)}个新文件已评分并加入数据库。")
+            with self.console_lock:    
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【数据库】 {evaluator_id}号评估器递交的{len(result)}个新文件已评分并加入数据库。",
+                )
+            
             self._sync_score_sheet()
-                
                 
 
     def get_status(self):

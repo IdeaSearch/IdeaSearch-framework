@@ -25,7 +25,7 @@ git clone https://github.com/IdeaSearch/IdeaSearch-framework IdeaSearch
 │   ├── API4LLMs/
 │   │   ├── api_keys_example.json
 │   │   └── api_keys.json 📝 (需手动创建)
-│   ├── FunSearch/
+│   ├── IdeaSearch/
 │   ├── my_script_template.py
 │   ├── my_script.py 🛠 (需手动创建)
 │   └── diary.txt 📔 (程序运行时自动生成)
@@ -86,7 +86,7 @@ git clone https://github.com/user_id/IdeaSearch-xxxxxx programs/xxxxxx
 准备就绪后，在项目根目录下运行：
 
 ```bash
-python -u -m src.my_script > src/diary.txt
+python -u -m src.my_script
 ```
 
-📒 日志输出会被自动记录到 `src/diary.txt` 中，方便你随时回顾每一次 IdeaSearch 的全过程！
+📒 日志输出会被自动记录到 diary_path（如：`src/diary.txt`） 中，方便你随时回顾每一次 IdeaSearch 的全过程！

@@ -2,9 +2,10 @@ import time
 import random
 from threading import Lock
 from src.API4LLMs.get_answer import get_answer
-from src.FunSearch.evaluator import Evaluator
-from src.FunSearch.database import Database
+from src.IdeaSearch.evaluator import Evaluator
+from src.IdeaSearch.database import Database
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+from src.utils import append_to_file
 
 
 class Sampler:
@@ -14,11 +15,12 @@ class Sampler:
         model,
         prologue_section,
         epilogue_section,
-        evaluators : Evaluator,
+        evaluators: Evaluator,
         generate_num,
-        database : Database,
-        model_temperature : float,
-        console_lock : Lock,
+        database: Database,
+        model_temperature: float,
+        console_lock: Lock,
+        diary_path: str,
     ):
         self.id = sampler_id + 1
         self.database = database
@@ -30,22 +32,32 @@ class Sampler:
         self.evaluators = evaluators
         self.model_temperature = model_temperature
         self.console_lock = console_lock
+        self.diary_path = diary_path
 
     def run(self):
         
         with self.console_lock:
-            print(f"【{self.id}号采样器】 已开始工作！")
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = f"【{self.id}号采样器】 已开始工作！",
+            )
         
         while self.database.get_status() == "Running":
             
             examples = self.database.get_examples()
             if examples is None: 
                 with self.console_lock:
-                    print(f"【{self.id}号采样器】 工作结束。")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 工作结束。",
+                    )
                 break
             else:
                 with self.console_lock:
-                    print(f"【{self.id}号采样器】 已从数据库采样{len(examples)}个idea！")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 已从数据库采样{len(examples)}个idea！",
+                    )
             
             examples_section = ""
             for index, example in enumerate(examples):
@@ -72,27 +84,42 @@ class Sampler:
                         generated_ideas[i] = future.result()
                     except Exception as e:
                         with self.console_lock:
-                            print(f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}")
+                            append_to_file(
+                                file_path = self.diary_path,
+                                content_str = f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}",
+                            )
             
             # 寻找空闲 evaluator
             evaluator = self._get_idle_evaluator()
             if evaluator:
                 evaluator.evaluate(generated_ideas)
                 with self.console_lock:
-                    print(f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。",
+                    )
                 evaluator.release()
             else:
                 with self.console_lock:
-                    print(f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...",
+                    )
         
         with self.console_lock:    
-            print(f"【{self.id}号采样器】 工作结束。")
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = f"【{self.id}号采样器】 工作结束。",
+            )
 
 
     def _get_idle_evaluator(self) -> Evaluator:
         for evaluator in self.evaluators:
             if evaluator.try_acquire():
                 with self.console_lock:
-                    print(f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。")
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。"
+                    )
                 return evaluator
         return None
