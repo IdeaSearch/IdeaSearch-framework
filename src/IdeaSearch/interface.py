@@ -1,4 +1,4 @@
-from src.utils import append_to_file, clear_file_content
+from src.utils import guarantee_path_exist, clear_file_content, append_to_file
 from src.IdeaSearch.database import Database
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
@@ -53,6 +53,7 @@ def IdeaSearchInterface(
         None
     """
     
+    guarantee_path_exist(diary_path)
     clear_file_content(diary_path)
     
     append_to_file(
@@ -101,8 +102,17 @@ def IdeaSearchInterface(
     ]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=samplers_num) as executor:
-        futures = [executor.submit(sampler.run) for sampler in samplers]
-        concurrent.futures.wait(futures)
+        futures = {executor.submit(sampler.run): sampler for sampler in samplers}
+        for future in concurrent.futures.as_completed(futures):
+            sampler = futures[future]
+            try:
+                _ = future.result() 
+            except Exception as e:
+                append_to_file(
+                    file_path = diary_path,
+                    content_str = f"【{sampler.id}号采样器】 运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                )
+                exit()
 
     append_to_file(
         file_path = diary_path,

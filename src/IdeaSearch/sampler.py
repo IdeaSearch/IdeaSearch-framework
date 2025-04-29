@@ -81,8 +81,8 @@ class Sampler:
                     file_path = self.diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 已向{self.model}(T={self.model_temperature:.1f})"
-                        f"发送prompt，正等待回答！",
-                    )
+                        f"发送prompt，正在等待回答！"
+                    ),
                 )
                 
             generated_ideas = [None] * self.generate_num
@@ -109,8 +109,8 @@ class Sampler:
                     file_path = self.diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 已收到来自{self.model}(T={self.model_temperature:.1f})"
-                        f"的{self.generate_num}个回答！",
-                    )
+                        f"的{self.generate_num}个回答！"
+                    ),
                 )
             
             # 寻找空闲 evaluator
