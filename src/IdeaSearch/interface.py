@@ -23,6 +23,7 @@ def IdeaSearchInterface(
     diary_path: str,
     initialization_cleanse_threshold: float,
     delete_when_initial_cleanse: bool,
+    evaluator_handle_threshold: float,
 ) -> None:
     """
     启动并运行一个 IdeaSearch 搜索过程。
@@ -46,6 +47,7 @@ def IdeaSearchInterface(
         diary_path (str): IdeaSearch的日志文件路径。
         initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的idea将会被清除/忽略
         delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的idea的行为：True则删除文件；False则仅仅忽视不见
+        evaluator_handle_threshold (float): Evaluator将idea递交给数据库的分数阈值，低于此分数阈值的idea会被舍弃。
 
     Returns:
         None
@@ -78,6 +80,7 @@ def IdeaSearchInterface(
             evaluate_func = evaluate_func,
             console_lock = console_lock,
             diary_path = diary_path,
+            evaluator_handle_threshold = evaluator_handle_threshold,
         ) 
         for i in range(evaluators_num)
     ]

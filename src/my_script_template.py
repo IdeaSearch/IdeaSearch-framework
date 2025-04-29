@@ -28,6 +28,7 @@ def main()-> None:
     model_temperature = 1.0
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
+    evaluator_handle_threshold = 0.0
     
     # Max interaction num
     max_interaction_num = 5
@@ -53,11 +54,11 @@ def main()-> None:
         diary_path = diary_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
+        evaluator_handle_threshold = evaluator_handle_threshold,
     )
 
 
 if __name__ == "__main__":
     
     main()
-    
     

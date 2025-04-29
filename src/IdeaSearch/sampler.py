@@ -44,6 +44,12 @@ class Sampler:
         
         while self.database.get_status() == "Running":
             
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【{self.id}号采样器】 已开始新一轮采样！",
+                )
+            
             examples = self.database.get_examples()
             if examples is None: 
                 with self.console_lock:
@@ -69,6 +75,15 @@ class Sampler:
                 examples_section += f"{example.content}\n"
             
             prompt = self.prologue_section + examples_section + self.epilogue_section
+            
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"【{self.id}号采样器】 已向{self.model}(T={self.model_temperature:.1f})"
+                        f"发送prompt，正等待回答！",
+                    )
+                )
                 
             generated_ideas = [None] * self.generate_num
             with ThreadPoolExecutor() as executor:
@@ -88,6 +103,15 @@ class Sampler:
                                 file_path = self.diary_path,
                                 content_str = f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}",
                             )
+                            
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"【{self.id}号采样器】 已收到来自{self.model}(T={self.model_temperature:.1f})"
+                        f"的{self.generate_num}个回答！",
+                    )
+                )
             
             # 寻找空闲 evaluator
             evaluator = self._get_idle_evaluator()

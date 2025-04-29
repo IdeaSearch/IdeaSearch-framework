@@ -12,6 +12,7 @@ class Evaluator:
         evaluate_func,
         console_lock : Lock,
         diary_path: str,
+        evaluator_handle_threshold: float,
     ):
         
         self.id = evaluator_id + 1
@@ -22,6 +23,7 @@ class Evaluator:
         self.lock = Lock()
         self.status = "Vacant"
         self.diary_path = diary_path
+        self.evaluator_handle_threshold = evaluator_handle_threshold
         
 
     def try_acquire(self):
@@ -39,7 +41,7 @@ class Evaluator:
         
         for idea in generated_ideas:
             score, info = self.evaluate_func(idea)
-            if score >= 60.00 or True:
+            if score >= self.evaluator_handle_threshold:
                 accepted_ideas.append((idea, score, info))
                 
         with self.console_lock:
@@ -49,12 +51,6 @@ class Evaluator:
             )
                 
         self.database.receive_result(accepted_ideas, self.id)         
-            
-        with self.console_lock:
-            append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.id}号评估器】 已完成一轮评估。",
-            )
     
     def release(self):
         
