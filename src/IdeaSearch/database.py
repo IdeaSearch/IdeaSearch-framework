@@ -35,6 +35,11 @@ class Database:
         diary_path: str,
         initialization_cleanse_threshold: float,
         delete_when_initial_cleanse: bool,
+        models: list[str],
+        model_temperatures: list[float],
+        model_assess_window_size: int,
+        model_assess_initial_score: float,
+        model_sample_temperature: float,
     ):
         
         self.program_name = program_name
@@ -42,6 +47,18 @@ class Database:
         self.console_lock = console_lock
         self.path = f"programs/{program_name}/database/"
         self.diary_path = diary_path
+        self.models = models
+        self.model_temperatures = model_temperatures
+        self.model_sample_temperature = model_sample_temperature
+        self.model_recent_scores = []
+        for _ in range(len(models)):
+            self.model_recent_scores.append(
+                np.full((model_assess_window_size,), model_assess_initial_score)
+            )
+        self.model_scores = [
+            np.mean(self.model_recent_scores[i]) 
+            for i in range(len(self.model_recent_scores))
+        ]
         
         self.ideas = []
         for path in Path(self.path).rglob('*.idea'):
@@ -114,6 +131,47 @@ class Database:
                 k=min(len(self.ideas), self.examples_num)
             )
             
+    def get_model(self) -> tuple[str, float]:
+        
+        with self.lock:
+            
+            self._show_model_scores()
+            
+            probabilities = np.array(self.model_scores) / self.model_sample_temperature
+            max_value = np.max(probabilities)
+            probabilities = np.exp(probabilities - max_value)
+            probabilities /= np.sum(probabilities)
+            
+            np.random.seed()
+            selected_index = np.random.choice(len(self.models), p=probabilities)
+            
+            selected_model_name = self.models[selected_index]
+            selected_model_temperature = self.model_temperatures[selected_index]
+            
+            return selected_model_name, selected_model_temperature
+        
+    def _show_model_scores(self)-> None:
+        
+        with self.console_lock:
+            
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 各模型目前得分情况如下：",
+            )
+            
+            for index, model in enumerate(self.models):
+                
+                model_temperature = self.model_temperatures[index]
+                
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]}"
+                    ),
+                )
+                
+            
+            
     def _sync_score_sheet(self):
         
         score_sheet = {
@@ -146,7 +204,13 @@ class Database:
                 )
             self.status = "Terminated"
 
-    def receive_result(self, result: list[tuple[Idea, float, str]], evaluator_id: int):
+    def receive_result(
+        self, 
+        result: list[tuple[Idea, float, str]], 
+        evaluator_id: int,
+        model: str,
+        model_temperature: float,
+    ):
         
         def generate_random_string(length=4):
             return ''.join(random.choices(string.ascii_lowercase, k=length))
@@ -179,6 +243,33 @@ class Database:
                 )
             
             self._sync_score_sheet()
+            
+            index = 0
+            
+            while index < len(self.models):
+                
+                if self.models[index] == model and self.model_temperatures[index] == model_temperature:
+                    self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
+                    self.model_recent_scores[index][-1] = np.mean(np.array([
+                        result_tuple[1] for result_tuple in result
+                    ]))
+                    self.model_scores[index] = np.mean(self.model_recent_scores[index])
+                    with self.console_lock:    
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = f"【数据库】 模型{model}(T={model_temperature:.2f})的分数已被更新为{self.model_scores[index]}！",
+                        )
+                    return
+                
+                index += 1
+                
+            with self.console_lock:    
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【数据库】 出现错误！未知的模型名称及温度：{model}(T={model_temperature:.2f})！",
+                )
+                
+            exit()  
                 
 
     def get_status(self):

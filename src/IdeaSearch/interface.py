@@ -13,8 +13,11 @@ def IdeaSearchInterface(
     sample_temperature: float,
     evaluators_num: int,
     prologue_section: str,
-    model: str,
-    model_temperature: float,
+    models: list[str],
+    model_temperatures: list[float],
+    model_assess_window_size: int,
+    model_assess_initial_score: float,
+    model_sample_temperature: float,
     examples_num: int,
     generate_num: int,
     epilogue_section: str,
@@ -73,6 +76,11 @@ def IdeaSearchInterface(
         diary_path = diary_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
+        models = models,
+        model_temperatures = model_temperatures,
+        model_assess_window_size = model_assess_window_size,
+        model_assess_initial_score = model_assess_initial_score,
+        model_sample_temperature = model_sample_temperature,
     )
     evaluators = [
         Evaluator(
@@ -88,13 +96,11 @@ def IdeaSearchInterface(
     samplers = [
         Sampler(
             sampler_id = i,
-            model = model,
             prologue_section = prologue_section,
             epilogue_section = epilogue_section,
             evaluators = evaluators,
             generate_num = generate_num,
             database = database,
-            model_temperature = model_temperature,
             console_lock = console_lock,
             diary_path = diary_path,
         )

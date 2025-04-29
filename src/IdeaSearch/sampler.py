@@ -12,25 +12,21 @@ class Sampler:
     def __init__(
         self, 
         sampler_id, 
-        model,
         prologue_section,
         epilogue_section,
         evaluators: Evaluator,
         generate_num,
         database: Database,
-        model_temperature: float,
         console_lock: Lock,
         diary_path: str,
     ):
         self.id = sampler_id + 1
         self.database = database
         self.program_name = database.program_name
-        self.model = model
         self.prologue_section = prologue_section
         self.epilogue_section = epilogue_section
         self.generate_num = generate_num
         self.evaluators = evaluators
-        self.model_temperature = model_temperature
         self.console_lock = console_lock
         self.diary_path = diary_path
 
@@ -80,7 +76,25 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已向{self.model}(T={self.model_temperature:.1f})"
+                        f"【{self.id}号采样器】 正在询问数据库使用何模型。。。"
+                    ),
+                )
+            
+            model, model_temperature = self.database.get_model()
+            
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"【{self.id}号采样器】 根据数据库建议，依概率选择了{model}(T={model_temperature:.2f})！"
+                    ),
+                )
+            
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"【{self.id}号采样器】 已向{model}(T={model_temperature:.2f})"
                         f"发送prompt，正在等待回答！"
                     ),
                 )
@@ -89,7 +103,7 @@ class Sampler:
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
-                    executor.submit(get_answer, self.model, prompt, self.model_temperature): i
+                    executor.submit(get_answer, model, prompt, model_temperature): i
                     for i in range(self.generate_num)
                 }
 
@@ -101,14 +115,14 @@ class Sampler:
                         with self.console_lock:
                             append_to_file(
                                 file_path = self.diary_path,
-                                content_str = f"【{self.id}号采样器】 尝试获取{self.model}的回答时发生错误: {e}",
+                                content_str = f"【{self.id}号采样器】 尝试获取{model}(T={model_temperature:.2f})的回答时发生错误: {e}",
                             )
                             
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已收到来自{self.model}(T={self.model_temperature:.1f})"
+                        f"【{self.id}号采样器】 已收到来自{model}(T={model_temperature:.2f})"
                         f"的{self.generate_num}个回答！"
                     ),
                 )
@@ -116,7 +130,7 @@ class Sampler:
             # 寻找空闲 evaluator
             evaluator = self._get_idle_evaluator()
             if evaluator:
-                evaluator.evaluate(generated_ideas)
+                evaluator.evaluate(generated_ideas, model, model_temperature)
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
@@ -143,7 +157,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【{self.id}号采样器】 已找到{evaluator.id}号评估器对{self.model}的回答进行评估。"
+                        content_str = f"【{self.id}号采样器】 已找到{evaluator.id}号评估器进行评估！",
                     )
                 return evaluator
         return None

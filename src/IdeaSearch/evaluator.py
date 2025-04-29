@@ -35,7 +35,12 @@ class Evaluator:
             self.lock.release()
         return False
 
-    def evaluate(self, generated_ideas : list[str]) -> None:
+    def evaluate(
+        self, 
+        generated_ideas: list[str],
+        model: str,
+        model_temperature: float,
+    )-> None:
         
         accepted_ideas = []
         
@@ -50,7 +55,7 @@ class Evaluator:
                 content_str = f"【{self.id}号评估器】 已将{len(accepted_ideas)}/{len(generated_ideas)}个满足条件的idea递交给数据库！",
             )
                 
-        self.database.receive_result(accepted_ideas, self.id)         
+        self.database.receive_result(accepted_ideas, self.id, model, model_temperature)         
     
     def release(self):
         

@@ -4,12 +4,6 @@ from programs.TemplateProgram.prompt import epilogue_section as TemplateProgram_
 from src.IdeaSearch.interface import IdeaSearchInterface
 
 
-from programs.SysYCompilerTest.evaluator.evaluator import evaluate as SysYCompilerTest_evaluate
-from programs.SysYCompilerTest.prompt import prologue_section as SysYCompilerTest_prologue_section
-from programs.SysYCompilerTest.prompt import epilogue_section as SysYCompilerTest_epilogue_section
-from src.IdeaSearch.interface import IdeaSearchInterface
-
-
 def main()-> None:
     
     # Things you 【must】 modify
@@ -24,8 +18,19 @@ def main()-> None:
     evaluators_num = samplers_num
     examples_num = 3
     generate_num = 2
-    model = "Deepseek_V3"
-    model_temperature = 1.0
+    models = [
+        "Qwen_Max",
+        "Qwen_Max",
+        "Qwen_Max",
+    ]
+    model_temperatures = [
+        0.9,
+        1.0,
+        1.1,
+    ]
+    model_assess_window_size = 10
+    model_assess_initial_score = 100.0
+    model_sample_temperature = 50.0
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
     evaluator_handle_threshold = 0.0
@@ -46,8 +51,11 @@ def main()-> None:
         prologue_section = prologue_section,
         examples_num = examples_num,
         generate_num = generate_num,
-        model = model,
-        model_temperature = model_temperature,
+        models = models,
+        model_temperatures = model_temperatures,
+        model_assess_window_size = model_assess_window_size,
+        model_assess_initial_score = model_assess_initial_score,
+        model_sample_temperature = model_sample_temperature,
         epilogue_section = epilogue_section,
         max_interaction_num = max_interaction_num,
         evaluate_func = evaluate_func,
