@@ -45,7 +45,20 @@ class Evaluator:
         accepted_ideas = []
         
         for idea in generated_ideas:
-            score, info = self.evaluate_func(idea)
+            
+            try:
+                score, info = self.evaluate_func(idea)
+                
+            except Exception as e:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误：\n{e}\n评估终止！"
+                        ),
+                    )  
+                return
+            
             if score >= self.evaluator_handle_threshold:
                 accepted_ideas.append((idea, score, info))
                 

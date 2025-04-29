@@ -118,6 +118,16 @@ class Sampler:
                                 content_str = f"【{self.id}号采样器】 尝试获取{model}(T={model_temperature:.2f})的回答时发生错误: {e}",
                             )
                             
+            if any(idea is None for idea in generated_ideas):
+                
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【{self.id}号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。",
+                    )
+                    
+                continue
+                            
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
