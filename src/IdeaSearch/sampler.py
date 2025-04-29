@@ -86,7 +86,7 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 根据数据库建议，依概率选择了{model}(T={model_temperature:.2f})！"
+                        f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了{model}(T={model_temperature:.2f})！"
                     ),
                 )
             
