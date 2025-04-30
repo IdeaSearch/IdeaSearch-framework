@@ -1,6 +1,12 @@
 from src.API4LLMs.model_manager import model_manager
 from openai import OpenAI
 
+
+__all__ = [
+    "get_answer",
+]
+
+
 def get_answer(
     model_name : str, 
     question : str,

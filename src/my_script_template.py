@@ -1,7 +1,7 @@
 from programs.TemplateProgram.evaluator.evaluator import evaluate as TemplateProgram_evaluate
 from programs.TemplateProgram.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.prompt import epilogue_section as TemplateProgram_epilogue_section
-from src.IdeaSearch.interface import IdeaSearchInterface
+from src.IdeaSearch.interface import IdeaSearch
 
 
 def main()-> None:
@@ -46,13 +46,14 @@ def main()-> None:
     # Max interaction num
     max_interaction_num = 10
     
-    # Diary path
+    # Paths
     diary_path = "src/diary.txt"
     database_path = f"programs/{program_name}/database/"
+    api_keys_path = "src/API4LLMs/api_keys.json"
     
     # Start IdeaSearch
     # prompt = prologue section + examples section + epilogue section
-    IdeaSearchInterface(
+    IdeaSearch(
         program_name =  program_name,
         samplers_num = samplers_num,
         sample_temperature = sample_temperature,
@@ -69,6 +70,7 @@ def main()-> None:
         max_interaction_num = max_interaction_num,
         evaluate_func = evaluate_func,
         diary_path = diary_path,
+        api_keys_path = api_keys_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_handle_threshold = evaluator_handle_threshold,

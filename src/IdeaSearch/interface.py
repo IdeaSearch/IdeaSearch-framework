@@ -1,18 +1,28 @@
-from src.utils import guarantee_path_exist, clear_file_content, append_to_file
-from src.IdeaSearch.database import Database
-from src.IdeaSearch.sampler import Sampler
-from src.IdeaSearch.evaluator import Evaluator
 import concurrent.futures
 from threading import Lock
 from typing import Callable, Optional
+from pathlib import Path
+
+from src.utils import guarantee_path_exist, clear_file_content, append_to_file
+from src.IdeaSearch.database import Idea, Database
+from src.IdeaSearch.sampler import Sampler
+from src.IdeaSearch.evaluator import Evaluator
+from src.API4LLMs.model_manager import init_model_manager
 
 
-def IdeaSearchInterface(
+__all__ = [
+    "IdeaSearch",
+    "cleanse_dataset",
+]
+
+
+def IdeaSearch(
     program_name: str,
     prologue_section: str,
     epilogue_section: str,
     database_path: str,
     diary_path: str,
+    api_keys_path: str,
     models: list[str],
     model_temperatures: list[float],
     max_interaction_num: int,
@@ -28,7 +38,7 @@ def IdeaSearchInterface(
     model_sample_temperature: float = 50.0,
     evaluator_handle_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
-    similarity_func: Optional[ Callable[[str, str], float]] = None,
+    similarity_func: Optional[Callable[[str, str], float]] = None,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
 ) -> None:
@@ -49,6 +59,7 @@ def IdeaSearchInterface(
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
         database_path (str): 数据库路径，在此路径下存放.idea文件和自动生成的score_sheet.json。
         diary_path (str): IdeaSearch 的日志文件路径。
+        api_keys_path (str): 用于向LLM提问的json文件路径，文件中应包含自己的api keys。
         models (list[str]): 用于生成 idea 的大语言模型名称列表，应在 api_keys_path 下的文件中定义。
         model_temperatures (list[float]): 与 models 对应的温度值列表，其长度应与 models 相同。
         max_interaction_num (int): 数据库允许的最大评估交互次数，超过即终止。
@@ -77,13 +88,17 @@ def IdeaSearchInterface(
     
     if similarity_func is None:
         similarity_func = default_similarity_func
+        
+    init_model_manager(
+        api_keys_path = api_keys_path,
+    )
     
     guarantee_path_exist(diary_path)
     clear_file_content(diary_path)
     
     append_to_file(
         file_path = diary_path,
-        content_str = f"现在开始{program_name}的IdeaSearch！",
+        content_str = f"【系统】 现在开始{program_name}的IdeaSearch！",
     )
     
     console_lock = Lock()
@@ -142,11 +157,29 @@ def IdeaSearchInterface(
             except Exception as e:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{sampler.id}号采样器】 运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                    content_str = f"【系统】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                 )
                 exit()
 
     append_to_file(
         file_path = diary_path,
-        content_str = f"已达到最大采样次数，{program_name}的IdeaSearch结束！",
+        content_str = f"【系统】 已达到最大互动次数，{program_name}的IdeaSearch结束！",
     )
+    
+
+def cleanse_dataset(
+    database_path: str,
+    evaluate_func: Callable[[str], tuple[float, str]],
+    cleanse_threshold: float,
+):
+    
+    for path in Path(database_path).rglob('*.idea'):
+            
+        idea = Idea(
+            path = path, 
+            evaluate_func = evaluate_func,
+        )
+        
+        if idea.score < cleanse_threshold:
+            path.unlink()
+            print(f"文件{path}得分未达到{cleanse_threshold}，已删除。")

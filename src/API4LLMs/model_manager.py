@@ -1,6 +1,11 @@
 import json
 import os
 
+__all__ = [
+    "model_manager",
+    "init_model_manager",
+]
+
 class ModelManager:
     def __init__(self):
         self.models = {}
@@ -34,10 +39,13 @@ class ModelManager:
                 self.models[model_name]['base_url'] = base_url
             if model is not None:
                 self.models[model_name]['model'] = model
-                
+                         
                 
 model_manager = ModelManager()
 
-if not os.path.exists("src/API4LLMs/api_keys.json"):
-    print("请仿照 api_keys_example.json 在同目录下自行创建 api_keys.json，并填写自己的 api_key！")
-model_manager.load_from("src/API4LLMs/api_keys.json")
+
+def init_model_manager(
+    api_keys_path: str,
+)-> None:
+    model_manager.load_from(api_keys_path)
+
