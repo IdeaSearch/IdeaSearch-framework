@@ -44,11 +44,13 @@ class Evaluator:
     )-> None:
         
         accepted_ideas = []
+        score_result = []
         
         for idea in generated_ideas:
             
             try:
                 score, info = self.evaluate_func(idea)
+                score_result.append(score)
                 
                 if not isinstance(score, float):
                     with self.console_lock:
@@ -97,13 +99,17 @@ class Evaluator:
             if score >= self.evaluator_handle_threshold:
                 accepted_ideas.append((idea, score, info))
                 
+        self.database.update_model_score(score_result, model, model_temperature)   
+        self.database.receive_result(accepted_ideas, self.id)
+        
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
                 content_str = f"【{self.id}号评估器】 已将{len(accepted_ideas)}/{len(generated_ideas)}个满足条件的idea递交给数据库！",
             )
                 
-        self.database.receive_result(accepted_ideas, self.id, model, model_temperature)         
+        
+                
     
     def release(self):
         

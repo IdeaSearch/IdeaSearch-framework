@@ -35,6 +35,7 @@ def IdeaSearch(
     generate_num: int = 5,
     model_assess_window_size: int = 20,
     model_assess_initial_score: float = 100.0,
+    model_assess_average_order: float = 1.0,
     model_sample_temperature: float = 50.0,
     evaluator_handle_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
@@ -72,6 +73,7 @@ def IdeaSearch(
         generate_num (int): 每个 Sampler 每轮生成的候选 idea 数量。
         model_assess_window_size (int): 模型评估窗口大小，每个模型的实时得分是该模型在前 model_assess_window_size 轮生成的idea得分的平均值。
         model_assess_initial_score (float): 模型评估初始分数，用于冷启动时的模型分数基准，建议设为100.0甚至更大，以鼓励系统采样模型时的探索。
+        model_assess_average_order (float): 模型评估p范数平均的阶数p，默认为1.0，p越大越强调最大值的影响，p越小越强调最小值的影响。
         model_sample_temperature (float): 系统采样模型时的温度，诸模型被采样的概率正比于 exp(-score / model_sample_temperature)。
         evaluator_handle_threshold (float): Evaluator 将 idea 递交给数据库的分数阈值，低于此阈值的 idea 会被舍弃。
         similarity_threshold (float): 用于判断两个 idea 是否相似的阈值， idea1 与 idea2 相似当且仅当 idea1 就是 idea2 或  similarity_func(idea1, idea2) < similarity_threshold ；默认为 -1.0 ，相当于只认为相同的 idea 相似。
@@ -184,6 +186,12 @@ def IdeaSearch(
             "【IdeaSearch参数类型错误】 `model_assess_initial_score` 应该是 float 类型，"
             f"但接收到 {type(model_assess_initial_score).__name__}"
         )
+        
+    if not isinstance(model_assess_average_order, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `model_assess_average_order` 应该是 float 类型，"
+            f"但接收到 {type(model_assess_average_order).__name__}"
+        )
 
     if not isinstance(model_sample_temperature, (int, float)):
         raise TypeError(
@@ -258,6 +266,7 @@ def IdeaSearch(
         model_temperatures = model_temperatures,
         model_assess_window_size = model_assess_window_size,
         model_assess_initial_score = model_assess_initial_score,
+        model_assess_average_order = model_assess_average_order,
         model_sample_temperature = model_sample_temperature,
         similarity_threshold = similarity_threshold,
     )

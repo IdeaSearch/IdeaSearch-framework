@@ -1,7 +1,7 @@
+from src.IdeaSearch.interface import IdeaSearch, cleanse_dataset 
 from programs.TemplateProgram.evaluator.evaluator import evaluate as TemplateProgram_evaluate
 from programs.TemplateProgram.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.prompt import epilogue_section as TemplateProgram_epilogue_section
-from src.IdeaSearch.interface import IdeaSearch
 
 
 def main()-> None:
@@ -36,6 +36,7 @@ def main()-> None:
     ]
     model_assess_window_size = 20
     model_assess_initial_score = 100.0
+    model_assess_average_order = 1.0
     model_sample_temperature = 60.0
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
@@ -65,6 +66,7 @@ def main()-> None:
         model_temperatures = model_temperatures,
         model_assess_window_size = model_assess_window_size,
         model_assess_initial_score = model_assess_initial_score,
+        model_assess_average_order = model_assess_average_order,
         model_sample_temperature = model_sample_temperature,
         epilogue_section = epilogue_section,
         max_interaction_num = max_interaction_num,
@@ -84,10 +86,10 @@ if __name__ == "__main__":
     
     main()
     
-    # you can use helper function `cleanse_dataset`
+    # you can use helper function cleanse_dataset
     # cleanse_dataset(
-    #     database_path = "programs/SysYCompilerTest/dataset/",
-    #     evaluate_func = SysYCompilerTest_evaluate,
+    #     database_path = "programs/TemplateProgram/dataset/",
+    #     evaluate_func = TemplateProgram_evaluate,
     #     cleanse_threshold = 1.0,
     # )
     

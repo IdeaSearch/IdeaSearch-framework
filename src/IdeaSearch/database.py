@@ -42,6 +42,7 @@ class Database:
         model_temperatures: list[float],
         model_assess_window_size: int,
         model_assess_initial_score: float,
+        model_assess_average_order: float,
         model_sample_temperature: float,
         similarity_threshold: float,
     )-> None:
@@ -62,8 +63,10 @@ class Database:
             self.model_recent_scores.append(
                 np.full((model_assess_window_size,), model_assess_initial_score)
             )
+        self.model_assess_average_order = model_assess_average_order
+        p = self.model_assess_average_order
         self.model_scores = [
-            np.mean(self.model_recent_scores[i]) 
+            (np.mean(np.abs(self.model_recent_scores[i]) ** p)) ** (1 / p)
             for i in range(len(self.model_recent_scores))
         ]
         
@@ -248,7 +251,7 @@ class Database:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]}"
+                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]:.2f}"
                     ),
                 )    
             
@@ -289,14 +292,11 @@ class Database:
         self, 
         result: list[tuple[Idea, float, str]], 
         evaluator_id: int,
-        model: str,
-        model_temperature: float,
     ):
-        
-        def generate_random_string(length=4):
-            return ''.join(random.choices(string.ascii_lowercase, k=length))
-        
         with self.lock:
+        
+            def generate_random_string(length=4):
+                return ''.join(random.choices(string.ascii_lowercase, k=length))
             
             for idea_content, score, info in result:
                 
@@ -326,20 +326,30 @@ class Database:
             self._sync_score_sheet()
             self._sync_similar_num_list()
             
+            
+    def update_model_score(
+        self,
+        score_result: list[float], 
+        model: str,
+        model_temperature: float,
+    )-> None:
+        
+        with self.lock:
+            
             index = 0
             
             while index < len(self.models):
                 
                 if self.models[index] == model and self.model_temperatures[index] == model_temperature:
                     self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
-                    self.model_recent_scores[index][-1] = np.mean(np.array([
-                        result_tuple[1] for result_tuple in result
-                    ]))
-                    self.model_scores[index] = np.mean(self.model_recent_scores[index])
+                    p = self.model_assess_average_order
+                    scores_array = np.array(score_result)
+                    self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
+                    self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
                     with self.console_lock:    
                         append_to_file(
                             file_path = self.diary_path,
-                            content_str = f"【数据库】 模型{model}(T={model_temperature:.2f})的分数已被更新为{self.model_scores[index]}！",
+                            content_str = f"【数据库】 模型{model}(T={model_temperature:.2f})的分数已被更新为{self.model_scores[index]:.2f}！",
                         )
                     return
                 
