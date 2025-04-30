@@ -30,7 +30,7 @@ def main()-> None:
     ]
     model_assess_window_size = 10
     model_assess_initial_score = 100.0
-    model_sample_temperature = 50.0
+    model_sample_temperature = 40.0
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
     evaluator_handle_threshold = 0.0
