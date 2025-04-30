@@ -11,15 +11,24 @@ __all__ = [
 def guarantee_path_exist(path):
     """
     确保给定路径存在，如果不存在则创建它。
+    如果路径是文件，则创建文件所在的文件夹；
+    如果路径是文件夹，则直接创建该文件夹。
 
     参数:
     path (str): 要检查或创建的路径。
     """
 
-    # 检查路径是否存在
+    # 获取文件的目录
+    directory = os.path.dirname(path)
+
+    # 检查目录是否存在
+    if not os.path.exists(directory):
+        # 创建目录
+        os.makedirs(directory)
+
+    # 如果路径是文件，确保文件存在
     if not os.path.exists(path):
-        # 创建路径
-        os.makedirs(path)       
+        open(path, 'a').close()  # 创建空文件    
 
 
 def append_to_file(
