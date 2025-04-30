@@ -16,31 +16,39 @@ def main()-> None:
     samplers_num = 5
     sample_temperature = 50.0
     evaluators_num = samplers_num
-    examples_num = 3
+    examples_num = 4
     generate_num = 2
     models = [
         "Qwen_Max",
         "Qwen_Max",
         "Qwen_Max",
+        # "Deepseek_V3",
+        # "Deepseek_V3",
+        # "Deepseek_V3",
     ]
     model_temperatures = [
         0.9,
         1.0,
         1.1,
+        # 0.9,
+        # 1.0,
+        # 1.1,
     ]
-    model_assess_window_size = 10
+    model_assess_window_size = 20
     model_assess_initial_score = 100.0
-    model_sample_temperature = 45.0
+    model_sample_temperature = 60.0
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
     evaluator_handle_threshold = 0.0
     similarity_threshold = 0.1
+    similarity_func = None
     
     # Max interaction num
-    max_interaction_num = 5
+    max_interaction_num = 10
     
     # Diary path
     diary_path = "src/diary.txt"
+    database_path = f"programs/{program_name}/database/"
     
     # Start IdeaSearch
     # prompt = prologue section + examples section + epilogue section
@@ -65,10 +73,11 @@ def main()-> None:
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_handle_threshold = evaluator_handle_threshold,
         similarity_threshold = similarity_threshold,
+        similarity_func = similarity_func, 
+        database_path = database_path,
     )
 
 
 if __name__ == "__main__":
     
     main()
-    

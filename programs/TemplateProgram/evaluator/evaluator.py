@@ -1,5 +1,7 @@
+from typing import Optional
+
 # please implement your evaluator here
-def evaluate(idea: str)-> tuple[float, str | None]:
+def evaluate(idea: str)-> tuple[float, Optional[str]]:
     """
     对语言模型生成的答案进行评估，返回分数和评语。
 

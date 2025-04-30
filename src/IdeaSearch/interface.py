@@ -4,7 +4,7 @@ from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 import concurrent.futures
 from threading import Lock
-from typing import Callable, Protocol
+from typing import Callable, Optional
 
 
 def IdeaSearchInterface(
@@ -28,6 +28,7 @@ def IdeaSearchInterface(
     model_sample_temperature: float = 50.0,
     evaluator_handle_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
+    similarity_func: Optional[ Callable[[str, str], float]] = None,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
 ) -> None:
@@ -57,18 +58,25 @@ def IdeaSearchInterface(
         evaluators_num (int): 要创建的评估器（Evaluator）数量。
         sample_temperature (float): 系统采样idea时的温度，诸 idea 被采样的概率正比于 exp(-score / sample_temperature) / N(idea)，其中 N(idea) 是 database 所有 ideas 中与 idea 相似的元素个数。
         examples_num (int): 每个 prompt 给大语言模型看的例子数量。
-        generate_num (int): 每个 Sampler 每轮生成的候选程序数量。
+        generate_num (int): 每个 Sampler 每轮生成的候选 idea 数量。
         model_assess_window_size (int): 模型评估窗口大小，每个模型的实时得分是该模型在前 model_assess_window_size 轮生成的idea得分的平均值。
         model_assess_initial_score (float): 模型评估初始分数，用于冷启动时的模型分数基准，建议设为100.0甚至更大，以鼓励系统采样模型时的探索。
         model_sample_temperature (float): 系统采样模型时的温度，诸模型被采样的概率正比于 exp(-score / model_sample_temperature)。
         evaluator_handle_threshold (float): Evaluator 将 idea 递交给数据库的分数阈值，低于此阈值的 idea 会被舍弃。
-        similarity_threshold (float): 用于判断两个 idea 是否相似的阈值，若 |score1 - score2| < similarity_threshold 则视为相似。
+        similarity_threshold (float): 用于判断两个 idea 是否相似的阈值， idea1 与 idea2 相似当且仅当 idea1 就是 idea2 或  similarity_func(idea1, idea2) < similarity_threshold ；默认为 -1.0 ，相当于只认为相同的 idea 相似。
+        similarity_func (Callable[[str, str], float] | None): 衡量两个 idea 相似度的函数，默认为 None （会被赋值为返回 |score(idea1) - score(idea2)| 的函数），但也可以自行编写并传入。
         initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的 idea 将会被清除/忽略。
         delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的 idea 的行为：True 则删除文件；False 则仅仅忽视不见。
 
     Returns:
         None
     """
+    
+    def default_similarity_func(idea1, idea2):
+        return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
+    
+    if similarity_func is None:
+        similarity_func = default_similarity_func
     
     guarantee_path_exist(diary_path)
     clear_file_content(diary_path)
@@ -85,6 +93,8 @@ def IdeaSearchInterface(
         max_interaction_num = max_interaction_num,
         examples_num = examples_num,
         evaluate_func = evaluate_func,
+        similarity_func = similarity_func,
+        default_similarity_func = default_similarity_func,
         sample_temperature = sample_temperature,
         console_lock = console_lock,
         diary_path = diary_path,

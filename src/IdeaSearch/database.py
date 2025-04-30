@@ -4,7 +4,7 @@ import random
 import os
 import string
 import json
-from numpy import exp
+from typing import Callable
 import numpy as np
 from src.utils import append_to_file
 
@@ -30,7 +30,9 @@ class Database:
         max_interaction_num,
         examples_num,
         evaluate_func,
-        sample_temperature : float,
+        similarity_func: Callable[[str, str], float],
+        default_similarity_func: Callable[[str, str], float],
+        sample_temperature: float,
         console_lock,
         diary_path: str,
         database_path: str,
@@ -42,7 +44,7 @@ class Database:
         model_assess_initial_score: float,
         model_sample_temperature: float,
         similarity_threshold: float,
-    ):
+    )-> None:
         
         self.program_name = program_name
         self.sample_temperature = sample_temperature
@@ -50,6 +52,8 @@ class Database:
         self.path = database_path
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
+        self.similarity_func = similarity_func
+        self.default_similarity_func = default_similarity_func
         self.models = models
         self.model_temperatures = model_temperatures
         self.model_sample_temperature = model_sample_temperature
@@ -112,10 +116,13 @@ class Database:
     #     for i, idea_i in enumerate(self.ideas):
     #         similar_count = 0
     #         for j, idea_j in enumerate(self.ideas):
-    #             if i == j:
+    #             if i == j or idea_i.content == idea_j.content:
     #                 similar_count += 1
-    #             score_diff = abs(idea_i.score - idea_j.score)
-    #             if score_diff < self.similarity_threshold:
+    #             if self.similarity_func == self.default_similarity_func:
+    #                 score_diff = abs(idea_i.score - idea_j.score)
+    #             else:
+    #                 score_diff = self.similarity_func(idea_i.content, idea_j.content)
+    #             if score_diff <= self.similarity_threshold:
     #                 similar_count += 1
     #         self.idea_similar_nums.append(similar_count)
             
@@ -125,37 +132,51 @@ class Database:
     #             content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
     #         )
       
-    # GPT完成的高效版本      
+    # GPT完成的高效版本（仅在default_similarity_func情形下优化）     
     def _sync_similar_num_list(self):
         epsilon = self.similarity_threshold
+        default_sim = self.similarity_func == self.default_similarity_func
 
-        # 记录原始索引
-        indexed_ideas = list(enumerate(self.ideas))
-        
-        # 按 score 排序
-        indexed_ideas.sort(key=lambda x: x[1].score)
+        self.idea_similar_nums = [0] * len(self.ideas)
 
-        # 准备一个结果数组，初始为 0
-        similar_counts = [0] * len(self.ideas)
+        if default_sim:
+            # 使用滑窗优化，只适用于默认 similarity_func
+            indexed_ideas = list(enumerate(self.ideas))
+            indexed_ideas.sort(key=lambda x: x[1].score)
 
-        # 双指针滑窗法
-        n = len(indexed_ideas)
-        left = 0
-        for right in range(n):
-            # 将 left 移动到不满足相似条件的位置
-            while indexed_ideas[right][1].score - indexed_ideas[left][1].score >= epsilon:
-                left += 1
-            # 当前 right 的窗口中所有 [left, right] 都是相似的
-            count = right - left + 1
-            original_index = indexed_ideas[right][0]
-            similar_counts[original_index] = count
+            n = len(indexed_ideas)
+            left = 0
+            for right in range(n):
+                # 左边界移动到满足 score 差值小于 epsilon 的位置
+                while indexed_ideas[right][1].score - indexed_ideas[left][1].score > epsilon:
+                    left += 1
+                count = 0
+                for k in range(left, right + 1):
+                    i = indexed_ideas[right][0]
+                    j = indexed_ideas[k][0]
+                    # 包含内容完全相同的情况
+                    if i == j or self.ideas[i].content == self.ideas[j].content:
+                        count += 1
+                    elif abs(self.ideas[i].score - self.ideas[j].score) <= epsilon:
+                        count += 1
+                self.idea_similar_nums[indexed_ideas[right][0]] = count
+        else:
+            # 非默认相似度函数，使用两重循环
+            for i, idea_i in enumerate(self.ideas):
+                similar_count = 0
+                for j, idea_j in enumerate(self.ideas):
+                    if i == j or idea_i.content == idea_j.content:
+                        similar_count += 1
+                    else:
+                        score_diff = self.similarity_func(idea_i.content, idea_j.content)
+                        if score_diff <= epsilon:
+                            similar_count += 1
+                self.idea_similar_nums[i] = similar_count
 
-        self.idea_similar_nums = similar_counts
-        
         with self.console_lock:
             append_to_file(
-                file_path = self.diary_path,
-                content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+                file_path=self.diary_path,
+                content_str="【数据库】 成功将idea_similar_nums与ideas同步！",
             )
         
 
