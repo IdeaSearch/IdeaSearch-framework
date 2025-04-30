@@ -34,6 +34,7 @@ def main()-> None:
     initialization_cleanse_threshold = 1.0
     delete_when_initial_cleanse = True
     evaluator_handle_threshold = 0.0
+    similarity_threshold = 0.1
     
     # Max interaction num
     max_interaction_num = 5
@@ -63,6 +64,7 @@ def main()-> None:
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_handle_threshold = evaluator_handle_threshold,
+        similarity_threshold = similarity_threshold,
     )
 
 

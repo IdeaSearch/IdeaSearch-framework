@@ -27,6 +27,7 @@ def IdeaSearchInterface(
     initialization_cleanse_threshold: float,
     delete_when_initial_cleanse: bool,
     evaluator_handle_threshold: float,
+    similarity_threshold: float,
 ) -> None:
     """
     启动并运行一个 IdeaSearch 搜索过程。
@@ -81,6 +82,7 @@ def IdeaSearchInterface(
         model_assess_window_size = model_assess_window_size,
         model_assess_initial_score = model_assess_initial_score,
         model_sample_temperature = model_sample_temperature,
+        similarity_threshold = similarity_threshold,
     )
     evaluators = [
         Evaluator(

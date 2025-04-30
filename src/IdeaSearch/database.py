@@ -40,6 +40,7 @@ class Database:
         model_assess_window_size: int,
         model_assess_initial_score: float,
         model_sample_temperature: float,
+        similarity_threshold: float,
     ):
         
         self.program_name = program_name
@@ -47,6 +48,7 @@ class Database:
         self.console_lock = console_lock
         self.path = f"programs/{program_name}/database/"
         self.diary_path = diary_path
+        self.similarity_threshold = similarity_threshold
         self.models = models
         self.model_temperatures = model_temperatures
         self.model_sample_temperature = model_sample_temperature
@@ -91,6 +93,7 @@ class Database:
                     )
                     
         self._sync_score_sheet()
+        self._sync_similar_num_list()
         
         self.interaction_count = 0
         self.max_interaction_num = max_interaction_num
@@ -99,6 +102,48 @@ class Database:
         self.lock = Lock()
         self.status = "Running"
         
+
+    # 低效版本
+    # def _sync_similar_num_list(self):
+        
+    #     self.idea_similar_nums = []
+
+    #     for i, idea_i in enumerate(self.ideas):
+    #         similar_count = 0
+    #         for j, idea_j in enumerate(self.ideas):
+    #             if i == j:
+    #                 similar_count += 1
+    #             score_diff = abs(idea_i.score - idea_j.score)
+    #             if score_diff < self.similarity_threshold:
+    #                 similar_count += 1
+    #         self.idea_similar_nums.append(similar_count)
+      
+    # GPT完成的高效版本      
+    def _sync_similar_num_list(self):
+        epsilon = self.similarity_threshold
+
+        # 记录原始索引
+        indexed_ideas = list(enumerate(self.ideas))
+        
+        # 按 score 排序
+        indexed_ideas.sort(key=lambda x: x[1].score)
+
+        # 准备一个结果数组，初始为 0
+        similar_counts = [0] * len(self.ideas)
+
+        # 双指针滑窗法
+        n = len(indexed_ideas)
+        left = 0
+        for right in range(n):
+            # 将 left 移动到不满足相似条件的位置
+            while indexed_ideas[right][1].score - indexed_ideas[left][1].score >= epsilon:
+                left += 1
+            # 当前 right 的窗口中所有 [left, right] 都是相似的
+            count = right - left + 1
+            original_index = indexed_ideas[right][0]
+            similar_counts[original_index] = count
+
+        self.idea_similar_nums = similar_counts
         
 
     def get_examples(self) -> list[Idea]:
@@ -123,6 +168,7 @@ class Database:
             scores = scores / self.sample_temperature
             shifted_scores = scores - np.max(scores)
             exp_scores = np.exp(shifted_scores)
+            exp_scores /= np.array(self.idea_similar_nums)
             weights = exp_scores / np.sum(exp_scores)
 
             return random.choices(
@@ -130,6 +176,7 @@ class Database:
                 weights=weights,
                 k=min(len(self.ideas), self.examples_num)
             )
+            
             
     def get_model(self) -> tuple[str, float]:
         
@@ -150,6 +197,7 @@ class Database:
             
             return selected_model_name, selected_model_temperature
         
+        
     def _show_model_scores(self)-> None:
         
         with self.console_lock:
@@ -168,8 +216,7 @@ class Database:
                     content_str = (
                         f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]}"
                     ),
-                )
-                
+                )    
             
             
     def _sync_score_sheet(self):
@@ -243,6 +290,7 @@ class Database:
                 )
             
             self._sync_score_sheet()
+            self._sync_similar_num_list()
             
             index = 0
             
