@@ -115,8 +115,12 @@ class Sampler:
                         with self.console_lock:
                             append_to_file(
                                 file_path = self.diary_path,
-                                content_str = f"【{self.id}号采样器】 尝试获取{model}(T={model_temperature:.2f})的回答时发生错误: {e}",
+                                content_str = (
+                                    f"【{self.id}号采样器】 尝试获取{model}(T={model_temperature:.2f})的回答时发生错误: \n{e}\n"
+                                    "此轮采样失败。。。"
+                                ),
                             )
+                        continue
                             
             if any(idea is None for idea in generated_ideas):
                 
@@ -151,7 +155,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【{self.id}号采样器】 没有找到空闲的评估器，此次采样失败...",
+                        content_str = f"【{self.id}号采样器】 没有找到空闲的评估器，此轮采样失败。。。",
                     )
         
         with self.console_lock:    
