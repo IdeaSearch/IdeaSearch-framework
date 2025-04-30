@@ -42,6 +42,7 @@ def IdeaSearch(
     similarity_func: Optional[Callable[[str, str], float]] = None,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
+    idea_uid_length: int = 4,
 ) -> None:
     
     """
@@ -80,6 +81,7 @@ def IdeaSearch(
         similarity_func (Callable[[str, str], float] | None): 衡量两个 idea 相似度的函数，默认为 None （会被赋值为返回 |score(idea1) - score(idea2)| 的函数），但也可以自行编写并传入。
         initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的 idea 将会被清除/忽略。
         delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的 idea 的行为：True 则删除文件；False 则仅仅忽视不见。
+        idea_uid_length (int):  LLM 生成的 idea 会被存储至 database_path 下的 f"idea_{idea_uid}.idea" 文件中， idea_uid_length 决定 idea_uid 的长度，一般取为 4 。
 
     Returns:
         None
@@ -228,6 +230,12 @@ def IdeaSearch(
             "【IdeaSearch参数类型错误】 `delete_when_initial_cleanse` 应该是 bool 类型，"
             f"但接收到 {type(delete_when_initial_cleanse).__name__}"
         )
+        
+    if not isinstance(idea_uid_length, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `idea_uid_length` 应该是 int 类型，"
+            f"但接收到 {type(idea_uid_length).__name__}"
+        )
     
     def default_similarity_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
@@ -269,6 +277,7 @@ def IdeaSearch(
         model_assess_average_order = model_assess_average_order,
         model_sample_temperature = model_sample_temperature,
         similarity_threshold = similarity_threshold,
+        idea_uid_length = idea_uid_length,
     )
     evaluators = [
         Evaluator(
@@ -329,4 +338,4 @@ def cleanse_dataset(
         
         if idea.score < cleanse_threshold:
             path.unlink()
-            print(f"文件{path}得分未达到{cleanse_threshold}，已删除。")
+            print(f"文件{path}得分未达到{cleanse_threshold:.2f}，已删除。")

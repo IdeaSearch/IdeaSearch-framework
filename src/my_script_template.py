@@ -43,6 +43,7 @@ def IdeaSearch_interface()-> None:
     evaluator_handle_threshold = 0.0
     similarity_threshold = 0.1
     similarity_func = None
+    idea_uid_length = 4
     
     # Max interaction num
     max_interaction_num = 10
@@ -79,6 +80,7 @@ def IdeaSearch_interface()-> None:
         similarity_threshold = similarity_threshold,
         similarity_func = similarity_func, 
         database_path = database_path,
+        idea_uid_length = idea_uid_length,
     )
 
 

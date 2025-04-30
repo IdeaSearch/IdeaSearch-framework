@@ -45,6 +45,7 @@ class Database:
         model_assess_average_order: float,
         model_sample_temperature: float,
         similarity_threshold: float,
+        idea_uid_length: int,
     )-> None:
         
         self.program_name = program_name
@@ -55,6 +56,7 @@ class Database:
         self.similarity_threshold = similarity_threshold
         self.similarity_func = similarity_func
         self.default_similarity_func = default_similarity_func
+        self.idea_uid_length = idea_uid_length
         self.models = models
         self.model_temperatures = model_temperatures
         self.model_sample_temperature = model_sample_temperature
@@ -295,16 +297,16 @@ class Database:
     ):
         with self.lock:
         
-            def generate_random_string(length=4):
+            def generate_random_string(length=self.idea_uid_length):
                 return ''.join(random.choices(string.ascii_lowercase, k=length))
             
             for idea_content, score, info in result:
                 
-                uid = generate_random_string()
-                path = os.path.join("programs", self.program_name, "database", f"idea_{uid}.idea")
+                idea_uid = generate_random_string()
+                path = os.path.join("programs", self.program_name, "database", f"idea_{idea_uid}.idea")
                 while path in [idea.path for idea in self.ideas]:
-                    uid = generate_random_string()
-                    path = os.path.join("programs", self.program_name, "database", f"idea_{uid}.idea")
+                    idea_uid = generate_random_string()
+                    path = os.path.join("programs", self.program_name, "database", f"idea_{idea_uid}.idea")
                 
                 with open(path, 'w', encoding='utf-8') as file:
                     file.write(idea_content)
