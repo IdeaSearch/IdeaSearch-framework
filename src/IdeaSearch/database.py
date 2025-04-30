@@ -349,7 +349,10 @@ class Database:
                     with self.console_lock:    
                         append_to_file(
                             file_path = self.diary_path,
-                            content_str = f"【数据库】 模型{model}(T={model_temperature:.2f})的分数已被更新为{self.model_scores[index]:.2f}！",
+                            content_str = (
+                                f"【数据库】 模型{model}(T={model_temperature:.2f})此轮得分为{self.model_recent_scores[index][-1]:.2f}，"
+                                f"其总得分已被更新为{self.model_scores[index]:.2f}！"
+                            ),
                         )
                     return
                 
