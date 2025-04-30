@@ -1,4 +1,5 @@
 from threading import Lock
+from math import isnan
 from src.IdeaSearch.database import Database
 from src.utils import append_to_file
 
@@ -48,6 +49,40 @@ class Evaluator:
             
             try:
                 score, info = self.evaluate_func(idea)
+                
+                if not isinstance(score, float):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
+                                f"返回结果中的score应为一浮点数，不应为一个{type(score)}类型的对象！"
+                            ),
+                        )
+                    return
+                
+                if isnan(score):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
+                                f"返回结果中的score不应为NaN！"
+                            ),
+                        )
+                    return
+                
+                if info is not None:
+                    if not isinstance(info, str):
+                        with self.console_lock:
+                            append_to_file(
+                                file_path = self.diary_path,
+                                content_str = (
+                                    f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
+                                    f"返回结果中的info应为None或一字符串，不应为一个{type(info)}类型的对象！"
+                                ),
+                            )
+                        return
                 
             except Exception as e:
                 with self.console_lock:

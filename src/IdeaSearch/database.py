@@ -33,6 +33,7 @@ class Database:
         sample_temperature : float,
         console_lock,
         diary_path: str,
+        database_path: str,
         initialization_cleanse_threshold: float,
         delete_when_initial_cleanse: bool,
         models: list[str],
@@ -46,7 +47,7 @@ class Database:
         self.program_name = program_name
         self.sample_temperature = sample_temperature
         self.console_lock = console_lock
-        self.path = f"programs/{program_name}/database/"
+        self.path = database_path
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
         self.models = models

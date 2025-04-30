@@ -4,54 +4,67 @@ from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 import concurrent.futures
 from threading import Lock
-from typing import Callable
+from typing import Callable, Protocol
 
 
 def IdeaSearchInterface(
     program_name: str,
-    samplers_num: int,
-    sample_temperature: float,
-    evaluators_num: int,
     prologue_section: str,
+    epilogue_section: str,
+    database_path: str,
+    diary_path: str,
     models: list[str],
     model_temperatures: list[float],
-    model_assess_window_size: int,
-    model_assess_initial_score: float,
-    model_sample_temperature: float,
-    examples_num: int,
-    generate_num: int,
-    epilogue_section: str,
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
-    diary_path: str,
-    initialization_cleanse_threshold: float,
-    delete_when_initial_cleanse: bool,
-    evaluator_handle_threshold: float,
-    similarity_threshold: float,
+    *, # 必填参数和选填参数的分界线
+    samplers_num: int = 5,
+    evaluators_num: int = 5,
+    sample_temperature: float = 50.0,
+    examples_num: int = 3,
+    generate_num: int = 5,
+    model_assess_window_size: int = 20,
+    model_assess_initial_score: float = 100.0,
+    model_sample_temperature: float = 50.0,
+    evaluator_handle_threshold: float = 0.0,
+    similarity_threshold: float = -1.0,
+    initialization_cleanse_threshold: float = -1.0,
+    delete_when_initial_cleanse: bool = False,
 ) -> None:
+    
     """
     启动并运行一个 IdeaSearch 搜索过程。
 
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
     使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。
+    
+    为使用该函数，用户需自行创建 prologue section 、 epilogue section 和 evaluate_func 并传入，其中
+    evaluate_func是一个接收字符串、返回tuple[float, str | None]类型的分数、评语元组（评语可选）的函数。
+    我们建议分数在0.0至100.0间变化。
 
     Args:
         program_name (str): 当前程序或实验的名称。
-        samplers_num (int): 要创建的采样器（Sampler）数量。
-        sample_temperature (float): 采样温度，诸idea被采样的概率正比于 exp (- score / sample_temperature)。
-        evaluators_num (int): 要创建的评估器（Evaluator）数量。
         prologue_section (str): 用于提示模型采样的前导文本片段。
-        model (str): 大语言模型的名字，应在API4LLMs/api_keys.json中出现。
-        model_temperature (float): 大语言模型的温度。
-        examples_num (int): 每个prompt给大语言模型看的例子数量。
-        generate_num (int): 每个 Sampler 每轮生成的候选程序数量。
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
+        database_path (str): 数据库路径，在此路径下存放.idea文件和自动生成的score_sheet.json。
+        diary_path (str): IdeaSearch 的日志文件路径。
+        models (list[str]): 用于生成 idea 的大语言模型名称列表，应在 api_keys_path 下的文件中定义。
+        model_temperatures (list[float]): 与 models 对应的温度值列表，其长度应与 models 相同。
         max_interaction_num (int): 数据库允许的最大评估交互次数，超过即终止。
-        evaluate_func (Callable): 用于评估候选程序的函数，供 Evaluator 使用，返回score和info。
-        diary_path (str): IdeaSearch的日志文件路径。
-        initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的idea将会被清除/忽略
-        delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的idea的行为：True则删除文件；False则仅仅忽视不见
-        evaluator_handle_threshold (float): Evaluator将idea递交给数据库的分数阈值，低于此分数阈值的idea会被舍弃。
+        evaluate_func (Callable[[str], tuple[float, str]]): 用于评估候选程序的函数，供 Evaluator 使用，返回 score 和 info。
+
+        samplers_num (int): 要创建的采样器（Sampler）数量。
+        evaluators_num (int): 要创建的评估器（Evaluator）数量。
+        sample_temperature (float): 系统采样idea时的温度，诸 idea 被采样的概率正比于 exp(-score / sample_temperature) / N(idea)，其中 N(idea) 是 database 所有 ideas 中与 idea 相似的元素个数。
+        examples_num (int): 每个 prompt 给大语言模型看的例子数量。
+        generate_num (int): 每个 Sampler 每轮生成的候选程序数量。
+        model_assess_window_size (int): 模型评估窗口大小，每个模型的实时得分是该模型在前 model_assess_window_size 轮生成的idea得分的平均值。
+        model_assess_initial_score (float): 模型评估初始分数，用于冷启动时的模型分数基准，建议设为100.0甚至更大，以鼓励系统采样模型时的探索。
+        model_sample_temperature (float): 系统采样模型时的温度，诸模型被采样的概率正比于 exp(-score / model_sample_temperature)。
+        evaluator_handle_threshold (float): Evaluator 将 idea 递交给数据库的分数阈值，低于此阈值的 idea 会被舍弃。
+        similarity_threshold (float): 用于判断两个 idea 是否相似的阈值，若 |score1 - score2| < similarity_threshold 则视为相似。
+        initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的 idea 将会被清除/忽略。
+        delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的 idea 的行为：True 则删除文件；False 则仅仅忽视不见。
 
     Returns:
         None
@@ -75,6 +88,7 @@ def IdeaSearchInterface(
         sample_temperature = sample_temperature,
         console_lock = console_lock,
         diary_path = diary_path,
+        database_path = database_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         models = models,

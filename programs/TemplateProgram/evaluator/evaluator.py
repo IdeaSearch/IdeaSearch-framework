@@ -1,5 +1,5 @@
 # please implement your evaluator here
-def evaluate(idea: str) -> tuple[float, str]:
+def evaluate(idea: str)-> tuple[float, str | None]:
     """
     对语言模型生成的答案进行评估，返回分数和评语。
 

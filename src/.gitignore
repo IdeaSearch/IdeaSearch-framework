@@ -1,3 +1,5 @@
 diary.txt
 __pycache__
 my_script.py
+my_script_*.py
+!my_script_template.py
