@@ -83,6 +83,144 @@ def IdeaSearch(
         None
     """
     
+    if not isinstance(program_name, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `program_name` 应该是 str 类型，"
+            f"但接收到 {type(program_name).__name__}"
+        )
+
+    if not isinstance(prologue_section, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `prologue_section` 应该是 str 类型，"
+            f"但接收到 {type(prologue_section).__name__}"
+        )
+
+    if not isinstance(epilogue_section, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `epilogue_section` 应该是 str 类型，"
+            f"但接收到 {type(epilogue_section).__name__}"
+        )
+
+    if not isinstance(database_path, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `database_path` 应该是 str 类型，"
+            f"但接收到 {type(database_path).__name__}"
+        )
+
+    if not isinstance(diary_path, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `diary_path` 应该是 str 类型，"
+            f"但接收到 {type(diary_path).__name__}"
+        )
+
+    if not isinstance(api_keys_path, str):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `api_keys_path` 应该是 str 类型，"
+            f"但接收到 {type(api_keys_path).__name__}"
+        )
+
+    if not isinstance(models, list) or not all(isinstance(m, str) for m in models):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `models` 应该是 str 类型的列表，"
+            f"但接收到 {type(models).__name__}"
+        )
+
+    if not isinstance(model_temperatures, list) or not all(isinstance(t, (int, float)) for t in model_temperatures):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `model_temperatures` 应该是 float 类型的列表，"
+            f"但接收到 {type(model_temperatures).__name__}"
+        )
+
+    if not isinstance(max_interaction_num, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `max_interaction_num` 应该是 int 类型，"
+            f"但接收到 {type(max_interaction_num).__name__}"
+        )
+
+    if not callable(evaluate_func):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `evaluate_func` 应该是 callable 函数，"
+            f"但接收到 {type(evaluate_func).__name__}"
+        )
+
+    if not isinstance(samplers_num, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `samplers_num` 应该是 int 类型，"
+            f"但接收到 {type(samplers_num).__name__}"
+        )
+
+    if not isinstance(evaluators_num, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `evaluators_num` 应该是 int 类型，"
+            f"但接收到 {type(evaluators_num).__name__}"
+        )
+
+    if not isinstance(sample_temperature, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `sample_temperature` 应该是 float 类型，"
+            f"但接收到 {type(sample_temperature).__name__}"
+        )
+
+    if not isinstance(examples_num, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `examples_num` 应该是 int 类型，"
+            f"但接收到 {type(examples_num).__name__}"
+        )
+
+    if not isinstance(generate_num, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `generate_num` 应该是 int 类型，"
+            f"但接收到 {type(generate_num).__name__}"
+        )
+
+    if not isinstance(model_assess_window_size, int):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `model_assess_window_size` 应该是 int 类型，"
+            f"但接收到 {type(model_assess_window_size).__name__}"
+        )
+
+    if not isinstance(model_assess_initial_score, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `model_assess_initial_score` 应该是 float 类型，"
+            f"但接收到 {type(model_assess_initial_score).__name__}"
+        )
+
+    if not isinstance(model_sample_temperature, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `model_sample_temperature` 应该是 float 类型，"
+            f"但接收到 {type(model_sample_temperature).__name__}"
+        )
+
+    if not isinstance(evaluator_handle_threshold, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `evaluator_handle_threshold` 应该是 float 类型，"
+            f"但接收到 {type(evaluator_handle_threshold).__name__}"
+        )
+
+    if not isinstance(similarity_threshold, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `similarity_threshold` 应该是 float 类型，"
+            f"但接收到 {type(similarity_threshold).__name__}"
+        )
+
+    if similarity_func is not None and not callable(similarity_func):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `similarity_func` 应该是 Callable[[str, str], float] 或 None，"
+            f"但接收到 {type(similarity_func).__name__}"
+        )
+
+    if not isinstance(initialization_cleanse_threshold, (int, float)):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `initialization_cleanse_threshold` 应该是 float 类型，"
+            f"但接收到 {type(initialization_cleanse_threshold).__name__}"
+        )
+
+    if not isinstance(delete_when_initial_cleanse, bool):
+        raise TypeError(
+            "【IdeaSearch参数类型错误】 `delete_when_initial_cleanse` 应该是 bool 类型，"
+            f"但接收到 {type(delete_when_initial_cleanse).__name__}"
+        )
+    
     def default_similarity_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
     
