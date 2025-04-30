@@ -42,7 +42,7 @@ def IdeaSearch_interface()-> None:
     delete_when_initial_cleanse = True
     evaluator_handle_threshold = 0.0
     similarity_threshold = 0.1
-    similarity_func = None
+    similarity_distance_func = None
     idea_uid_length = 4
     
     # Max interaction num
@@ -78,7 +78,7 @@ def IdeaSearch_interface()-> None:
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_handle_threshold = evaluator_handle_threshold,
         similarity_threshold = similarity_threshold,
-        similarity_func = similarity_func, 
+        similarity_distance_func = similarity_distance_func, 
         database_path = database_path,
         idea_uid_length = idea_uid_length,
     )

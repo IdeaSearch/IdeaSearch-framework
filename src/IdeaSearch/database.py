@@ -30,8 +30,8 @@ class Database:
         max_interaction_num,
         examples_num,
         evaluate_func,
-        similarity_func: Callable[[str, str], float],
-        default_similarity_func: Callable[[str, str], float],
+        similarity_distance_func: Callable[[str, str], float],
+        default_similarity_distance_func: Callable[[str, str], float],
         sample_temperature: float,
         console_lock,
         diary_path: str,
@@ -54,8 +54,8 @@ class Database:
         self.path = database_path
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
-        self.similarity_func = similarity_func
-        self.default_similarity_func = default_similarity_func
+        self.similarity_distance_func = similarity_distance_func
+        self.default_similarity_distance_func = default_similarity_distance_func
         self.idea_uid_length = idea_uid_length
         self.models = models
         self.model_temperatures = model_temperatures
@@ -123,10 +123,10 @@ class Database:
     #         for j, idea_j in enumerate(self.ideas):
     #             if i == j or idea_i.content == idea_j.content:
     #                 similar_count += 1
-    #             if self.similarity_func == self.default_similarity_func:
+    #             if self.similarity_distance_func == self.default_similarity_distance_func:
     #                 score_diff = abs(idea_i.score - idea_j.score)
     #             else:
-    #                 score_diff = self.similarity_func(idea_i.content, idea_j.content)
+    #                 score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
     #             if score_diff <= self.similarity_threshold:
     #                 similar_count += 1
     #         self.idea_similar_nums.append(similar_count)
@@ -137,15 +137,15 @@ class Database:
     #             content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
     #         )
       
-    # GPT完成的高效版本（仅在default_similarity_func情形下优化）     
+    # GPT完成的高效版本（仅在default_similarity_distance_func情形下优化）     
     def _sync_similar_num_list(self):
         epsilon = self.similarity_threshold
-        default_sim = self.similarity_func == self.default_similarity_func
+        default_sim = self.similarity_distance_func == self.default_similarity_distance_func
 
         self.idea_similar_nums = [0] * len(self.ideas)
 
         if default_sim:
-            # 使用滑窗优化，只适用于默认 similarity_func
+            # 使用滑窗优化，只适用于默认 similarity_distance_func
             indexed_ideas = list(enumerate(self.ideas))
             indexed_ideas.sort(key=lambda x: x[1].score)
 
@@ -173,7 +173,7 @@ class Database:
                     if i == j or idea_i.content == idea_j.content:
                         similar_count += 1
                     else:
-                        score_diff = self.similarity_func(idea_i.content, idea_j.content)
+                        score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
                         if score_diff <= epsilon:
                             similar_count += 1
                 self.idea_similar_nums[i] = similar_count

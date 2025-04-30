@@ -39,7 +39,7 @@ def IdeaSearch(
     model_sample_temperature: float = 50.0,
     evaluator_handle_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
-    similarity_func: Optional[Callable[[str, str], float]] = None,
+    similarity_distance_func: Optional[Callable[[str, str], float]] = None,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
     idea_uid_length: int = 4,
@@ -77,8 +77,8 @@ def IdeaSearch(
         model_assess_average_order (float): 模型评估p范数平均的阶数p，默认为1.0，p越大越强调最大值的影响，p越小越强调最小值的影响。
         model_sample_temperature (float): 系统采样模型时的温度，诸模型被采样的概率正比于 exp(-score / model_sample_temperature)。
         evaluator_handle_threshold (float): Evaluator 将 idea 递交给数据库的分数阈值，低于此阈值的 idea 会被舍弃。
-        similarity_threshold (float): 用于判断两个 idea 是否相似的阈值， idea1 与 idea2 相似当且仅当 idea1 就是 idea2 或  similarity_func(idea1, idea2) < similarity_threshold ；默认为 -1.0 ，相当于只认为相同的 idea 相似。
-        similarity_func (Callable[[str, str], float] | None): 衡量两个 idea 相似度的函数，默认为 None （会被赋值为返回 |score(idea1) - score(idea2)| 的函数），但也可以自行编写并传入。
+        similarity_threshold (float): 用于判断两个 idea 是否相似的阈值， idea1 与 idea2 相似当且仅当 idea1 就是 idea2 或  similarity_distance_func(idea1, idea2) < similarity_threshold ；默认为 -1.0 ，相当于只认为相同的 idea 相似。
+        similarity_distance_func (Callable[[str, str], float] | None): 衡量两个 idea 相似度的函数，默认为 None （会被赋值为返回 |score(idea1) - score(idea2)| 的函数），但也可以自行编写并传入。
         initialization_cleanse_threshold (float): 数据库初始化时的清除阈值分数，低于此阈值的 idea 将会被清除/忽略。
         delete_when_initial_cleanse (bool): 决定数据库初始化时对低于分数阈值的 idea 的行为：True 则删除文件；False 则仅仅忽视不见。
         idea_uid_length (int):  LLM 生成的 idea 会被存储至 database_path 下的 f"idea_{idea_uid}.idea" 文件中， idea_uid_length 决定 idea_uid 的长度，一般取为 4 。
@@ -213,10 +213,10 @@ def IdeaSearch(
             f"但接收到 {type(similarity_threshold).__name__}"
         )
 
-    if similarity_func is not None and not callable(similarity_func):
+    if similarity_distance_func is not None and not callable(similarity_distance_func):
         raise TypeError(
-            "【IdeaSearch参数类型错误】 `similarity_func` 应该是 Callable[[str, str], float] 或 None，"
-            f"但接收到 {type(similarity_func).__name__}"
+            "【IdeaSearch参数类型错误】 `similarity_distance_func` 应该是 Callable[[str, str], float] 或 None，"
+            f"但接收到 {type(similarity_distance_func).__name__}"
         )
 
     if not isinstance(initialization_cleanse_threshold, (int, float)):
@@ -237,11 +237,11 @@ def IdeaSearch(
             f"但接收到 {type(idea_uid_length).__name__}"
         )
     
-    def default_similarity_func(idea1, idea2):
+    def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
     
-    if similarity_func is None:
-        similarity_func = default_similarity_func
+    if similarity_distance_func is None:
+        similarity_distance_func = default_similarity_distance_func
         
     init_model_manager(
         api_keys_path = api_keys_path,
@@ -262,8 +262,8 @@ def IdeaSearch(
         max_interaction_num = max_interaction_num,
         examples_num = examples_num,
         evaluate_func = evaluate_func,
-        similarity_func = similarity_func,
-        default_similarity_func = default_similarity_func,
+        similarity_distance_func = similarity_distance_func,
+        default_similarity_distance_func = default_similarity_distance_func,
         sample_temperature = sample_temperature,
         console_lock = console_lock,
         diary_path = diary_path,
