@@ -4,7 +4,7 @@ from programs.TemplateProgram.prompt import prologue_section as TemplateProgram_
 from programs.TemplateProgram.prompt import epilogue_section as TemplateProgram_epilogue_section
 
 
-def main()-> None:
+def IdeaSearch_interface()-> None:
     
     # Things you 【must】 modify
     program_name = "TemplateProgram"
@@ -84,7 +84,7 @@ def main()-> None:
 
 if __name__ == "__main__":
     
-    main()
+    IdeaSearch_interface()
     
     # you can use helper function cleanse_dataset
     # cleanse_dataset(
