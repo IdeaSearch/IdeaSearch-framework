@@ -22,17 +22,17 @@ def main()-> None:
         "Qwen_Max",
         "Qwen_Max",
         "Qwen_Max",
-        # "Deepseek_V3",
-        # "Deepseek_V3",
-        # "Deepseek_V3",
+        "Deepseek_V3",
+        "Deepseek_V3",
+        "Deepseek_V3",
     ]
     model_temperatures = [
         0.9,
         1.0,
         1.1,
-        # 0.9,
-        # 1.0,
-        # 1.1,
+        0.9,
+        1.0,
+        1.1,
     ]
     model_assess_window_size = 20
     model_assess_initial_score = 100.0
@@ -83,3 +83,12 @@ def main()-> None:
 if __name__ == "__main__":
     
     main()
+    
+    # you can use helper function `cleanse_dataset`
+    # cleanse_dataset(
+    #     database_path = "programs/SysYCompilerTest/dataset/",
+    #     evaluate_func = SysYCompilerTest_evaluate,
+    #     cleanse_threshold = 1.0,
+    # )
+    
+    pass
