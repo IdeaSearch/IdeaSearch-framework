@@ -117,6 +117,12 @@ class Database:
     #             if score_diff < self.similarity_threshold:
     #                 similar_count += 1
     #         self.idea_similar_nums.append(similar_count)
+            
+    #     with self.console_lock:
+    #         append_to_file(
+    #             file_path = self.diary_path,
+    #             content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+    #         )
       
     # GPT完成的高效版本      
     def _sync_similar_num_list(self):
@@ -144,6 +150,12 @@ class Database:
             similar_counts[original_index] = count
 
         self.idea_similar_nums = similar_counts
+        
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+            )
         
 
     def get_examples(self) -> list[Idea]:
