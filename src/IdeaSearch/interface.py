@@ -39,7 +39,7 @@ def IdeaSearchInterface(
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
     使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。
     
-    为使用该函数，用户需自行创建 prologue section 、 epilogue section 和 evaluate_func 并传入，其中
+    为使用该函数的基本功能，用户需自行创建 prologue section 、 epilogue section 和 evaluate_func 并传入，其中
     evaluate_func是一个接收字符串、返回tuple[float, str | None]类型的分数、评语元组（评语可选）的函数。
     我们建议分数在0.0至100.0间变化。
 
@@ -110,7 +110,7 @@ def IdeaSearchInterface(
     )
     evaluators = [
         Evaluator(
-            evaluator_id = i,
+            evaluator_id = i + 1,
             database = database,
             evaluate_func = evaluate_func,
             console_lock = console_lock,
@@ -121,7 +121,7 @@ def IdeaSearchInterface(
     ]
     samplers = [
         Sampler(
-            sampler_id = i,
+            sampler_id = i + 1,
             prologue_section = prologue_section,
             epilogue_section = epilogue_section,
             evaluators = evaluators,

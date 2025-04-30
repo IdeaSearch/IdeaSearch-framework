@@ -16,7 +16,7 @@ class Evaluator:
         evaluator_handle_threshold: float,
     ):
         
-        self.id = evaluator_id + 1
+        self.id = evaluator_id
         self.database = database
         self.program_name = database.program_name
         self.evaluate_func = evaluate_func

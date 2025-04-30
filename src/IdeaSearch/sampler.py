@@ -20,7 +20,7 @@ class Sampler:
         console_lock: Lock,
         diary_path: str,
     ):
-        self.id = sampler_id + 1
+        self.id = sampler_id
         self.database = database
         self.program_name = database.program_name
         self.prologue_section = prologue_section
