@@ -43,6 +43,13 @@ def IdeaSearch_interface()-> None:
     evaluator_handle_threshold = 0.0
     similarity_threshold = 0.1
     similarity_distance_func = None
+    assess_func = None,
+    assess_interval = None,
+    assess_result_path = None,
+    mutation_func = None,
+    mutation_interval = None,
+    crossover_func = None,
+    crossover_interval = None,
     idea_uid_length = 4
     
     # Max interaction num
@@ -72,6 +79,13 @@ def IdeaSearch_interface()-> None:
         epilogue_section = epilogue_section,
         max_interaction_num = max_interaction_num,
         evaluate_func = evaluate_func,
+        assess_func = assess_func,
+        assess_interval = assess_interval,
+        assess_result_path = assess_result_path,
+        mutation_func = mutation_func,
+        mutation_interval = mutation_interval,
+        crossover_func = crossover_func,
+        crossover_interval = crossover_interval,
         diary_path = diary_path,
         api_keys_path = api_keys_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
