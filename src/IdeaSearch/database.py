@@ -30,6 +30,13 @@ class Database:
         max_interaction_num,
         examples_num,
         evaluate_func,
+        assess_func,
+        assess_interval,
+        assess_result_path,
+        mutation_func,
+        mutation_interval,
+        crossover_func,
+        crossover_interval,
         similarity_distance_func: Callable[[str, str], float],
         default_similarity_distance_func: Callable[[str, str], float],
         sample_temperature: float,
@@ -55,6 +62,29 @@ class Database:
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
         self.similarity_distance_func = similarity_distance_func
+        
+        if assess_func is not None:
+            self.assess_on = True
+            self.assess_func = assess_func
+            self.assess_interval = assess_interval
+            self.assess_result_path = assess_result_path
+        else:
+            self.assess_on = False
+        
+        if mutation_func is not None:
+            self.mutation_on = True
+            self.mutation_func = mutation_func
+            self.mutation_interval = mutation_interval
+        else:
+            self.mutation_on = False
+            
+        if crossover_func is not None:
+            self.crossover_on = True
+            self.crossover_func = crossover_func
+            self.crossover_interval = crossover_interval
+        else:
+            self.crossover_on = False
+        
         self.default_similarity_distance_func = default_similarity_distance_func
         self.idea_uid_length = idea_uid_length
         self.models = models
@@ -183,6 +213,30 @@ class Database:
                 file_path=self.diary_path,
                 content_str="【数据库】 成功将idea_similar_nums与ideas同步！",
             )
+            
+            
+    def _assess(self)-> None:
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 现在开始评估库中idea的整体质量！",
+            )
+    
+    
+    def _mutate(self)-> None:
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 现在开始进行单体突变！",
+            )
+    
+    
+    def _crossover(self)-> None:
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 现在开始进行交叉变异！",
+            )
         
 
     def get_examples(self) -> list[Idea]:
@@ -192,6 +246,19 @@ class Database:
             if self.status == "Terminated":
                 return None
             self.interaction_count += 1
+            
+            if self.assess_on:
+                if self.interaction_count % self.assess_interval == 0:
+                    self._assess()
+            
+            if self.mutation_on:
+                if self.interaction_count % self.mutation_interval == 0:
+                    self._mutate()
+            
+            if self.crossover_on:
+                if self.interaction_count % self.crossover_interval == 0:
+                    self._crossover()
+            
             self._check_threshold()
             
             if len(self.ideas) == 0:
