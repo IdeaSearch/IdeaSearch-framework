@@ -104,34 +104,38 @@ class Database:
         ]
         
         self.ideas = []
-        for path in Path(self.path).rglob('*.idea'):
-            
-            idea = Idea(
-                path = path, 
-                evaluate_func = evaluate_func,
-            )
-            
-            if idea.score < initialization_cleanse_threshold:
-                if delete_when_initial_cleanse:
-                    path.unlink()
-                    with self.console_lock:
-                        append_to_file(
-                            file_path = self.diary_path,
-                            content_str = f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已删除。",
-                        )
+        # 处理文件路径，确保使用正确的分隔符
+        path_to_search = Path(self.path).resolve()
+
+        for path in path_to_search.rglob('*.idea'):
+            # 确保路径在 macOS 上的兼容性
+            if os.path.isfile(path):
+                idea = Idea(
+                    path=path,
+                    evaluate_func=evaluate_func,
+                )
+                
+                if idea.score < initialization_cleanse_threshold:
+                    if delete_when_initial_cleanse:
+                        path.unlink()
+                        with self.console_lock:
+                            append_to_file(
+                                file_path=self.diary_path,
+                                content_str=f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已删除。",
+                            )
+                    else:
+                        with self.console_lock:
+                            append_to_file(
+                                file_path=self.diary_path,
+                                content_str=f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已忽略。",
+                            )
                 else:
+                    self.ideas.append(idea)
                     with self.console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
-                            content_str = f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已忽略。",
+                            file_path=self.diary_path,
+                            content_str=f"【数据库】 初始文件{path}已评分并加入数据库。",
                         )
-            else:
-                self.ideas.append(idea)
-                with self.console_lock:
-                    append_to_file(
-                        file_path = self.diary_path,
-                        content_str = f"【数据库】 初始文件{path}已评分并加入数据库。",
-                    )
                     
         self._sync_score_sheet()
         self._sync_similar_num_list()
