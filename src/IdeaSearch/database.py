@@ -6,7 +6,7 @@ import string
 import json
 from typing import Callable
 import numpy as np
-from src.utils import append_to_file
+from src.utils import append_to_file, guarantee_path_exist
 
 class Idea:
     
@@ -334,6 +334,8 @@ class Database:
             }
             for idea in self.ideas
         }
+        
+        guarantee_path_exist(self.path + "score_sheet.json")
 
         with open(self.path + "score_sheet.json", 'w', encoding='utf-8') as json_file:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
