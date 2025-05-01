@@ -4,7 +4,7 @@ import random
 import os
 import string
 import json
-from typing import Callable
+from typing import Callable, Optional
 import numpy as np
 from src.utils import append_to_file, guarantee_path_exist
 
@@ -19,7 +19,7 @@ class Idea:
         else:
             self.content = content
             self.score = score
-            self.info = info     
+            self.info = info
 
 
 class Database:
@@ -75,6 +75,7 @@ class Database:
         self.model_assess_average_order = model_assess_average_order
         self.max_interaction_num = max_interaction_num
         self.examples_num = examples_num
+        self.evaluate_func = evaluate_func
         
         # 确保score_sheet.json文件存在
         guarantee_path_exist(self.path + "score_sheet.json")
@@ -116,7 +117,7 @@ class Database:
             self.model_scores.append(model_assess_initial_score)
         
         # 初始化ideas列表（疑似存在mac OS系统的兼容性问题）
-        self.ideas = []
+        self.ideas: list[Idea] = []
         path_to_search = Path(self.path).resolve()
         for path in path_to_search.rglob('*.idea'):
             
@@ -156,10 +157,11 @@ class Database:
         self._sync_score_sheet()
         self._sync_similar_num_list()
         
-        # 初始化互动时间戳、自锁与状态
+        # 初始化互动时间戳、自锁、状态、随机数生成器
         self.interaction_count = 0
         self.lock = Lock()
         self.status = "Running"
+        self.random_generator = np.random.default_rng()
     
     # ----------------------------- 外部调用动作 ----------------------------- 
     
@@ -224,8 +226,10 @@ class Database:
             probabilities = np.exp(probabilities - max_value)
             probabilities /= np.sum(probabilities)
             
-            np.random.seed()
-            selected_index = np.random.choice(len(self.models), p=probabilities)
+            selected_index = self.random_generator.choice(
+                a = len(self.models), 
+                p = probabilities,
+            )
             
             selected_model_name = self.models[selected_index]
             selected_model_temperature = self.model_temperatures[selected_index]
@@ -282,18 +286,11 @@ class Database:
     
             for idea_content, score, info in result:
                 
-                path = self._get_new_idea_path()
-                
-                with open(path, 'w', encoding='utf-8') as file:
-                    file.write(idea_content)
-                    
-                self.ideas.append(Idea(
-                    path=path,
-                    evaluate_func=None,
-                    content=idea_content,
-                    score=score,
-                    info=info,
-                ))
+                self._store_idea(
+                    idea = idea_content,
+                    score = score,
+                    info = info,
+                )
                 
             with self.console_lock:    
                 append_to_file(
@@ -416,19 +413,142 @@ class Database:
     
     
     def _mutate(self)-> None:
+        
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
                 content_str = "【数据库】 现在开始进行单体突变！",
             )
+            
+        probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
+        max_value = np.max(probabilities)
+        probabilities = np.exp(probabilities - max_value)
+        probabilities /= np.sum(probabilities)
+            
+        for index in range(self.mutation_num):
+            
+            selected_index = self.random_generator.choice(
+                a = len(self.ideas), 
+                p = probabilities
+            )
+            selected_idea = self.ideas[selected_index]
+            
+            try:
+                mutated_idea = self.mutation_func(selected_idea.content)
+            except Exception as error:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次单体突变在运行 mutation_func 时发生了错误：\n"
+                            f"{error}\n此轮单体突变意外结束！"
+                        ),
+                    )
+                return
+            
+            path = self._store_idea(
+                idea = mutated_idea,
+                evaluate_func = self.evaluate_func,
+            )
+            
+            if path is not None:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次单体突变："
+                            f" {selected_idea.path} 突变为 {path} "
+                        ),
+                    )
+                self._sync_score_sheet()
+            else:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次单体突变发生了错误：\n"
+                            f"{self._store_idea_error_message}\n此轮单体突变意外结束！"
+                        ),
+                    )
+                return
+                
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 此轮单体突变已结束。",
+            )
     
     
-    def _crossover(self)-> None:
+    def _crossover(self) -> None:
+    
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
                 content_str = "【数据库】 现在开始进行交叉变异！",
-            )   
+            )
+
+        probabilities = np.array([idea.score for idea in self.ideas]) / self.crossover_temperature
+        max_value = np.max(probabilities)
+        probabilities = np.exp(probabilities - max_value)
+        probabilities /= np.sum(probabilities)
+
+        for index in range(self.crossover_num):
+            
+            parent_indices = self.random_generator.choice(
+                a = len(self.ideas), 
+                size = 2, 
+                replace = False, 
+                p = probabilities
+            )
+            parent_1 = self.ideas[parent_indices[0]]
+            parent_2 = self.ideas[parent_indices[1]]
+
+            try:
+                crossed_content = self.crossover_func(
+                    parent_1.content, parent_2.content
+                )
+            except Exception as error:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次交叉变异在运行 crossover_func 时发生了错误：\n"
+                            f"{error}\n此轮交叉变异意外结束！"
+                        ),
+                    )
+                return
+
+            path = self._store_idea(
+                idea = crossed_content,
+                evaluate_func = self.evaluate_func,
+            )
+
+            if path is not None:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次交叉变异："
+                            f"{parent_1.path} × {parent_2.path} 交叉为 {path} "
+                        ),
+                    )
+                self._sync_score_sheet()
+            else:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 第{index+1}次交叉变异发生了错误：\n"
+                            f"{self._store_idea_error_message}\n此轮交叉变异意外结束！"
+                        ),
+                    )
+                return
+
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 此轮交叉变异已结束。",
+            )
         
         
     def _show_model_scores(self)-> None:
@@ -449,8 +569,38 @@ class Database:
                     content_str = (
                         f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]:.2f}"
                     ),
-                )    
-             
+                )
+    
+    
+    def _store_idea(
+        self, 
+        idea: str,
+        evaluate_func: Optional[Callable[[str, str], float]] = None,
+        score: Optional[float] = None,
+        info: Optional[str] = None,
+    )-> Optional[str]:
+        
+        try:
+            path = self._get_new_idea_path()
+            
+            with open(path, 'w', encoding='utf-8') as file:
+                
+                file.write(idea)
+                    
+                self.ideas.append(Idea(
+                    path = path,
+                    evaluate_func = evaluate_func,
+                    content = idea,
+                    score = score,
+                    info = info,
+                ))
+                
+            return path
+        
+        except Exception as error:
+            self._store_idea_error_message = error
+            return None
+            
             
     def _get_new_idea_path(self)-> str:
         
@@ -465,6 +615,8 @@ class Database:
             path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
             
         return path
+            
+        
 
     
             
