@@ -102,13 +102,38 @@ def IdeaSearch(
     """
     
     IdeaSearch_entrance_check(
-        program_name, prologue_section, epilogue_section, database_path, diary_path, api_keys_path,
-        models, model_temperatures, max_interaction_num, evaluate_func, samplers_num, evaluators_num,
-        sample_temperature, examples_num, generate_num, assess_func, assess_interval, assess_result_path, 
-        mutation_func, mutation_interval, crossover_func,
-        crossover_interval, model_assess_window_size, model_assess_initial_score, model_assess_average_order,
-        model_sample_temperature, evaluator_handle_threshold, similarity_threshold, similarity_distance_func,
-        initialization_cleanse_threshold, delete_when_initial_cleanse, idea_uid_length,
+        program_name,
+        prologue_section,
+        epilogue_section,
+        database_path,
+        diary_path,
+        api_keys_path,
+        models,
+        model_temperatures,
+        max_interaction_num,
+        evaluate_func,
+        samplers_num,
+        evaluators_num,
+        sample_temperature,
+        examples_num,
+        generate_num,
+        assess_func,
+        assess_interval,
+        assess_result_path,
+        mutation_func,
+        mutation_interval,
+        crossover_func,
+        crossover_interval,
+        model_assess_window_size,
+        model_assess_initial_score,
+        model_assess_average_order,
+        model_sample_temperature,
+        evaluator_handle_threshold,
+        similarity_threshold,
+        similarity_distance_func,
+        initialization_cleanse_threshold,
+        delete_when_initial_cleanse,
+        idea_uid_length
     )
     
     def default_similarity_distance_func(idea1, idea2):
@@ -307,7 +332,7 @@ def IdeaSearch_entrance_check(
     # 函数及其配套参数的合法性检查
     if assess_func is not None:
         if not callable(assess_func):
-            raise TypeError("【IdeaSearch参数类型错误】 `assess_func` 应该是 callable 函数")
+            raise TypeError(f"【IdeaSearch参数类型错误】 `assess_func` 应该是 callable 函数")
         if assess_interval is None or not isinstance(assess_interval, int) or assess_interval <= 0:
             raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时必须提供正整数的 assess_interval")
         if assess_result_path is None or not isinstance(assess_result_path, str):

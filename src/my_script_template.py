@@ -43,13 +43,13 @@ def IdeaSearch_interface()-> None:
     evaluator_handle_threshold = 0.0
     similarity_threshold = 0.1
     similarity_distance_func = None
-    assess_func = None,
-    assess_interval = None,
-    assess_result_path = None,
-    mutation_func = None,
-    mutation_interval = None,
-    crossover_func = None,
-    crossover_interval = None,
+    assess_func = None
+    assess_interval = None
+    assess_result_path = None
+    mutation_func = None
+    mutation_interval = None
+    crossover_func = None
+    crossover_interval = None
     idea_uid_length = 4
     
     # Max interaction num
