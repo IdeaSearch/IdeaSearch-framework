@@ -3,6 +3,7 @@ from programs.TemplateProgram.evaluator.evaluator import evaluate as TemplatePro
 from programs.TemplateProgram.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.prompt import epilogue_section as TemplateProgram_epilogue_section
 
+# i love zhangboyuan
 
 def IdeaSearch_interface()-> None:
     
