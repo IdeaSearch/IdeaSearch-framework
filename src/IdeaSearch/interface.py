@@ -38,6 +38,8 @@ def IdeaSearch(
     assess_result_path: Optional[str] = None,
     mutation_func: Optional[Callable[[str], str]] = None,
     mutation_interval: Optional[int] = None,
+    mutation_num: Optional[int] = None,
+    mutation_temperature: Optional[float] = None,
     crossover_func: Optional[Callable[[str, str], str]] = None,
     crossover_interval: Optional[int] = None,
     model_assess_window_size: int = 20,
@@ -53,6 +55,7 @@ def IdeaSearch(
 ) -> None:
     
     """
+    czy remark (0501): doc string 暂未和项目的最新情况同步，有待维护！  
     启动并运行一个 IdeaSearch 搜索过程。
 
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
@@ -101,6 +104,7 @@ def IdeaSearch(
         None
     """
     
+    # czy remark (0501): entrance check 暂未和项目的最新情况同步，有待维护！  
     IdeaSearch_entrance_check(
         program_name,
         prologue_section,
@@ -166,6 +170,8 @@ def IdeaSearch(
         assess_result_path = assess_result_path,
         mutation_func = mutation_func,
         mutation_interval = mutation_interval,
+        mutation_num = mutation_num,
+        mutation_temperature = mutation_temperature,
         crossover_func = crossover_func,
         crossover_interval = crossover_interval,
         similarity_distance_func = similarity_distance_func,
@@ -246,7 +252,8 @@ def cleanse_dataset(
             path.unlink()
             print(f"文件{path}得分未达到{cleanse_threshold:.2f}，已删除。")
             
-            
+       
+# czy remark (0501): entrance check 暂未和项目的最新情况同步，有待维护！     
 def IdeaSearch_entrance_check(
     program_name,
     prologue_section,
