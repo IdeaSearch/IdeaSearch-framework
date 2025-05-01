@@ -59,6 +59,7 @@ class Database:
         self.sample_temperature = sample_temperature
         self.console_lock = console_lock
         self.path = database_path
+        guarantee_path_exist(self.path + "score_sheet.json")
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
         self.similarity_distance_func = similarity_distance_func
@@ -334,8 +335,6 @@ class Database:
             }
             for idea in self.ideas
         }
-        
-        guarantee_path_exist(self.path + "score_sheet.json")
 
         with open(self.path + "score_sheet.json", 'w', encoding='utf-8') as json_file:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
