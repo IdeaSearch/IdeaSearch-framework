@@ -55,7 +55,7 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
             temperature = data.get('temperature', 0.7)
             system_prompt = data.get('system_prompt', '')
             prompt = data.get('prompt', '')
-            cuda_device_no = local_model_port_to_cuda_device_no[port]
+            cuda_device_no = local_model_port_to_cuda_device_no[current_port]
             input(f"【{port}: {cuda_device_no}】")
             if not prompt:
                 return jsonify({"error": "提示信息是必须的"}), 400
