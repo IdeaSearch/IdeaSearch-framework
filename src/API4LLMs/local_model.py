@@ -28,15 +28,16 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
     app = Flask(__name__)
 
     def init_model():
+        cuda_device_no = get_free_cuda_device()
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,
-            device_map='cuda:1',
+            device_map=f'cuda:{cuda_device_no}',
             trust_remote_code=True
         )
         model.config.pad_token_id = tokenizer.eos_token_id
-        model.to('cuda:1')
+        model.to(f'cuda:{cuda_device_no}')
         model.eval()
         return model, tokenizer
     
@@ -119,3 +120,21 @@ def find_free_port() -> int:
         s.listen(1)
         address = s.getsockname()
         return address[1]
+    
+    
+# 在这个函数中，“空闲” 的定义是内存占用最少的设备
+def get_free_cuda_device():
+    num_devices = torch.cuda.device_count()
+    if num_devices == 0:
+        raise RuntimeError("没有可用的CUDA设备")
+
+    free_device = None
+    min_memory = float('inf')
+
+    for i in range(num_devices):
+        allocated_memory = torch.cuda.memory_allocated(i)
+        if allocated_memory < min_memory:
+            min_memory = allocated_memory
+            free_device = i
+    
+    return free_device
