@@ -99,18 +99,24 @@ class Evaluator:
             if score >= self.evaluator_hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
-        self.database.update_model_score(score_result, model, model_temperature)   
+        self.database.update_model_score(score_result, model, model_temperature)  
         
-        with self.console_lock:
-            append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.id}号评估器】 已将{len(accepted_ideas)}/{len(generated_ideas)}个满足条件的idea递交给数据库！",
-            )
+        if len(accepted_ideas):
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给数据库！",
+                )
+                
+            self.database.receive_result(accepted_ideas, self.id)
             
-        self.database.receive_result(accepted_ideas, self.id)
-                
-        
-                
+        else:
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【{self.id}号评估器】 评估结束，此轮采样没有生成可递交给数据库的满足条件的 idea ！",
+                )
+                    
     
     def release(self):
         
