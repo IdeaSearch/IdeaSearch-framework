@@ -21,13 +21,13 @@ def IdeaSearch(
     prologue_section: str,
     epilogue_section: str,
     database_path: str,
-    diary_path: str,
     api_keys_path: str,
     models: list[str],
     model_temperatures: list[float],
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
     *, # 必填参数和选填参数的分界线
+    diary_path: Optional[str] = None,
     samplers_num: int = 5,
     evaluators_num: int = 5,
     sample_temperature: float = 50.0,
@@ -42,6 +42,8 @@ def IdeaSearch(
     mutation_temperature: Optional[float] = None,
     crossover_func: Optional[Callable[[str, str], str]] = None,
     crossover_interval: Optional[int] = None,
+    crossover_num: Optional[int] = None,
+    crossover_temperature: Optional[float] = None,
     model_assess_window_size: int = 20,
     model_assess_initial_score: float = 100.0,
     model_assess_average_order: float = 1.0,
@@ -52,6 +54,7 @@ def IdeaSearch(
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
     idea_uid_length: int = 4,
+    record_prompt_in_diary: bool = True,
 ) -> None:
     
     """
@@ -140,6 +143,9 @@ def IdeaSearch(
         idea_uid_length
     )
     
+    if diary_path is None:
+        diary_path = database_path + "log/diary.txt"
+    
     def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
     
@@ -174,6 +180,8 @@ def IdeaSearch(
         mutation_temperature = mutation_temperature,
         crossover_func = crossover_func,
         crossover_interval = crossover_interval,
+        crossover_num = crossover_num,
+        crossover_temperature = crossover_temperature,
         similarity_distance_func = similarity_distance_func,
         default_similarity_distance_func = default_similarity_distance_func,
         sample_temperature = sample_temperature,
@@ -212,6 +220,7 @@ def IdeaSearch(
             database = database,
             console_lock = console_lock,
             diary_path = diary_path,
+            record_prompt_in_diary = record_prompt_in_diary,
         )
         for i in range(samplers_num)
     ]
@@ -294,12 +303,15 @@ def IdeaSearch_entrance_check(
         "prologue_section": prologue_section,
         "epilogue_section": epilogue_section,
         "database_path": database_path,
-        "diary_path": diary_path,
         "api_keys_path": api_keys_path,
     }.items():
         if not isinstance(val, str):
             raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应该是 str 类型，但接收到 {type(val).__name__}")
 
+    if diary_path is not None:
+        if not isinstance(diary_path, str):
+            raise TypeError(f"【IdeaSearch参数类型错误】 `{diary_path}` 应该是 None 或 str 类型，但接收到 {type(diary_path).__name__}")
+    
     # 列表类型检查
     if not isinstance(models, list) or not all(isinstance(m, str) for m in models):
         raise TypeError("【IdeaSearch参数类型错误】 `models` 应该是 str 类型的列表")

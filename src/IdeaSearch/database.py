@@ -2,6 +2,7 @@ from threading import Lock
 from pathlib import Path
 import random
 import os
+from os.path import basename
 import string
 import json
 from typing import Callable, Optional
@@ -10,7 +11,14 @@ from src.utils import append_to_file, guarantee_path_exist
 
 class Idea:
     
-    def __init__(self, path, evaluate_func, content = None, score = None, info = None):
+    def __init__(
+        self, 
+        path,
+        evaluate_func, 
+        content = None, 
+        score = None, 
+        info = None
+    ):
         self.path = str(path)
         if evaluate_func is not None:
             with open(path, 'r', encoding = "UTF-8") as file:
@@ -35,12 +43,14 @@ class Database:
         assess_func,
         assess_interval,
         assess_result_path,
-        mutation_func,
-        mutation_interval,
-        mutation_num,
-        mutation_temperature,
-        crossover_func,
-        crossover_interval,
+        mutation_func: Optional[Callable[[str], str]],
+        mutation_interval: Optional[int],
+        mutation_num: Optional[int],
+        mutation_temperature: Optional[float],
+        crossover_func: Optional[Callable[[str, str], str]],
+        crossover_interval: Optional[int],
+        crossover_num: Optional[int],
+        crossover_temperature: Optional[float],
         similarity_distance_func: Callable[[str, str], float],
         default_similarity_distance_func: Callable[[str, str], float],
         sample_temperature: float,
@@ -63,7 +73,7 @@ class Database:
         self.program_name = program_name
         self.sample_temperature = sample_temperature
         self.console_lock = console_lock
-        self.path = database_path
+        self.path = database_path + "ideas/"
         self.diary_path = diary_path
         self.similarity_threshold = similarity_threshold
         self.similarity_distance_func = similarity_distance_func
@@ -104,6 +114,8 @@ class Database:
             self.crossover_on = True
             self.crossover_func = crossover_func
             self.crossover_interval = crossover_interval
+            self.crossover_num = crossover_num
+            self.crossover_temperature = crossover_temperature
         else:
             self.crossover_on = False
         
@@ -170,13 +182,23 @@ class Database:
             return self.status
         
     
-    def get_examples(self) -> list[Idea]:
+    def get_examples(
+        self
+    ) -> list[Idea]:
         
         with self.lock:
             
             if self.status == "Terminated":
                 return None
             self.interaction_count += 1
+            with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 当前交互次数为：{self.interaction_count}，"
+                            f"还剩{self.max_interaction_num-self.interaction_count}次！"
+                        ),
+                    )
             
             if self.assess_on:
                 if self.interaction_count % self.assess_interval == 0:
@@ -199,20 +221,22 @@ class Database:
                         content_str = "【数据库】 发生异常：ideas列表为空！",
                     )
                 exit()
+                
+            probabilities = np.array([idea.score for idea in self.ideas])
+            probabilities /= self.sample_temperature
+            max_value = np.max(probabilities)
+            probabilities = np.exp(probabilities - max_value)
+            probabilities /= np.array(self.idea_similar_nums)
+            probabilities /= np.sum(probabilities)
             
-            # 使用 score / sample_temperature 的 softmax 作为采样权重（数值稳定写法）
-            scores = np.array([idea.score for idea in self.ideas])
-            scores = scores / self.sample_temperature
-            shifted_scores = scores - np.max(scores)
-            exp_scores = np.exp(shifted_scores)
-            exp_scores /= np.array(self.idea_similar_nums)
-            weights = exp_scores / np.sum(exp_scores)
-
-            return random.choices(
-                self.ideas,
-                weights=weights,
-                k=min(len(self.ideas), self.examples_num)
+            selected_indices = self.random_generator.choice(
+                a = len(self.ideas),
+                size = min(len(self.ideas), self.examples_num),
+                replace = False, # 不允许重复选择同一个元素
+                p = probabilities,
             )
+
+            return [self.ideas[int(i)] for i in selected_indices]
         
         
     def get_model(self) -> tuple[str, float]:
@@ -367,7 +391,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path=self.diary_path,
-                content_str="【数据库】 成功将idea_similar_nums与ideas同步！",
+                content_str="【数据库】 成功将 idea_similar_nums 列表与 ideas 列表同步！",
             )
     # 低效版本（备份用）
     # def _sync_similar_num_list(self):
@@ -405,6 +429,7 @@ class Database:
     
     
     def _assess(self)-> None:
+        
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
@@ -420,12 +445,13 @@ class Database:
                 content_str = "【数据库】 现在开始进行单体突变！",
             )
             
-        probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
-        max_value = np.max(probabilities)
-        probabilities = np.exp(probabilities - max_value)
-        probabilities /= np.sum(probabilities)
-            
         for index in range(self.mutation_num):
+            
+            probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
+            max_value = np.max(probabilities)
+            probabilities = np.exp(probabilities - max_value)
+            probabilities /= np.array(self.idea_similar_nums)
+            probabilities /= np.sum(probabilities)
             
             selected_index = self.random_generator.choice(
                 a = len(self.ideas), 
@@ -441,7 +467,7 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次单体突变在运行 mutation_func 时发生了错误：\n"
-                            f"{error}\n此轮单体突变意外结束！"
+                            f"{error}\n此轮单体突变意外终止！"
                         ),
                     )
                 return
@@ -457,17 +483,18 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次单体突变："
-                            f" {selected_idea.path} 突变为 {path} "
+                            f" {basename(selected_idea.path)} 突变为 {basename(path)} "
                         ),
                     )
                 self._sync_score_sheet()
+                self._sync_similar_num_list()
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次单体突变发生了错误：\n"
-                            f"{self._store_idea_error_message}\n此轮单体突变意外结束！"
+                            f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
                         ),
                     )
                 return
@@ -487,17 +514,17 @@ class Database:
                 content_str = "【数据库】 现在开始进行交叉变异！",
             )
 
-        probabilities = np.array([idea.score for idea in self.ideas]) / self.crossover_temperature
-        max_value = np.max(probabilities)
-        probabilities = np.exp(probabilities - max_value)
-        probabilities /= np.sum(probabilities)
-
         for index in range(self.crossover_num):
+            
+            probabilities = np.array([idea.score for idea in self.ideas]) / self.crossover_temperature
+            max_value = np.max(probabilities)
+            probabilities = np.exp(probabilities - max_value)
+            probabilities /= np.sum(probabilities)
             
             parent_indices = self.random_generator.choice(
                 a = len(self.ideas), 
                 size = 2, 
-                replace = False, 
+                replace = False, # 不允许重复选择同一个元素
                 p = probabilities
             )
             parent_1 = self.ideas[parent_indices[0]]
@@ -513,7 +540,7 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次交叉变异在运行 crossover_func 时发生了错误：\n"
-                            f"{error}\n此轮交叉变异意外结束！"
+                            f"{error}\n此轮交叉变异意外终止！"
                         ),
                     )
                 return
@@ -529,17 +556,18 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次交叉变异："
-                            f"{parent_1.path} × {parent_2.path} 交叉为 {path} "
+                            f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {path} "
                         ),
                     )
                 self._sync_score_sheet()
+                self._sync_similar_num_list()
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次交叉变异发生了错误：\n"
-                            f"{self._store_idea_error_message}\n此轮交叉变异意外结束！"
+                            f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
                         ),
                     )
                 return
@@ -580,20 +608,39 @@ class Database:
         info: Optional[str] = None,
     )-> Optional[str]:
         
+        """
+        将一个新的 idea 内容保存为文件，并添加到内部 idea 列表中。
+        为了避免重复运行 evaluate_func 带来的时间开销，允许调用者在以下两个情形间选择：
+        
+        1. evaluate_func is None （已在外部评估 idea ）
+        这时应该传入 score 和 info
+        
+        2. evaluate_func is not None （尚未评估 idea ）
+        这时可以不传入 score 和 info
+
+        Args:
+            idea (str): 需要存储的 idea 内容（字符串格式）。
+            evaluate_func (Optional[Callable[[str, str], float]]): 用于评价 idea 的函数。
+            score (Optional[float]): 预设的 idea 得分。
+            info (Optional[str]): 与 idea 相关的附加信息。
+
+        Returns:
+            Optional[str]: 成功则返回该 idea 对应的文件路径；若出错则返回 None。
+        """
+        
         try:
             path = self._get_new_idea_path()
             
             with open(path, 'w', encoding='utf-8') as file:
-                
                 file.write(idea)
-                    
-                self.ideas.append(Idea(
-                    path = path,
-                    evaluate_func = evaluate_func,
-                    content = idea,
-                    score = score,
-                    info = info,
-                ))
+                
+            self.ideas.append(Idea(
+                path = path,
+                evaluate_func = evaluate_func,
+                content = idea,
+                score = score,
+                info = info,
+            ))
                 
             return path
         

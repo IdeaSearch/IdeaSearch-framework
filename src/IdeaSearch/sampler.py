@@ -19,6 +19,7 @@ class Sampler:
         database: Database,
         console_lock: Lock,
         diary_path: str,
+        record_prompt_in_diary: str,
     ):
         self.id = sampler_id
         self.database = database
@@ -29,6 +30,7 @@ class Sampler:
         self.evaluators = evaluators
         self.console_lock = console_lock
         self.diary_path = diary_path
+        self.record_prompt_in_diary = record_prompt_in_diary
 
     def run(self):
         
@@ -53,7 +55,7 @@ class Sampler:
                         file_path = self.diary_path,
                         content_str = f"【{self.id}号采样器】 工作结束。",
                     )
-                break
+                return
             else:
                 with self.console_lock:
                     append_to_file(
@@ -61,13 +63,13 @@ class Sampler:
                         content_str = f"【{self.id}号采样器】 已从数据库采样{len(examples)}个idea！",
                     )
             
-            examples_section = ""
+            examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
             for index, example in enumerate(examples):
-                examples_section += f"[Example {index + 1}]\n"
-                examples_section += f"Score: {example.score}\n"
+                examples_section += f"[第 {index + 1} 个例子]\n"
+                examples_section += f"得分：{example.score:.2f}\n"
                 if example.info is not None:
-                    examples_section += f"Info: {example.info}\n"
-                examples_section += f"Content:\n"
+                    examples_section += f"说明：{example.info}\n"
+                examples_section += f"内容：\n"
                 examples_section += f"{example.content}\n"
             
             prompt = self.prologue_section + examples_section + self.epilogue_section
@@ -89,6 +91,16 @@ class Sampler:
                         f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了{model}(T={model_temperature:.2f})！"
                     ),
                 )
+                
+            if self.record_prompt_in_diary:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【{self.id}号采样器】 向{model}(T={model_temperature:.2f})发送的prompt是：\n"
+                            f"{prompt}"
+                        ),
+                    )
             
             with self.console_lock:
                 append_to_file(
