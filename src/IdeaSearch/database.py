@@ -463,7 +463,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次单体突变在运行 mutation_func 时发生了错误：\n"
+                            f"【数据库】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
                             f"{error}\n此轮单体突变意外终止！"
                         ),
                     )
@@ -479,7 +479,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次单体突变："
+                            f"【数据库】 第 {index+1} 次单体突变："
                             f" {basename(selected_idea.path)} 突变为 {basename(path)} "
                         ),
                     )
@@ -490,7 +490,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次单体突变发生了错误：\n"
+                            f"【数据库】 第 {index+1} 次单体突变发生了错误：\n"
                             f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
                         ),
                     )
@@ -536,7 +536,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次交叉变异在运行 crossover_func 时发生了错误：\n"
+                            f"【数据库】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
                             f"{error}\n此轮交叉变异意外终止！"
                         ),
                     )
@@ -552,7 +552,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次交叉变异："
+                            f"【数据库】 第 {index+1} 次交叉变异："
                             f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
                         ),
                     )
@@ -563,7 +563,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第{index+1}次交叉变异发生了错误：\n"
+                            f"【数据库】 第 {index+1} 次交叉变异发生了错误：\n"
                             f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
                         ),
                     )
