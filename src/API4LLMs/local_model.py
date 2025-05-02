@@ -78,7 +78,7 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
                 generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
                 
                 return jsonify({
-                    "generated_text": generated_text,
+                    "generated_text": generated_text[len(system_prompt+prompt):],
                     "status": "成功"
                 })
         
