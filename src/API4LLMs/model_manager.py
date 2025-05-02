@@ -2,6 +2,8 @@ import json
 import os
 from typing import Optional
 from threading import Lock
+from src.API4LLMs.local_model import launch_model_inference_port
+from src.API4LLMs.local_model import shutdown_model_inference_port
 
 
 __all__ = [
@@ -9,6 +11,7 @@ __all__ = [
     "is_online_model",
     "get_online_model_instance",
     "get_local_model_instance",
+    "shutdown_model_manager",
 ]
 
 
@@ -72,16 +75,26 @@ class ModelManager:
                     
                     for model_name in local_models_dict.keys():
                         
-                        # TODO: 根据 path 给本地模型开端口
-                    
                         self._is_online_model[model_name] = False
+                        
+                        local_model_instances = []
+                        
+                        for index in range(len(local_models_dict[model_name])):
+                            
+                            port = local_models_dict[model_name][index]["port"]
+                            path = local_models_dict[model_name][index]["path"]
+                            
+                            port = launch_model_inference_port(
+                                port = port,
+                                path = path,
+                            )
+                            
+                            local_model_instances.append({
+                                "port": port,
+                            })
+                        
                         self._local_models[model_name] = {
-                            "instances": [
-                                {
-                                    "port": local_models_dict[model_name][index]["port"]
-                                }
-                                for index in range(len(local_models_dict[model_name]))
-                            ],
+                            "instances": local_model_instances,
                             "next_choice_index": 0,
                         }
                     
@@ -131,6 +144,10 @@ class ModelManager:
             self._local_models[model_name]["next_choice_index"] = (local_model["next_choice_index"]+1) % len(local_model["instances"])
             
             return local_model["instances"][index_backup]["port"]
+        
+        
+    def shutdown(self):
+        pass
              
                 
 model_manager = ModelManager()
@@ -173,3 +190,5 @@ def get_local_model_instance(
     return model_manager.get_local_model_instance(model_name)
 
 
+def shutdown_model_manager()-> None:
+    model_manager.shutdown()

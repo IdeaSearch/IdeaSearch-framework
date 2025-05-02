@@ -8,6 +8,7 @@ from src.IdeaSearch.database import Idea, Database
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 from src.API4LLMs.model_manager import init_model_manager
+from src.API4LLMs.model_manager import shutdown_model_manager
 
 
 __all__ = [
@@ -248,6 +249,8 @@ def IdeaSearch(
                     content_str = f"【系统】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                 )
                 exit()
+                
+    shutdown_model_manager()
 
     append_to_file(
         file_path = diary_path,

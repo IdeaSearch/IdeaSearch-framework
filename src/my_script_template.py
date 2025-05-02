@@ -24,8 +24,14 @@ def IdeaSearch_interface()-> None:
         "Deepseek_V3",
         "Deepseek_V3",
         "Deepseek_V3",
+        "Qwen3-32B",
+        "Qwen3-32B",
+        "Qwen3-32B",
     ]
     model_temperatures = [
+        0.7,
+        1.0,
+        1.3,
         0.7,
         1.0,
         1.3,
@@ -69,7 +75,8 @@ def IdeaSearch_interface()-> None:
     # Paths
     database_path = f"programs/{program_name}/database/"
     api_keys_path = "src/API4LLMs/api_keys.json"
-    local_models_path = None
+    # local_models_path = None
+    local_models_path = "src/API4LLMs/local_models.json"
     diary_path = None # use default diary path: database_path + "log/diary.txt"
     
     # Start IdeaSearch

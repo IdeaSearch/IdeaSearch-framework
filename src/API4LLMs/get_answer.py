@@ -1,6 +1,6 @@
+import requests
 from openai import OpenAI
 from typing import Optional
-
 from src.API4LLMs.model_manager import is_online_model
 from src.API4LLMs.model_manager import get_online_model_instance
 from src.API4LLMs.model_manager import get_local_model_instance
@@ -9,9 +9,6 @@ from src.API4LLMs.model_manager import get_local_model_instance
 __all__ = [
     "get_answer",
 ]
-
-
-local_model_max_new_token = None
 
 
 def get_answer(
@@ -81,11 +78,22 @@ def get_answer_online(
     return response.choices[0].message.content
 
 
-def get_answer_local(
-    port: int,
-)-> str:
-    pass
+def get_answer_local(port: int) -> str:
+    url = f"http://127.0.0.1:{port}/generate"
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "prompt": "Hello, how are you?",
+        "max_length": 100,
+        "temperature": 0.7
+    }
 
-
-if __name__ == "__main__":
-    pass
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            return response.json().get("generated_text", "")
+        else:
+            print(f"【Model Manager】 错误: {response.json().get('error', '未知错误')}")
+            return ""
+    except Exception as e:
+        print(f"【Model Manager】 请求失败: {str(e)}")
+        return ""
