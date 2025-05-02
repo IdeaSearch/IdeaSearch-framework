@@ -374,7 +374,7 @@ class Database:
     def _sync_score_sheet(self):
         
         score_sheet = {
-            idea.path: {
+            basename(idea.path): {
                 "score": idea.score,
                 "info": idea.info if idea.info is not None else "",
             }
@@ -392,74 +392,74 @@ class Database:
 
 
     # GPT完成的高效版本（仅在default_similarity_distance_func情形下优化）     
-    def _sync_similar_num_list(self):
-        epsilon = self.similarity_threshold
-        default_sim = self.similarity_distance_func == self.default_similarity_distance_func
-
-        self.idea_similar_nums = [0] * len(self.ideas)
-
-        if default_sim:
-            # 使用滑窗优化，只适用于默认 similarity_distance_func
-            indexed_ideas = list(enumerate(self.ideas))
-            indexed_ideas.sort(key=lambda x: x[1].score)
-
-            n = len(indexed_ideas)
-            left = 0
-            for right in range(n):
-                # 左边界移动到满足 score 差值小于 epsilon 的位置
-                while indexed_ideas[right][1].score - indexed_ideas[left][1].score > epsilon:
-                    left += 1
-                count = 0
-                for k in range(left, right + 1):
-                    i = indexed_ideas[right][0]
-                    j = indexed_ideas[k][0]
-                    # 包含内容完全相同的情况
-                    if i == j or self.ideas[i].content == self.ideas[j].content:
-                        count += 1
-                    elif abs(self.ideas[i].score - self.ideas[j].score) <= epsilon:
-                        count += 1
-                self.idea_similar_nums[indexed_ideas[right][0]] = count
-        else:
-            # 非默认相似度函数，使用两重循环
-            for i, idea_i in enumerate(self.ideas):
-                similar_count = 0
-                for j, idea_j in enumerate(self.ideas):
-                    if i == j or idea_i.content == idea_j.content:
-                        similar_count += 1
-                    else:
-                        score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
-                        if score_diff <= epsilon:
-                            similar_count += 1
-                self.idea_similar_nums[i] = similar_count
-
-        with self.console_lock:
-            append_to_file(
-                file_path=self.diary_path,
-                content_str="【数据库】 成功将 idea_similar_nums 列表与 ideas 列表同步！",
-            )
-    # 低效版本（备份用）
     # def _sync_similar_num_list(self):
-        
-    #     self.idea_similar_nums = []
+    #     epsilon = self.similarity_threshold
+    #     default_sim = self.similarity_distance_func == self.default_similarity_distance_func
 
-    #     for i, idea_i in enumerate(self.ideas):
-    #         similar_count = 0
-    #         for j, idea_j in enumerate(self.ideas):
-    #             if i == j or idea_i.content == idea_j.content:
-    #                 similar_count += 1
-    #             if self.similarity_distance_func == self.default_similarity_distance_func:
-    #                 score_diff = abs(idea_i.score - idea_j.score)
-    #             else:
-    #                 score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
-    #             if score_diff <= self.similarity_threshold:
-    #                 similar_count += 1
-    #         self.idea_similar_nums.append(similar_count)
-            
+    #     self.idea_similar_nums = [0] * len(self.ideas)
+
+    #     if default_sim:
+    #         # 使用滑窗优化，只适用于默认 similarity_distance_func
+    #         indexed_ideas = list(enumerate(self.ideas))
+    #         indexed_ideas.sort(key=lambda x: x[1].score)
+
+    #         n = len(indexed_ideas)
+    #         left = 0
+    #         for right in range(n):
+    #             # 左边界移动到满足 score 差值小于 epsilon 的位置
+    #             while indexed_ideas[right][1].score - indexed_ideas[left][1].score > epsilon:
+    #                 left += 1
+    #             count = 0
+    #             for k in range(left, right + 1):
+    #                 i = indexed_ideas[right][0]
+    #                 j = indexed_ideas[k][0]
+    #                 # 包含内容完全相同的情况
+    #                 if i == j or self.ideas[i].content == self.ideas[j].content:
+    #                     count += 1
+    #                 elif abs(self.ideas[i].score - self.ideas[j].score) <= epsilon:
+    #                     count += 1
+    #             self.idea_similar_nums[indexed_ideas[right][0]] = count
+    #     else:
+    #         # 非默认相似度函数，使用两重循环
+    #         for i, idea_i in enumerate(self.ideas):
+    #             similar_count = 0
+    #             for j, idea_j in enumerate(self.ideas):
+    #                 if i == j or idea_i.content == idea_j.content:
+    #                     similar_count += 1
+    #                 else:
+    #                     score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
+    #                     if score_diff <= epsilon:
+    #                         similar_count += 1
+    #             self.idea_similar_nums[i] = similar_count
+
     #     with self.console_lock:
     #         append_to_file(
-    #             file_path = self.diary_path,
-    #             content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+    #             file_path=self.diary_path,
+    #             content_str="【数据库】 成功将 idea_similar_nums 列表与 ideas 列表同步！",
     #         )
+    # 低效版本（备份用）
+    def _sync_similar_num_list(self):
+        
+        self.idea_similar_nums = []
+
+        for i, idea_i in enumerate(self.ideas):
+            similar_count = 0
+            for j, idea_j in enumerate(self.ideas):
+                if i == j or idea_i.content == idea_j.content:
+                    similar_count += 1
+                if self.similarity_distance_func == self.default_similarity_distance_func:
+                    score_diff = abs(idea_i.score - idea_j.score)
+                else:
+                    score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
+                if score_diff <= self.similarity_threshold:
+                    similar_count += 1
+            self.idea_similar_nums.append(similar_count)
+            
+        with self.console_lock:
+            append_to_file(
+                file_path = self.diary_path,
+                content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+            )
     
     
     def _check_threshold(self):
