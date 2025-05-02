@@ -13,7 +13,7 @@ class Evaluator:
         evaluate_func,
         console_lock : Lock,
         diary_path: str,
-        evaluator_handle_threshold: float,
+        evaluator_hand_over_threshold: float,
     ):
         
         self.id = evaluator_id
@@ -24,7 +24,7 @@ class Evaluator:
         self.lock = Lock()
         self.status = "Vacant"
         self.diary_path = diary_path
-        self.evaluator_handle_threshold = evaluator_handle_threshold
+        self.evaluator_hand_over_threshold = evaluator_hand_over_threshold
         
 
     def try_acquire(self):
@@ -96,7 +96,7 @@ class Evaluator:
                     )  
                 return
             
-            if score >= self.evaluator_handle_threshold:
+            if score >= self.evaluator_hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
         self.database.update_model_score(score_result, model, model_temperature)   

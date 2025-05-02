@@ -36,7 +36,7 @@ def IdeaSearch_interface()-> None:
     model_sample_temperature = 60.0
     initialization_cleanse_threshold = 0.0
     delete_when_initial_cleanse = True
-    evaluator_handle_threshold = 0.0
+    evaluator_hand_over_threshold = 0.0
     similarity_threshold = 0.1
     similarity_distance_func = None
     assess_func = None
@@ -95,7 +95,7 @@ def IdeaSearch_interface()-> None:
         api_keys_path = api_keys_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
-        evaluator_handle_threshold = evaluator_handle_threshold,
+        evaluator_hand_over_threshold = evaluator_hand_over_threshold,
         similarity_threshold = similarity_threshold,
         similarity_distance_func = similarity_distance_func, 
         database_path = database_path,
