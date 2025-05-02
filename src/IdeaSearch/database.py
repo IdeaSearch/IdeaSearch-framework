@@ -1,13 +1,23 @@
-from threading import Lock
-from pathlib import Path
 import random
 import os
-from os.path import basename
+import bisect
+import numpy as np
 import string
 import json
+
+from threading import Lock
+from pathlib import Path
 from typing import Callable, Optional
-import numpy as np
+from os.path import basename
+
 from src.utils import append_to_file, guarantee_path_exist
+
+
+__all__ = [
+    "Idea",
+    "Database",
+]
+
 
 class Idea:
     
@@ -66,6 +76,8 @@ class Database:
         model_assess_average_order: float,
         model_sample_temperature: float,
         similarity_threshold: float,
+        similarity_sys_info_thresholds: Optional[list[int]],
+        similarity_sys_info_prompts: Optional[list[str]],
         idea_uid_length: int,
     )-> None:
         
@@ -118,6 +130,14 @@ class Database:
             self.crossover_temperature = crossover_temperature
         else:
             self.crossover_on = False
+            
+        # 处理相似反馈系统信息
+        if similarity_sys_info_thresholds is not None:
+            self.similarity_sys_info_on = True
+            self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
+            self.similarity_sys_info_prompts = similarity_sys_info_prompts
+        else:
+            self.similarity_sys_info_on = False
         
         # 初始化模型得分记录列表与模型得分列表
         self.model_recent_scores = []
@@ -235,8 +255,32 @@ class Database:
                 replace = False, # 不允许重复选择同一个元素
                 p = probabilities,
             )
+            
+            selected_examples = []
+            for i in selected_indices:
+                selected_index = int(i)
+                example_idea = self.idea[selected_index]
+                
+                if self.similarity_sys_info_on:
+                    similar_num = self.idea_similar_nums[selected_index]
+                    similarity_prompt = get_label(
+                        x = similar_num,
+                        thresholds = self.similarity_sys_info_thresholds,
+                        labels = self.similarity_sys_info_prompts
+                    )
+                else:
+                    similar_num = None
+                    similarity_prompt = None
+                    
+                selected_examples.append((
+                    example_idea.content,
+                    example_idea.score,
+                    example_idea.info,
+                    similar_num,
+                    similarity_prompt,
+                ))
 
-            return [self.ideas[int(i)] for i in selected_indices]
+            return selected_examples
         
         
     def get_model(self) -> tuple[str, float]:
@@ -662,13 +706,22 @@ class Database:
             path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
             
         return path
-            
-        
+    
+    
+def get_label(
+    x: int, 
+    thresholds: list[int], 
+    labels: list[str]
+) -> str:
+    if not thresholds:
+        raise ValueError("thresholds 列表不能为空")
 
+    if len(labels) != len(thresholds) + 1:
+        raise ValueError(
+            f"labels 列表长度应比 thresholds 长 1，"
+            f"但实际为 labels={len(labels)}, thresholds={len(thresholds)}"
+        )
     
+    index = bisect.bisect_right(thresholds, x)
+    return labels[index]
             
-            
-    
-                
-
-    

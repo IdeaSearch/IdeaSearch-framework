@@ -51,6 +51,8 @@ def IdeaSearch(
     evaluator_hand_over_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
     similarity_distance_func: Optional[Callable[[str, str], float]] = None,
+    similarity_sys_info_thresholds: Optional[list[int]] = None,
+    similarity_sys_info_prompts: Optional[list[str]] = None,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
     idea_uid_length: int = 4,
@@ -97,7 +99,7 @@ def IdeaSearch(
         model_assess_average_order (float): 评估模型时 p-范数的 p 值，影响对最大/最小值的敏感程度。
         model_sample_temperature (float): 模型采样温度参数，控制模型选择的概率分布平滑程度。
         evaluator_hand_over_threshold (float): Evaluator 允许 idea 进入数据库的最低分数门槛。
-        similarity_threshold (float): 判定 idea 是否相似的阈值。若为 -1.0，则仅完全一致时视为相似。
+        similarity_threshold (float): 判定 idea 是否相似的阈值。默认为 -1.0，即仅完全一致时视为相似。
         similarity_distance_func (Optional[Callable[[str, str], float]]): 用于衡量 idea 相似度的距离函数，默认为分数差的绝对值。
         initialization_cleanse_threshold (float): 数据库初始化时清除低质量 idea 的分数阈值。
         delete_when_initial_cleanse (bool): 若为 True，在初始化清洗时会删除低分文件；否则仅跳过处理。
@@ -197,6 +199,8 @@ def IdeaSearch(
         model_assess_average_order = model_assess_average_order,
         model_sample_temperature = model_sample_temperature,
         similarity_threshold = similarity_threshold,
+        similarity_sys_info_thresholds = similarity_sys_info_thresholds,
+        similarity_sys_info_prompts = similarity_sys_info_prompts,
         idea_uid_length = idea_uid_length,
     )
     evaluators = [

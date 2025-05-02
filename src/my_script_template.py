@@ -52,6 +52,13 @@ def IdeaSearch_interface()-> None:
     crossover_temperature = 2 * sample_temperature
     idea_uid_length = 4
     record_prompt_in_diary = True
+    similarity_sys_info_thresholds = [
+        3,
+    ]
+    similarity_sys_info_prompts = [
+        "还可以再来点！",
+        "已经太多啦！",
+    ]
     
     # Max interaction num
     max_interaction_num = 20
@@ -98,6 +105,8 @@ def IdeaSearch_interface()-> None:
         evaluator_hand_over_threshold = evaluator_hand_over_threshold,
         similarity_threshold = similarity_threshold,
         similarity_distance_func = similarity_distance_func, 
+        similarity_sys_info_thresholds = similarity_sys_info_thresholds,
+        similarity_sys_info_prompts = similarity_sys_info_prompts,
         database_path = database_path,
         idea_uid_length = idea_uid_length,
         record_prompt_in_diary = record_prompt_in_diary,
