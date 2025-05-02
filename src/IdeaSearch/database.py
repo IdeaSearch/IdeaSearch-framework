@@ -556,7 +556,7 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第{index+1}次交叉变异："
-                            f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {path} "
+                            f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
                         ),
                     )
                 self._sync_score_sheet()
