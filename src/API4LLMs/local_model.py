@@ -2,6 +2,7 @@ import socket
 import torch
 import requests
 import threading
+import os
 from flask import Flask
 from flask import request
 from flask import jsonify
@@ -91,8 +92,8 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
     
     @app.route('/shutdown', methods=['POST'])
     def shutdown():
-        request.environ.get('werkzeug.server.shutdown')()
-        return jsonify({"status": "服务器正在关闭"}), 200
+        os._exit(0)  # 退出当前进程
+        return jsonify({"status": "服务器正在关闭"}), 200  # 通常不会执行
 
     def run_app():
         app.run(host='0.0.0.0', port=port, debug=False)
