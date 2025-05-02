@@ -89,6 +89,7 @@ def get_answer_local(
     
     headers = {"Content-Type": "application/json"}
     data = {
+        "port": port,
         "temperature": temperature,
         "system_prompt": system_prompt,
         "prompt": prompt,

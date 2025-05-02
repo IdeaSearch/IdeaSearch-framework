@@ -5,6 +5,7 @@ import threading
 from flask import Flask
 from flask import request
 from flask import jsonify
+from threading import Lock
 from transformers import AutoModelForCausalLM
 from transformers import AutoTokenizer
 
@@ -16,6 +17,7 @@ __all__ = [
 
 
 local_model_max_new_token = 2048
+local_model_port_to_lock = {}
 
 
 def launch_model_inference_port(port: int, model_path: str) -> int:
@@ -45,33 +47,36 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
 
         try:
             data = request.get_json()
+            current_port = data.get('port', 0)
             temperature = data.get('temperature', 0.7)
             system_prompt = data.get('system_prompt', '')
             prompt = data.get('prompt', '')
             
             if not prompt:
                 return jsonify({"error": "提示信息是必须的"}), 400
-
-            inputs = tokenizer(prompt, return_tensors="pt").to('cuda:1')
-            if temperature == 0.0:
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=local_model_max_new_token,
-                    do_sample=False,
-                )
-            else:
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=local_model_max_new_token,
-                    do_sample=True,
-                    temperature=temperature,
-                )
-            generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
             
-            return jsonify({
-                "generated_text": generated_text,
-                "status": "成功"
-            })
+            with local_model_port_to_lock[current_port]:
+
+                inputs = tokenizer(system_prompt + prompt, return_tensors="pt").to('cuda:1')
+                if temperature == 0.0:
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=local_model_max_new_token,
+                        do_sample=False,
+                    )
+                else:
+                    outputs = model.generate(
+                        **inputs,
+                        max_new_tokens=local_model_max_new_token,
+                        do_sample=True,
+                        temperature=temperature,
+                    )
+                generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+                
+                return jsonify({
+                    "generated_text": generated_text,
+                    "status": "成功"
+                })
         
         except Exception as e:
             return jsonify({"error": f"发生错误: {str(e)}"}), 500
@@ -90,6 +95,8 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
 
     thread = threading.Thread(target=run_app)
     thread.start()
+    
+    local_model_port_to_lock[port] = Lock()
 
     return port
 
