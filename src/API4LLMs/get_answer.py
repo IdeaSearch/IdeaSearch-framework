@@ -98,6 +98,7 @@ def get_answer_local(
     try:
         response = requests.post(url, json=data, headers=headers)
         if response.status_code == 200:
+            input(response.json())
             return response.json().get("generated_text", "")
         else:
             print(f"【Model Manager】 错误: {response.json().get('error', '未知错误')}")
