@@ -18,6 +18,7 @@ __all__ = [
 
 local_model_max_new_token = 2048
 local_model_port_to_lock = {}
+local_model_port_to_cuda_device_no = {}
 
 
 def launch_model_inference_port(port: int, model_path: str) -> int:
@@ -29,6 +30,7 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
 
     def init_model():
         cuda_device_no = get_free_cuda_device()
+        local_model_port_to_lock[port] = cuda_device_no
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
@@ -52,13 +54,14 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
             temperature = data.get('temperature', 0.7)
             system_prompt = data.get('system_prompt', '')
             prompt = data.get('prompt', '')
+            cuda_device_no = local_model_port_to_cuda_device_no[port]
             
             if not prompt:
                 return jsonify({"error": "提示信息是必须的"}), 400
             
             with local_model_port_to_lock[current_port]:
 
-                inputs = tokenizer(system_prompt + prompt, return_tensors="pt").to('cuda:1')
+                inputs = tokenizer(system_prompt + prompt, return_tensors="pt").to(f'cuda:{cuda_device_no}')
                 if temperature == 0.0:
                     outputs = model.generate(
                         **inputs,
