@@ -66,11 +66,11 @@ class Sampler:
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
             for index, example in enumerate(examples):
                 examples_section += f"[第 {index + 1} 个例子]\n"
+                examples_section += f"内容：\n"
+                examples_section += f"{example.content}\n"
                 examples_section += f"得分：{example.score:.2f}\n"
                 if example.info is not None:
                     examples_section += f"说明：{example.info}\n"
-                examples_section += f"内容：\n"
-                examples_section += f"{example.content}\n"
             
             prompt = self.prologue_section + examples_section + self.epilogue_section
             
