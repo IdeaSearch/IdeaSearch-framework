@@ -19,6 +19,7 @@ class Sampler:
         database: Database,
         console_lock: Lock,
         diary_path: str,
+        system_prompt: str,
         record_prompt_in_diary: str,
     ):
         self.id = sampler_id
@@ -30,6 +31,7 @@ class Sampler:
         self.evaluators = evaluators
         self.console_lock = console_lock
         self.diary_path = diary_path
+        self.system_prompt = system_prompt
         self.record_prompt_in_diary = record_prompt_in_diary
 
     def run(self):
@@ -68,7 +70,7 @@ class Sampler:
                 idea, score, info, similar_num, similarity_prompt = example
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
-                examples_section += f'"{idea}\n"'
+                examples_section += f'{idea}\n'
                 examples_section += f"得分：{score:.2f}\n"
                 if info is not None:
                     examples_section += f"说明：{info}\n"
@@ -103,7 +105,14 @@ class Sampler:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的prompt是：\n"
+                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 system prompt 是：\n"
+                            f"{self.system_prompt}"
+                        ),
+                    )
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 prompt 是：\n"
                             f"{prompt}"
                         ),
                     )
@@ -121,7 +130,13 @@ class Sampler:
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
-                    executor.submit(get_answer, model, prompt, model_temperature): i
+                    executor.submit(
+                        get_answer, 
+                        model, 
+                        model_temperature, 
+                        self.system_prompt, 
+                        prompt
+                    ): i
                     for i in range(self.generate_num)
                 }
 

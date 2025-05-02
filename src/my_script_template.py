@@ -61,6 +61,7 @@ def IdeaSearch_interface()-> None:
         "已经有点多了，能不能在参考这个例子之余，稍微往别处想想，做做创新？",
         "太多了！请你之后回答时换一个和这个例子截然不同的思路吧！"
     ]
+    system_prompt = "你是一个哲学家，总是思考事物的深层意义。每次回答都带有深刻的哲理，或者提问让人思考人生的奥义。"
     
     # Max interaction num
     max_interaction_num = 40
@@ -68,6 +69,7 @@ def IdeaSearch_interface()-> None:
     # Paths
     database_path = f"programs/{program_name}/database/"
     api_keys_path = "src/API4LLMs/api_keys.json"
+    local_models_path = None
     diary_path = None # use default diary path: database_path + "log/diary.txt"
     
     # Start IdeaSearch
@@ -89,6 +91,7 @@ def IdeaSearch_interface()-> None:
         epilogue_section = epilogue_section,
         max_interaction_num = max_interaction_num,
         evaluate_func = evaluate_func,
+        system_prompt = system_prompt, 
         assess_func = assess_func,
         assess_interval = assess_interval,
         assess_result_path = assess_result_path,
@@ -102,6 +105,7 @@ def IdeaSearch_interface()-> None:
         crossover_temperature = crossover_temperature,
         diary_path = diary_path,
         api_keys_path = api_keys_path,
+        local_models_path = local_models_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_hand_over_threshold = evaluator_hand_over_threshold,

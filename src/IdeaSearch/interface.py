@@ -21,13 +21,15 @@ def IdeaSearch(
     prologue_section: str,
     epilogue_section: str,
     database_path: str,
-    api_keys_path: str,
     models: list[str],
     model_temperatures: list[float],
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
     *, # 必填参数和选填参数的分界线
+    system_prompt: Optional[str] = None,
     diary_path: Optional[str] = None,
+    api_keys_path: Optional[str] = None,
+    local_models_path: Optional[str] = None,
     samplers_num: int = 5,
     evaluators_num: int = 5,
     sample_temperature: float = 50.0,
@@ -147,6 +149,9 @@ def IdeaSearch(
     
     if diary_path is None:
         diary_path = database_path + "log/diary.txt"
+        
+    if system_prompt is None:
+        system_prompt = "You're a helpful assistant."
     
     def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
@@ -156,6 +161,7 @@ def IdeaSearch(
         
     init_model_manager(
         api_keys_path = api_keys_path,
+        local_models_path = local_models_path,
     )
     
     guarantee_path_exist(diary_path)
@@ -224,6 +230,7 @@ def IdeaSearch(
             database = database,
             console_lock = console_lock,
             diary_path = diary_path,
+            system_prompt = system_prompt,
             record_prompt_in_diary = record_prompt_in_diary,
         )
         for i in range(samplers_num)

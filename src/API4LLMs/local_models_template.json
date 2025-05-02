@@ -1,0 +1,8 @@
+{
+  "Qwen3-32B": [
+    {
+      "path": "/path/to/your/local/model",
+      "port": 0
+    }
+  ]
+}
