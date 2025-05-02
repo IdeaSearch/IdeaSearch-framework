@@ -59,7 +59,7 @@ def IdeaSearch_interface()-> None:
     similarity_sys_info_prompts = [
         "还可以再来点类似的，但要略有不同！",
         "已经有点多了，能不能在参考这个例子之余，稍微往别处想想，做做创新？",
-        "太多了！请你在回答时换一个和这个例子截然不同的思路吧！"
+        "太多了！请你之后回答时换一个和这个例子截然不同的思路吧！"
     ]
     
     # Max interaction num
