@@ -68,9 +68,9 @@ class Sampler:
                 idea, score, info, similar_num, similarity_prompt = example
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
-                examples_section += f"{idea}\n"
+                examples_section += f'"{idea}\n"'
                 examples_section += f"得分：{score:.2f}\n"
-                if example.info is not None:
+                if info is not None:
                     examples_section += f"说明：{info}\n"
                 if similar_num is not None:
                     examples_section += (

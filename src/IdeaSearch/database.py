@@ -259,7 +259,7 @@ class Database:
             selected_examples = []
             for i in selected_indices:
                 selected_index = int(i)
-                example_idea = self.idea[selected_index]
+                example_idea = self.ideas[selected_index]
                 
                 if self.similarity_sys_info_on:
                     similar_num = self.idea_similar_nums[selected_index]
