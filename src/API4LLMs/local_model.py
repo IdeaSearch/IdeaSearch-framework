@@ -31,7 +31,8 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
     def init_model():
         cuda_device_no = get_free_cuda_device()
         input(f"【{port}: {cuda_device_no}】")
-        local_model_port_to_lock[port] = cuda_device_no
+        local_model_port_to_lock[port] = Lock()
+        local_model_port_to_cuda_device_no[port] = cuda_device_no
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False, trust_remote_code=True)
         model = AutoModelForCausalLM.from_pretrained(
             model_path,
