@@ -78,13 +78,20 @@ def get_answer_online(
     return response.choices[0].message.content
 
 
-def get_answer_local(port: int) -> str:
+def get_answer_local(
+    port: int,
+    temperature: float,
+    system_prompt: str,
+    prompt: str,
+) -> str:
+    
     url = f"http://127.0.0.1:{port}/generate"
+    
     headers = {"Content-Type": "application/json"}
     data = {
-        "prompt": "Hello, how are you?",
-        "max_length": 100,
-        "temperature": 0.7
+        "temperature": temperature,
+        "system_prompt": system_prompt,
+        "prompt": prompt,
     }
 
     try:

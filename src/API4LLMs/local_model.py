@@ -45,8 +45,9 @@ def launch_model_inference_port(port: int, model_path: str) -> int:
 
         try:
             data = request.get_json()
-            prompt = data.get('prompt', '')
             temperature = data.get('temperature', 0.7)
+            system_prompt = data.get('system_prompt', '')
+            prompt = data.get('prompt', '')
             
             if not prompt:
                 return jsonify({"error": "提示信息是必须的"}), 400
