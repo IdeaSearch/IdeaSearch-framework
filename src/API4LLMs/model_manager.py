@@ -86,7 +86,7 @@ class ModelManager:
                             
                             port = launch_model_inference_port(
                                 port = port,
-                                path = path,
+                                model_path = path,
                             )
                             
                             local_model_instances.append({
