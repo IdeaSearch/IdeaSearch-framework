@@ -60,7 +60,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【{self.id}号采样器】 已从数据库采样{len(examples)}个idea！",
+                        content_str = f"【{self.id}号采样器】 已从数据库采样 {len(examples)} 个idea！",
                     )
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
@@ -88,7 +88,7 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了{model}(T={model_temperature:.2f})！"
+                        f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了 {model}(T={model_temperature:.2f}) ！"
                     ),
                 )
                 
@@ -97,7 +97,7 @@ class Sampler:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【{self.id}号采样器】 向{model}(T={model_temperature:.2f})发送的prompt是：\n"
+                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的prompt是：\n"
                             f"{prompt}"
                         ),
                     )
@@ -106,7 +106,7 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已向{model}(T={model_temperature:.2f})"
+                        f"【{self.id}号采样器】 已向 {model}(T={model_temperature:.2f}) "
                         f"发送prompt，正在等待回答！"
                     ),
                 )
@@ -128,7 +128,7 @@ class Sampler:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【{self.id}号采样器】 尝试获取{model}(T={model_temperature:.2f})的回答时发生错误: \n{e}\n"
+                                    f"【{self.id}号采样器】 尝试获取 {model}(T={model_temperature:.2f}) 的回答时发生错误: \n{e}\n"
                                     "此轮采样失败。。。"
                                 ),
                             )
@@ -148,8 +148,8 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已收到来自{model}(T={model_temperature:.2f})"
-                        f"的{self.generate_num}个回答！"
+                        f"【{self.id}号采样器】 已收到来自 {model}(T={model_temperature:.2f}) "
+                        f"的 {self.generate_num} 个回答！"
                     ),
                 )
             

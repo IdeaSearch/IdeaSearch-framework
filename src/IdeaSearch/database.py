@@ -147,14 +147,14 @@ class Database:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已删除。",
+                                content_str=f"【数据库】 初始文件 {basename(path)} 得分未达到{initialization_cleanse_threshold:.2f}，已删除。",
                             )
                             
                     else:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件{path}得分未达到{initialization_cleanse_threshold}，已忽略。",
+                                content_str=f"【数据库】 初始文件 {basename(path)} 得分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
                             )
                             
                 else:
@@ -162,7 +162,7 @@ class Database:
                     with self.console_lock:
                         append_to_file(
                             file_path=self.diary_path,
-                            content_str=f"【数据库】 初始文件{path}已评分并加入数据库。",
+                            content_str=f"【数据库】 初始文件 {basename(path)} 已评分并加入数据库。",
                         )
          
         # 同步 score sheet 与 idea_similar_nums 列表   
@@ -195,8 +195,8 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 当前交互次数为：{self.interaction_count}，"
-                            f"还剩{self.max_interaction_num-self.interaction_count}次！"
+                            f"【数据库】 当前交互次数为： {self.interaction_count} ，"
+                            f"还剩 {self.max_interaction_num-self.interaction_count} 次！"
                         ),
                     )
             
@@ -218,7 +218,7 @@ class Database:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = "【数据库】 发生异常：ideas列表为空！",
+                        content_str = "【数据库】 发生异常： ideas 列表为空！",
                     )
                 exit()
                 
@@ -284,8 +284,8 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 模型{model}(T={model_temperature:.2f})此轮得分为{self.model_recent_scores[index][-1]:.2f}，"
-                                f"其总得分已被更新为{self.model_scores[index]:.2f}！"
+                                f"【数据库】 模型 {model}(T={model_temperature:.2f}) 此轮得分为 {self.model_recent_scores[index][-1]:.2f} ，"
+                                f"其总得分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
                     return
@@ -295,7 +295,7 @@ class Database:
             with self.console_lock:    
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 出现错误！未知的模型名称及温度：{model}(T={model_temperature:.2f})！",
+                    content_str = f"【数据库】 出现错误！未知的模型名称及温度： {model}(T={model_temperature:.2f}) ！",
                 )
                 
             exit()  
@@ -319,7 +319,7 @@ class Database:
             with self.console_lock:    
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 {evaluator_id}号评估器递交的{len(result)}个新文件已评分并加入数据库。",
+                    content_str = f"【数据库】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入数据库。",
                 )
             
             self._sync_score_sheet()
@@ -343,7 +343,7 @@ class Database:
         with self.console_lock:   
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【数据库】  {self.program_name}的score sheet已更新！",
+                content_str = f"【数据库】  {self.program_name} 的 score sheet 已更新！",
             )
 
 

@@ -240,7 +240,7 @@ def IdeaSearch(
 
     append_to_file(
         file_path = diary_path,
-        content_str = f"【系统】 已达到最大互动次数，{program_name}的IdeaSearch结束！",
+        content_str = f"【系统】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
     )
     
 
