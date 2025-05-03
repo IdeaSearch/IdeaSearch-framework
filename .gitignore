@@ -1,4 +1,5 @@
 document
+document/**
 .DS_Store
 .venv/
 .venv/**
