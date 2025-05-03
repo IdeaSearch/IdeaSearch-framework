@@ -150,7 +150,7 @@ class ModelManager:
         
         with self.lock:
             for model_name in self._local_models.keys():
-                for index in range(len(self._local_models[model_name])):
+                for index in range(len(self._local_models[model_name]["instances"])):
                     shutdown_model_inference_port(
                         port = self._local_models[model_name]["instances"][index]["port"]
                     )
