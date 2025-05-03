@@ -24,14 +24,8 @@ def IdeaSearch_interface()-> None:
         "Deepseek_V3",
         "Deepseek_V3",
         "Deepseek_V3",
-        "Qwen3-32B",
-        "Qwen3-32B",
-        "Qwen3-32B",
     ]
     model_temperatures = [
-        0.7,
-        1.0,
-        1.3,
         0.7,
         1.0,
         1.3,
@@ -48,11 +42,17 @@ def IdeaSearch_interface()-> None:
     assess_func = None
     assess_interval = None
     assess_result_path = None
-    mutation_func = TemplateProgram_mutate
+    mutation_func = [
+        TemplateProgram_mutate,
+        None,
+    ][1]
     mutation_interval = 3
     mutation_num = 3
     mutation_temperature = 2 * sample_temperature
-    crossover_func = TemplateProgram_crossover
+    crossover_func = [
+        TemplateProgram_crossover,
+        None,
+    ][1]
     crossover_interval = 6
     crossover_num = 9
     crossover_temperature = 2 * sample_temperature
@@ -68,15 +68,21 @@ def IdeaSearch_interface()-> None:
         "太多了！请你之后回答时换一个和这个例子截然不同的思路吧！"
     ]
     system_prompt = "你是一个哲学家，总是思考事物的深层意义。每次回答都带有深刻的哲理，或者提问让人思考人生的奥义。"
+    initialization_skip_evaluation = [
+        True,
+        False,
+    ][0]
     
     # Max interaction num
-    max_interaction_num = 40
+    max_interaction_num = 10
     
     # Paths
     database_path = f"programs/{program_name}/database/"
     api_keys_path = "src/API4LLMs/api_keys.json"
-    # local_models_path = None
-    local_models_path = "src/API4LLMs/local_models.json"
+    local_models_path = [
+        "src/API4LLMs/local_models.json",
+        None,
+    ][1]
     diary_path = None # use default diary path: database_path + "log/diary.txt"
     
     # Start IdeaSearch
@@ -114,6 +120,7 @@ def IdeaSearch_interface()-> None:
         api_keys_path = api_keys_path,
         local_models_path = local_models_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
+        initialization_skip_evaluation = initialization_skip_evaluation,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         evaluator_hand_over_threshold = evaluator_hand_over_threshold,
         similarity_threshold = similarity_threshold,

@@ -36,7 +36,9 @@ def append_to_file(
     file_path, 
     content_str, 
     end="\n", 
-    encoding = "utf-16"):
+    encoding = "utf-16"
+)-> None:
+    
     """
     将指定内容附加到文件末尾。
 

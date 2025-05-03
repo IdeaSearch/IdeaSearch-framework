@@ -67,6 +67,7 @@ class Database:
         console_lock,
         diary_path: str,
         database_path: str,
+        initialization_skip_evaluation: bool,
         initialization_cleanse_threshold: float,
         delete_when_initial_cleanse: bool,
         models: list[str],
@@ -100,9 +101,29 @@ class Database:
         self.evaluate_func = evaluate_func
         
         # 确保score_sheet.json文件存在
+        if initialization_skip_evaluation:
+            try:
+                with open(self.path + "score_sheet.json", "r", encoding="UTF-8") as file:
+                    score_sheet_backup = json.load(file)
+                with self.console_lock:
+                    append_to_file(
+                        file_path=self.diary_path,
+                        content_str=f"【数据库】 已从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件！",
+                    )
+            except Exception as error:
+                score_sheet_backup = {}
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 未从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件，报错：\n"
+                            f"{error}\n"
+                            "请检查该行为是否符合预期！"
+                        ),
+                    )
+        
         guarantee_path_exist(self.path + "score_sheet.json")
         
-        # 处理评估
         if assess_func is not None:
             self.assess_on = True
             self.assess_func = assess_func
@@ -110,8 +131,7 @@ class Database:
             self.assess_result_path = assess_result_path
         else:
             self.assess_on = False
-        
-        # 处理单体突变
+
         if mutation_func is not None:
             self.mutation_on = True
             self.mutation_func = mutation_func
@@ -120,8 +140,7 @@ class Database:
             self.mutation_temperature = mutation_temperature
         else:
             self.mutation_on = False
-            
-        # 处理交叉变异
+        
         if crossover_func is not None:
             self.crossover_on = True
             self.crossover_func = crossover_func
@@ -130,8 +149,7 @@ class Database:
             self.crossover_temperature = crossover_temperature
         else:
             self.crossover_on = False
-            
-        # 处理相似反馈系统信息
+        
         if similarity_sys_info_thresholds is not None:
             self.similarity_sys_info_on = True
             self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
@@ -139,7 +157,6 @@ class Database:
         else:
             self.similarity_sys_info_on = False
         
-        # 初始化模型得分记录列表与模型得分列表
         self.model_recent_scores = []
         self.model_scores = []
         for _ in range(len(models)):
@@ -155,10 +172,55 @@ class Database:
             
             if os.path.isfile(path):
                 
-                idea = Idea(
-                    path=path,
-                    evaluate_func=evaluate_func,
-                )
+                if initialization_skip_evaluation:
+                    if basename(path) in score_sheet_backup.keys():
+                        
+                        with open(path, 'r', encoding = "UTF-8") as file:
+                            content = file.read()
+                            
+                        score = score_sheet_backup[basename(path)]["score"]
+                            
+                        info = score_sheet_backup[basename(path)]["info"]
+                        if info == "": info = None
+                            
+                        idea = Idea(
+                            path = path,
+                            evaluate_func = None,
+                            content = content,
+                            score = score,
+                            info = info,
+                        )
+                        
+                        if info is not None:
+                            with self.console_lock:
+                                append_to_file(
+                                    file_path=self.diary_path,
+                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的得分与评语！",
+                                )
+                        else:
+                            with self.console_lock:
+                                append_to_file(
+                                    file_path=self.diary_path,
+                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的得分！",
+                                )
+                        
+                    else:
+                        with self.console_lock:
+                            append_to_file(
+                                file_path=self.diary_path,
+                                content_str=f"【数据库】 没有在 score_sheet.json 中找到初始文件 {basename(path)} ，迅捷加载失败！",
+                            )
+                            
+                        idea = Idea(
+                            path = path,
+                            evaluate_func = evaluate_func,
+                        )
+                    
+                else:
+                    idea = Idea(
+                        path = path,
+                        evaluate_func = evaluate_func,
+                    )
                 
                 if idea.score < initialization_cleanse_threshold:
                     
