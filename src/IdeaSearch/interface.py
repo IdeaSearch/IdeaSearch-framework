@@ -174,6 +174,10 @@ def IdeaSearch(
     def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
     
+    score_range_expand_ratio = 0.1
+    score_range_delta = (score_range[1] - score_range[0]) * score_range_expand_ratio
+    score_range = (score_range[0] - score_range_delta, score_range[1] + score_range_delta)
+    
     if similarity_distance_func is None:
         similarity_distance_func = default_similarity_distance_func
         
