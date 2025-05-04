@@ -13,7 +13,6 @@ from src.API4LLMs.model_manager import shutdown_model_manager
 
 __all__ = [
     "IdeaSearch",
-    "cleanse_dataset",
 ]
 
 
@@ -27,6 +26,7 @@ def IdeaSearch(
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
     *, # 必填参数和选填参数的分界线
+    score_range: tuple[float, float] = (0.0, 100.0),
     system_prompt: Optional[str] = None,
     diary_path: Optional[str] = None,
     api_keys_path: Optional[str] = None,
@@ -36,9 +36,10 @@ def IdeaSearch(
     sample_temperature: float = 50.0,
     examples_num: int = 3,
     generate_num: int = 5,
-    assess_func: Optional[Callable[[list[str]], float]] = None,
+    assess_func: Optional[Callable[[list[str], list[float], list[str]], float]] = None,
     assess_interval: Optional[int] = None,
-    assess_result_path: Optional[str] = None,
+    assess_result_data_path: Optional[str] = None,
+    assess_result_pic_path: Optional[str] = None,
     mutation_func: Optional[Callable[[str], str]] = None,
     mutation_interval: Optional[int] = None,
     mutation_num: Optional[int] = None,
@@ -50,6 +51,8 @@ def IdeaSearch(
     model_assess_window_size: int = 20,
     model_assess_initial_score: float = 100.0,
     model_assess_average_order: float = 1.0,
+    model_assess_save_result: bool = True,
+    model_assess_result_data_path: Optional[str] = None,
     model_sample_temperature: float = 50.0,
     evaluator_hand_over_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
@@ -93,7 +96,7 @@ def IdeaSearch(
         generate_num (int): 每个 Sampler 每轮生成的候选 idea 数量。
         assess_func (Optional[Callable[[list[str]], float]]): 评估一组 idea 的整体评分函数，可选。
         assess_interval (Optional[int]): 每隔多少轮评估一次所有 idea 的整体质量（调用 assess_func）。
-        assess_result_path (Optional[str]): 存储每轮整体评估得分的文件路径。
+        assess_result_data_path (Optional[str]): 存储每轮整体评估得分的文件路径。
         mutation_func (Optional[Callable[[str], str]]): 对 idea 进行突变的函数，可选。
         mutation_interval (Optional[int]): 每隔多少轮调用一次 mutation_func。
         crossover_func (Optional[Callable[[str, str], str]]): 对两个 idea 进行交叉的函数，可选。
@@ -132,7 +135,7 @@ def IdeaSearch(
         generate_num,
         assess_func,
         assess_interval,
-        assess_result_path,
+        assess_result_data_path,
         mutation_func,
         mutation_interval,
         crossover_func,
@@ -154,6 +157,16 @@ def IdeaSearch(
         
     if system_prompt is None:
         system_prompt = "You're a helpful assistant."
+        
+    if assess_func is not None:
+        if assess_result_data_path is None:
+            assess_result_data_path = database_path + "data/database_assessment.npz"
+        if assess_result_pic_path is None:
+            assess_result_pic_path = database_path + "data/database_assessment.png"
+            
+    if model_assess_save_result:
+        if model_assess_result_data_path is None:
+            model_assess_result_data_path = database_path + "data/model_scores.npy"
     
     def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
@@ -181,9 +194,11 @@ def IdeaSearch(
         max_interaction_num = max_interaction_num,
         examples_num = examples_num,
         evaluate_func = evaluate_func,
+        score_range = score_range,
         assess_func = assess_func,
         assess_interval = assess_interval,
-        assess_result_path = assess_result_path,
+        assess_result_data_path = assess_result_data_path,
+        assess_result_pic_path = assess_result_pic_path,
         mutation_func = mutation_func,
         mutation_interval = mutation_interval,
         mutation_num = mutation_num,
@@ -206,6 +221,8 @@ def IdeaSearch(
         model_assess_window_size = model_assess_window_size,
         model_assess_initial_score = model_assess_initial_score,
         model_assess_average_order = model_assess_average_order,
+        model_assess_save_result = model_assess_save_result,
+        model_assess_result_data_path = model_assess_result_data_path,
         model_sample_temperature = model_sample_temperature,
         similarity_threshold = similarity_threshold,
         similarity_sys_info_thresholds = similarity_sys_info_thresholds,
@@ -258,24 +275,6 @@ def IdeaSearch(
         file_path = diary_path,
         content_str = f"【系统】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
     )
-    
-
-def cleanse_dataset(
-    database_path: str,
-    evaluate_func: Callable[[str], tuple[float, str]],
-    cleanse_threshold: float,
-):
-    
-    for path in Path(database_path).rglob('*.idea'):
-            
-        idea = Idea(
-            path = path, 
-            evaluate_func = evaluate_func,
-        )
-        
-        if idea.score < cleanse_threshold:
-            path.unlink()
-            print(f"文件{path}得分未达到{cleanse_threshold:.2f}，已删除。")
             
        
 # czy remark (0501): entrance check 暂未和项目的最新情况同步，有待维护！     
@@ -297,7 +296,7 @@ def IdeaSearch_entrance_check(
     generate_num,
     assess_func,
     assess_interval,
-    assess_result_path,
+    assess_result_data_path,
     mutation_func,
     mutation_interval,
     crossover_func,
@@ -370,8 +369,8 @@ def IdeaSearch_entrance_check(
             raise TypeError(f"【IdeaSearch参数类型错误】 `assess_func` 应该是 callable 函数")
         if assess_interval is None or not isinstance(assess_interval, int) or assess_interval <= 0:
             raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时必须提供正整数的 assess_interval")
-        if assess_result_path is None or not isinstance(assess_result_path, str):
-            raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时必须提供 assess 结果的保存路径 assess_result_path （字符串）")
+        if assess_result_data_path is not None and not isinstance(assess_result_data_path, str):
+            raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时 assess_result_data_path 应为 None 或一字符串！")
     
     if mutation_func is not None:
         if not callable(mutation_func):

@@ -8,6 +8,7 @@ __all__ = [
 
 
 evaluate_random_generator = np.random.default_rng()
+evaluate_upper_bound = 30.0
 
 def evaluate(
     idea: str,
@@ -25,6 +26,13 @@ def evaluate(
             - str: 对回答的简要评语或解释信息（可为 None）。
     """
     
-    score = evaluate_random_generator.uniform(0.0, 100.0)
+    global evaluate_upper_bound
+    global evaluate_random_generator
+    
+    score = evaluate_random_generator.uniform(0.0, evaluate_upper_bound)
     info = "非常好！"
+    evaluate_upper_bound = min(
+        evaluate_upper_bound + evaluate_random_generator.uniform(-2.0, 4.0),
+        100.0
+    )
     return score, info

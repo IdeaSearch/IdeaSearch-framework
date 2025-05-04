@@ -1,16 +1,20 @@
-import random
 import os
-import bisect
-import numpy as np
-import string
 import json
-
+import random
+import bisect
+import string
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 from threading import Lock
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
+from typing import Optional
 from os.path import basename
 
-from src.utils import append_to_file, guarantee_path_exist
+from src.utils import append_to_file
+from src.utils import guarantee_path_exist
 
 
 __all__ = [
@@ -46,13 +50,15 @@ class Database:
 
     def __init__(
         self, 
-        program_name, 
-        max_interaction_num,
-        examples_num,
-        evaluate_func,
-        assess_func,
-        assess_interval,
-        assess_result_path,
+        program_name: str, 
+        max_interaction_num: int,
+        examples_num: int,
+        evaluate_func: Callable[[str], tuple[float, str]],
+        score_range: tuple[float, float],
+        assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
+        assess_interval: Optional[int],
+        assess_result_data_path: Optional[str],
+        assess_result_pic_path: Optional[str],
         mutation_func: Optional[Callable[[str], str]],
         mutation_interval: Optional[int],
         mutation_num: Optional[int],
@@ -64,7 +70,7 @@ class Database:
         similarity_distance_func: Callable[[str, str], float],
         default_similarity_distance_func: Callable[[str, str], float],
         sample_temperature: float,
-        console_lock,
+        console_lock: Lock,
         diary_path: str,
         database_path: str,
         initialization_skip_evaluation: bool,
@@ -75,6 +81,8 @@ class Database:
         model_assess_window_size: int,
         model_assess_initial_score: float,
         model_assess_average_order: float,
+        model_assess_save_result: bool,
+        model_assess_result_data_path: Optional[str],
         model_sample_temperature: float,
         similarity_threshold: float,
         similarity_sys_info_thresholds: Optional[list[int]],
@@ -96,9 +104,12 @@ class Database:
         self.model_temperatures = model_temperatures
         self.model_sample_temperature = model_sample_temperature
         self.model_assess_average_order = model_assess_average_order
+        self.model_assess_save_result = model_assess_save_result
+        self.model_assess_result_data_path = model_assess_result_data_path
         self.max_interaction_num = max_interaction_num
         self.examples_num = examples_num
         self.evaluate_func = evaluate_func
+        self.score_range = score_range
         
         # 确保score_sheet.json文件存在
         if initialization_skip_evaluation:
@@ -123,14 +134,6 @@ class Database:
                     )
         
         guarantee_path_exist(self.path + "score_sheet.json")
-        
-        if assess_func is not None:
-            self.assess_on = True
-            self.assess_func = assess_func
-            self.assess_interval = assess_interval
-            self.assess_result_path = assess_result_path
-        else:
-            self.assess_on = False
 
         if mutation_func is not None:
             self.mutation_on = True
@@ -246,12 +249,65 @@ class Database:
                             file_path=self.diary_path,
                             content_str=f"【数据库】 初始文件 {basename(path)} 已评分并加入数据库。",
                         )
-         
-        # 同步 score sheet 与 idea_similar_nums 列表   
+                        
+        ideas: list[str] = [current_idea.content for current_idea in self.ideas]
+        scores: list[float] = [current_idea.score for current_idea in self.ideas]
+        infos: list[Optional[str]] = [current_idea.info for current_idea in self.ideas]   
+                     
+        if assess_func is not None:
+            self.assess_on = True
+            self.assess_func = assess_func
+            self.assess_interval = assess_interval
+            self.assess_result_data_path = assess_result_data_path
+            self.assess_result_pic_path = assess_result_pic_path
+            self.assess_result_ndarray = np.zeros((1 + (max_interaction_num // assess_interval),))
+            self.assess_result_ndarray_index = 1
+            self.assess_result_ndarray_x_axis = np.linspace(
+                start = 0, 
+                stop = max_interaction_num, 
+                num = (1+(max_interaction_num//assess_interval)), 
+                endpoint = True
+            )
+            guarantee_path_exist(assess_result_data_path)
+            guarantee_path_exist(assess_result_pic_path)
+            
+            get_database_initial_score_success = False
+            try:
+                database_initial_score = self.assess_func(
+                    ideas,
+                    scores,
+                    infos,
+                )
+                get_database_initial_score_success = True
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = f"【数据库】 初始 ideas 的整体质量得分为：{database_initial_score:.2f}！",
+                    )
+                    
+            except Exception as error:
+                database_initial_score = 0
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 评估库中初始 ideas 的整体质量时遇到错误：\n"
+                            f"{error}"
+                        ),
+                    )
+                    
+            self.assess_result_ndarray[0] = database_initial_score
+            self._sync_database_assess_result(
+                is_initialization = True,
+                get_database_score_success = get_database_initial_score_success,
+            )
+            
+        else:
+            self.assess_on = False
+          
         self._sync_score_sheet()
         self._sync_similar_num_list()
         
-        # 初始化互动时间戳、自锁、状态、随机数生成器
         self.interaction_count = 0
         self.lock = Lock()
         self.status = "Running"
@@ -492,9 +548,50 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 现在开始评估库中idea的整体质量！",
+                content_str = "【数据库】 现在开始评估库中 ideas 的整体质量！",
             )
-    
+            
+        ideas: list[str] = []
+        scores: list[float] = []
+        infos: list[Optional[str]] = []
+        for idea in self.ideas:
+            ideas.append(idea.content)
+            scores.append(idea.score)
+            infos.append(idea.info)
+            
+        get_database_score_success = False
+        try:
+            database_score = self.assess_func(
+                ideas,
+                scores,
+                infos,
+            )
+            get_database_score_success = True
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = f"【数据库】 当前库中 ideas 的整体质量得分为：{database_score:.2f}！",
+                )
+                
+        except Exception as error:
+            database_score = 0
+            with self.console_lock:
+                append_to_file(
+                    file_path = self.diary_path,
+                    content_str = (
+                        f"【数据库】 评估库中 ideas 的整体质量时遇到错误：\n"
+                        f"{error}"
+                    ),
+                )
+                
+        self.assess_result_ndarray[self.assess_result_ndarray_index] = database_score
+        self.assess_result_ndarray_index += 1
+        
+        self._sync_database_assess_result(
+            is_initialization = False,
+            get_database_score_success = get_database_score_success,
+        )
+
     
     def _mutate(self)-> None:
         
@@ -721,6 +818,56 @@ class Database:
             path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
             
         return path
+    
+    
+    def _sync_database_assess_result(
+        self,
+        is_initialization: bool,
+        get_database_score_success: bool,
+    )-> None:
+        
+        np.savez(
+            file = self.assess_result_data_path, 
+            database_scores = self.assess_result_ndarray,
+            interaction_num = self.assess_result_ndarray_x_axis,
+        )
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            self.assess_result_ndarray_x_axis, 
+            self.assess_result_ndarray, 
+            label='Database Score', 
+            color='dodgerblue', 
+            marker='o'
+        )
+        plt.title("Database Assessment Fig.")
+        plt.xlabel("Interaction No.")
+        plt.ylabel("Database Score")
+        plt.ylim(self.score_range)
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(self.assess_result_pic_path)
+        plt.close()
+        
+        if get_database_score_success:
+            if is_initialization:
+                append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 初始质量评估结束，"
+                            f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
+                        ),
+                    )
+            else:
+                with self.console_lock:
+                    append_to_file(
+                        file_path = self.diary_path,
+                        content_str = (
+                            f"【数据库】 此轮质量评估结束，"
+                            f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
+                        ),
+                    )
+            
     
     
 def get_label(
