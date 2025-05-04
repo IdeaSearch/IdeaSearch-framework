@@ -83,14 +83,14 @@ class Database:
         model_assess_average_order: float,
         model_assess_save_result: bool,
         model_assess_result_data_path: Optional[str],
+        model_assess_result_pic_path: Optional[str],
         model_sample_temperature: float,
         similarity_threshold: float,
         similarity_sys_info_thresholds: Optional[list[int]],
         similarity_sys_info_prompts: Optional[list[str]],
         idea_uid_length: int,
     )-> None:
-        
-        # 记录必要字段
+
         self.program_name = program_name
         self.sample_temperature = sample_temperature
         self.console_lock = console_lock
@@ -106,12 +106,12 @@ class Database:
         self.model_assess_average_order = model_assess_average_order
         self.model_assess_save_result = model_assess_save_result
         self.model_assess_result_data_path = model_assess_result_data_path
+        self.model_assess_result_pic_path = model_assess_result_pic_path
         self.max_interaction_num = max_interaction_num
         self.examples_num = examples_num
         self.evaluate_func = evaluate_func
         self.score_range = score_range
         
-        # 确保score_sheet.json文件存在
         if initialization_skip_evaluation:
             try:
                 with open(self.path + "score_sheet.json", "r", encoding="UTF-8") as file:
@@ -159,14 +159,6 @@ class Database:
             self.similarity_sys_info_prompts = similarity_sys_info_prompts
         else:
             self.similarity_sys_info_on = False
-        
-        self.model_recent_scores = []
-        self.model_scores = []
-        for _ in range(len(models)):
-            self.model_recent_scores.append(
-                np.full((model_assess_window_size,), model_assess_initial_score)
-            )
-            self.model_scores.append(model_assess_initial_score)
         
         # 初始化ideas列表（疑似存在mac OS系统的兼容性问题）
         self.ideas: list[Idea] = []
@@ -265,7 +257,7 @@ class Database:
             self.assess_result_ndarray_x_axis = np.linspace(
                 start = 0, 
                 stop = max_interaction_num, 
-                num = (1+(max_interaction_num//assess_interval)), 
+                num = 1 + (max_interaction_num // assess_interval), 
                 endpoint = True
             )
             guarantee_path_exist(assess_result_data_path)
@@ -304,6 +296,25 @@ class Database:
             
         else:
             self.assess_on = False
+            
+        self.model_recent_scores = []
+        self.model_scores = []
+        for _ in range(len(models)):
+            self.model_recent_scores.append(
+                np.full((model_assess_window_size,), model_assess_initial_score)
+            )
+            self.model_scores.append(model_assess_initial_score)
+            
+        if self.model_assess_save_result:
+            self.scores_of_models = np.zeros((1+self.max_interaction_num, len(self.models)))
+            self.scores_of_models_index = 0
+            self.scores_of_models_x_axis = np.linspace(
+                start = 0, 
+                stop = max_interaction_num, 
+                num = 1 + max_interaction_num, 
+                endpoint = True
+            )
+            self._sync_model_score_result()
           
         self._sync_score_sheet()
         self._sync_similar_num_list()
@@ -340,7 +351,7 @@ class Database:
             
             if self.assess_on:
                 if self.interaction_count % self.assess_interval == 0:
-                    self._assess()
+                    self._assess_database()
             
             if self.mutation_on:
                 if self.interaction_count % self.mutation_interval == 0:
@@ -450,6 +461,7 @@ class Database:
                                 f"其总得分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
+                    self._sync_model_score_result()
                     return
                 
                 index += 1
@@ -543,7 +555,7 @@ class Database:
             self.status = "Terminated"
     
     
-    def _assess(self)-> None:
+    def _assess_database(self)-> None:
         
         with self.console_lock:
             append_to_file(
@@ -826,10 +838,10 @@ class Database:
         get_database_score_success: bool,
     )-> None:
         
-        np.savez(
+        np.savez_compressed(
             file = self.assess_result_data_path, 
-            database_scores = self.assess_result_ndarray,
             interaction_num = self.assess_result_ndarray_x_axis,
+            database_scores = self.assess_result_ndarray,
         )
         
         plt.figure(figsize=(10, 6))
@@ -840,7 +852,7 @@ class Database:
             color='dodgerblue', 
             marker='o'
         )
-        plt.title("Database Assessment Fig.")
+        plt.title("Database Assessment")
         plt.xlabel("Interaction No.")
         plt.ylabel("Database Score")
         plt.ylim(self.score_range)
@@ -867,9 +879,51 @@ class Database:
                             f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
                         ),
                     )
-            
-    
-    
+                    
+                    
+    def _sync_model_score_result(self):
+        
+        self.scores_of_models[self.scores_of_models_index] = self.model_scores
+        self.scores_of_models_index += 1
+        
+        scores_of_models = self.scores_of_models.T
+        
+        scores_of_models_dict = {}
+        for model_name, model_temperature, model_scores in zip(self.models, self.model_temperatures, scores_of_models):
+            scores_of_models_dict[f"{model_name}(T={model_temperature:.2f})"] = model_scores
+        
+        np.savez_compressed(
+            file=self.model_assess_result_data_path,
+            interaction_num=self.scores_of_models_x_axis,
+            **scores_of_models_dict
+        )
+
+        plt.figure(figsize=(10, 6))
+        for model_label, model_scores in scores_of_models_dict.items():
+            plt.plot(
+                self.scores_of_models_x_axis,
+                model_scores,
+                label=model_label,
+                marker='o'
+            )
+        plt.title("Model Scores")
+        plt.xlabel("Interaction No.")
+        plt.ylabel("Model Score")
+        plt.ylim(self.score_range)
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(self.model_assess_result_pic_path)
+        plt.close()
+        
+        with self.console_lock:
+            append_to_file(
+                file_path=self.diary_path,
+                content_str=(
+                    f"【数据库】 "
+                    f" {basename(self.model_assess_result_data_path)} 与 {basename(self.model_assess_result_pic_path)} 已更新！"
+                ),
+            )
+
 def get_label(
     x: int, 
     thresholds: list[int], 

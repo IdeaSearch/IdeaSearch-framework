@@ -36,10 +36,11 @@ def IdeaSearch_interface()-> None:
     model_assess_initial_score = 100.0
     model_assess_average_order = 1.0
     model_assess_save_result = [
-        True,
         False,
-    ][0]
-    model_assess_result_data_path = None  # use default: database_path + "data/database_assessment.npy"
+        True,
+    ][1]
+    model_assess_result_data_path = None  # use default: database_path + "data/model_scores.npz"
+    model_assess_result_pic_path = None  # use default: database_path + "pic/model_scores.png"
     model_sample_temperature = 60.0
     initialization_cleanse_threshold = 0.0
     delete_when_initial_cleanse = True
@@ -51,8 +52,8 @@ def IdeaSearch_interface()-> None:
         TemplateProgram_assess,
     ][1]
     assess_interval = 1
-    assess_result_data_path = None # use default: database_path + "data/database_assessment.npy"
-    assess_result_pic_path = None # use default: database_path + "data/database_assessment.png"
+    assess_result_data_path = None # use default: database_path + "data/database_assessment.npz"
+    assess_result_pic_path = None # use default: database_path + "pic/database_assessment.png"
     mutation_func = [
         None,
         TemplateProgram_mutate,
@@ -113,6 +114,7 @@ def IdeaSearch_interface()-> None:
         model_assess_average_order = model_assess_average_order,
         model_assess_save_result = model_assess_save_result,
         model_assess_result_data_path = model_assess_result_data_path,
+        model_assess_result_pic_path = model_assess_result_pic_path,
         model_sample_temperature = model_sample_temperature,
         epilogue_section = epilogue_section,
         max_interaction_num = max_interaction_num,

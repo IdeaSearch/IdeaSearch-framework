@@ -53,6 +53,7 @@ def IdeaSearch(
     model_assess_average_order: float = 1.0,
     model_assess_save_result: bool = True,
     model_assess_result_data_path: Optional[str] = None,
+    model_assess_result_pic_path: Optional[str] = None,
     model_sample_temperature: float = 50.0,
     evaluator_hand_over_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
@@ -162,11 +163,13 @@ def IdeaSearch(
         if assess_result_data_path is None:
             assess_result_data_path = database_path + "data/database_assessment.npz"
         if assess_result_pic_path is None:
-            assess_result_pic_path = database_path + "data/database_assessment.png"
+            assess_result_pic_path = database_path + "pic/database_assessment.png"
             
     if model_assess_save_result:
         if model_assess_result_data_path is None:
-            model_assess_result_data_path = database_path + "data/model_scores.npy"
+            model_assess_result_data_path = database_path + "data/model_scores.npz"
+        if model_assess_result_pic_path is None:
+            model_assess_result_pic_path = database_path + "pic/model_scores.png"
     
     def default_similarity_distance_func(idea1, idea2):
         return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
@@ -223,6 +226,7 @@ def IdeaSearch(
         model_assess_average_order = model_assess_average_order,
         model_assess_save_result = model_assess_save_result,
         model_assess_result_data_path = model_assess_result_data_path,
+        model_assess_result_pic_path = model_assess_result_pic_path,
         model_sample_temperature = model_sample_temperature,
         similarity_threshold = similarity_threshold,
         similarity_sys_info_thresholds = similarity_sys_info_thresholds,
