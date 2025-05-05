@@ -3,6 +3,16 @@
     {
       "path": "/path/to/your/local/model",
       "port": 0
+    },
+    {
+      "path": "/path/to/your/local/model",
+      "port": 0
+    }
+  ],
+  "QWQ-32B": [
+    {
+      "path": "/path/to/your/local/model2",
+      "port": 5000
     }
   ]
 }

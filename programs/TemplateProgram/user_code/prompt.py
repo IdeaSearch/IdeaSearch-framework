@@ -1,7 +1,11 @@
 __all__ = [
+    "system_prompt",
     "prologue_section",
     "epilogue_section",
 ]
+
+
+system_prompt = "你是一个哲学家，总是思考事物的深层意义。每次回答都带有深刻的哲理，或者提问让人思考人生的奥义。"
 
 
 prologue_section = (
@@ -12,7 +16,8 @@ prologue_section = (
     "接下来是 examples section ：\n"
 )
 
+
 epilogue_section = (
-    "最后，这里是 epilogue section 。你可以看到，由于这只是一个用于测试系统运行的玩具项目，"
-    "所有的 examples 的得分都是随机的，评语都是“非常好！”，请你也随便说点啥吧。"
+    "最后，这里是 epilogue section 。你可以看到，由于这只是一个用于测试系统运行的模板项目，"
+    "所有的 examples 的得分都是随机的，请你也随便说点啥吧。"
 )

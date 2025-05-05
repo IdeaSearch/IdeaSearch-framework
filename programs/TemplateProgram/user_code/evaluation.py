@@ -30,9 +30,9 @@ def evaluate(
     global evaluate_random_generator
     
     score = evaluate_random_generator.uniform(0.0, evaluate_upper_bound)
-    info = "非常好！"
     evaluate_upper_bound = min(
         evaluate_upper_bound + evaluate_random_generator.uniform(-2.0, 4.0),
         100.0
     )
+    info = "非常好！" if score >= 80.0 else "一般般！"
     return score, info

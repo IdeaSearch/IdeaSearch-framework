@@ -1,4 +1,5 @@
 from src.IdeaSearch.interface import IdeaSearch
+from programs.TemplateProgram.user_code.prompt import system_prompt as TemplateProgram_system_prompt
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
 from programs.TemplateProgram.user_code.evaluation import evaluate as TemplateProgram_evaluate
@@ -20,7 +21,7 @@ def IdeaSearch_interface()-> None:
     samplers_num = 3
     sample_temperature = 40.0
     evaluators_num = samplers_num
-    examples_num = 3
+    examples_num = 2
     generate_num = 1
     models = [
         "Deepseek_V3",
@@ -69,7 +70,10 @@ def IdeaSearch_interface()-> None:
     crossover_num = 9
     crossover_temperature = 2 * sample_temperature
     idea_uid_length = 4
-    record_prompt_in_diary = True
+    record_prompt_in_diary = [
+        False,
+        True,
+    ][1]
     similarity_sys_info_thresholds = [
         5,
         10,
@@ -79,14 +83,14 @@ def IdeaSearch_interface()-> None:
         "已经有点多了，能不能在参考这个例子之余，稍微往别处想想，做做创新？",
         "太多了！请你之后回答时换一个和这个例子截然不同的思路吧！"
     ]
-    system_prompt = "你是一个哲学家，总是思考事物的深层意义。每次回答都带有深刻的哲理，或者提问让人思考人生的奥义。"
+    system_prompt = TemplateProgram_system_prompt
     initialization_skip_evaluation = [
         False,
         True,
     ][0]
     
     # Max interaction num
-    max_interaction_num = 40
+    max_interaction_num = 80
     
     # Paths
     database_path = f"programs/{program_name}/database/"
