@@ -41,7 +41,7 @@ class ModelManager:
                     
                     api_keys_dict = json.load(file)
                     
-                    for model_name in api_keys_dict.keys():
+                    for model_name in api_keys_dict:
                     
                         self._is_online_model[model_name] = True
                         self._online_models[model_name] = {
@@ -73,7 +73,7 @@ class ModelManager:
                     
                     local_models_dict = json.load(file)
                     
-                    for model_name in local_models_dict.keys():
+                    for model_name in local_models_dict:
                         
                         self._is_online_model[model_name] = False
                         
@@ -107,7 +107,7 @@ class ModelManager:
         model_name: str,
     )-> bool:
         with self.lock:
-            if model_name in self._is_online_model.keys():
+            if model_name in self._is_online_model:
                 return self._is_online_model[model_name]
             else:
                 raise ValueError(f" 模型 {model_name} 未被 model manager 记录！")
@@ -149,7 +149,7 @@ class ModelManager:
     def shutdown(self):
         
         with self.lock:
-            for model_name in self._local_models.keys():
+            for model_name in self._local_models:
                 for index in range(len(self._local_models[model_name]["instances"])):
                     shutdown_model_inference_port(
                         port = self._local_models[model_name]["instances"][index]["port"]

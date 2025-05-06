@@ -170,7 +170,7 @@ class Database:
             if os.path.isfile(path):
                 
                 if initialization_skip_evaluation:
-                    if basename(path) in score_sheet_backup.keys():
+                    if basename(path) in score_sheet_backup:
                         
                         with open(path, 'r', encoding = "UTF-8") as file:
                             content = file.read()
