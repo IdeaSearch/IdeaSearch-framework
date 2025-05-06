@@ -779,6 +779,17 @@ class Database:
                 crossover_idea = self.crossover_func(
                     parent_1.content, parent_2.content
                 )
+                if not isinstance(crossover_idea, str):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的交叉变异函数时发生错误："
+                                f"返回结果中的 crossover_idea 应为一字符串，不应为一个 {type(crossover_idea)} 类型的对象！"
+                                "\n此轮交叉变异意外终止！"
+                            ),
+                        )
+                    return
             except Exception as error:
                 with self.console_lock:
                     append_to_file(
