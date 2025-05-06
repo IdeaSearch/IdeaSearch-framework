@@ -1,5 +1,6 @@
 from threading import Lock
 from math import isnan
+from typing import Callable
 from src.IdeaSearch.database import Database
 from src.utils import append_to_file
 
@@ -8,12 +9,12 @@ class Evaluator:
     
     def __init__(
         self, 
-        evaluator_id,
+        evaluator_id: int,
         database : Database,
-        evaluate_func,
+        evaluate_func: Callable[[str], tuple[float, str]],
+        hand_over_threshold: float,
         console_lock : Lock,
         diary_path: str,
-        hand_over_threshold: float,
     ):
         
         self.id = evaluator_id

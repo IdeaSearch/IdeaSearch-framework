@@ -10,27 +10,27 @@ from src.IdeaSearch.database import Database
 class Sampler:
     def __init__(
         self, 
-        sampler_id, 
-        prologue_section,
-        epilogue_section,
-        evaluators: Evaluator,
-        generate_num,
+        sampler_id: int, 
+        system_prompt: str,
+        prologue_section: str,
+        epilogue_section: str,
         database: Database,
+        evaluators: Evaluator,
+        generate_num: int,
         console_lock: Lock,
         diary_path: str,
-        system_prompt: str,
         record_prompt_in_diary: str,
     ):
         self.id = sampler_id
         self.database = database
         self.program_name = database.program_name
+        self.system_prompt = system_prompt
         self.prologue_section = prologue_section
         self.epilogue_section = epilogue_section
         self.generate_num = generate_num
         self.evaluators = evaluators
         self.console_lock = console_lock
         self.diary_path = diary_path
-        self.system_prompt = system_prompt
         self.record_prompt_in_diary = record_prompt_in_diary
 
     def run(self):

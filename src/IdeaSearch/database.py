@@ -49,17 +49,29 @@ class Database:
     # ----------------------------- 数据库初始化 ----------------------------- 
 
     def __init__(
-        self, 
-        program_name: str, 
+        self,
+        program_name: str,
+        database_path: str,
+        models: list[str],
+        model_temperatures: list[float],
         max_interaction_num: int,
-        examples_num: int,
         evaluate_func: Callable[[str], tuple[float, str]],
         score_range: tuple[float, float],
+        hand_over_threshold: float,
+        diary_path: Optional[str],
+        examples_num: int,
+        sample_temperature: float,
+        model_sample_temperature: float,
         assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
         assess_interval: Optional[int],
         assess_result_data_path: Optional[str],
         assess_result_pic_path: Optional[str],
-        hand_over_threshold: float,
+        model_assess_window_size: int,
+        model_assess_initial_score: float,
+        model_assess_average_order: float,
+        model_assess_save_result: bool,
+        model_assess_result_data_path: Optional[str],
+        model_assess_result_pic_path: Optional[str],
         mutation_func: Optional[Callable[[str], str]],
         mutation_interval: Optional[int],
         mutation_num: Optional[int],
@@ -68,51 +80,39 @@ class Database:
         crossover_interval: Optional[int],
         crossover_num: Optional[int],
         crossover_temperature: Optional[float],
+        similarity_threshold: float,
         similarity_distance_func: Callable[[str, str], float],
         default_similarity_distance_func: Callable[[str, str], float],
-        sample_temperature: float,
-        console_lock: Lock,
-        diary_path: str,
-        database_path: str,
+        similarity_sys_info_thresholds: Optional[list[int]],
+        similarity_sys_info_prompts: Optional[list[str]],
         initialization_skip_evaluation: bool,
         initialization_cleanse_threshold: float,
         delete_when_initial_cleanse: bool,
-        models: list[str],
-        model_temperatures: list[float],
-        model_assess_window_size: int,
-        model_assess_initial_score: float,
-        model_assess_average_order: float,
-        model_assess_save_result: bool,
-        model_assess_result_data_path: Optional[str],
-        model_assess_result_pic_path: Optional[str],
-        model_sample_temperature: float,
-        similarity_threshold: float,
-        similarity_sys_info_thresholds: Optional[list[int]],
-        similarity_sys_info_prompts: Optional[list[str]],
         idea_uid_length: int,
-    )-> None:
+        console_lock: Lock,
+    ) -> None:
 
         self.program_name = program_name
-        self.sample_temperature = sample_temperature
-        self.console_lock = console_lock
         self.path = database_path + "ideas/"
-        self.diary_path = diary_path
-        self.similarity_threshold = similarity_threshold
-        self.similarity_distance_func = similarity_distance_func
-        self.default_similarity_distance_func = default_similarity_distance_func
-        self.idea_uid_length = idea_uid_length
         self.models = models
         self.model_temperatures = model_temperatures
+        self.max_interaction_num = max_interaction_num
+        self.evaluate_func = evaluate_func
+        self.score_range = score_range
+        self.handover_threshold = hand_over_threshold
+        self.diary_path = diary_path
+        self.examples_num = examples_num
+        self.sample_temperature = sample_temperature
         self.model_sample_temperature = model_sample_temperature
         self.model_assess_average_order = model_assess_average_order
         self.model_assess_save_result = model_assess_save_result
         self.model_assess_result_data_path = model_assess_result_data_path
         self.model_assess_result_pic_path = model_assess_result_pic_path
-        self.max_interaction_num = max_interaction_num
-        self.handover_threshold = hand_over_threshold
-        self.examples_num = examples_num
-        self.evaluate_func = evaluate_func
-        self.score_range = score_range
+        self.similarity_threshold = similarity_threshold
+        self.similarity_distance_func = similarity_distance_func
+        self.default_similarity_distance_func = default_similarity_distance_func
+        self.idea_uid_length = idea_uid_length
+        self.console_lock = console_lock
         
         if initialization_skip_evaluation:
             try:

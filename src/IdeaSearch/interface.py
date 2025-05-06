@@ -1,14 +1,18 @@
 import concurrent.futures
 from threading import Lock
-from typing import Callable, Optional, List
-from pathlib import Path
-
-from src.utils import guarantee_path_exist, clear_file_content, append_to_file
-from src.IdeaSearch.database import Idea, Database
-from src.IdeaSearch.sampler import Sampler
-from src.IdeaSearch.evaluator import Evaluator
+from typing import Callable
+from typing import Optional
+# from typing import List
+# from pathlib import Path
+from src.utils import guarantee_path_exist
+from src.utils import clear_file_content
+from src.utils import append_to_file
 from src.API4LLMs.model_manager import init_model_manager
 from src.API4LLMs.model_manager import shutdown_model_manager
+# from src.IdeaSearch.database import Idea
+from src.IdeaSearch.database import Database
+from src.IdeaSearch.sampler import Sampler
+from src.IdeaSearch.evaluator import Evaluator
 
 
 __all__ = [
@@ -25,132 +29,202 @@ def IdeaSearch(
     model_temperatures: list[float],
     max_interaction_num: int,
     evaluate_func: Callable[[str], tuple[float, str]],
-    *, # 必填参数和选填参数的分界线
+    
+    *,  # 选填参数分界线
+    
+    # 基础设置
     score_range: tuple[float, float] = (0.0, 100.0),
+    hand_over_threshold: float = 0.0,
     system_prompt: Optional[str] = None,
     diary_path: Optional[str] = None,
     api_keys_path: Optional[str] = None,
     local_models_path: Optional[str] = None,
+
+    # 并发配置
     samplers_num: int = 5,
     evaluators_num: int = 5,
-    sample_temperature: float = 50.0,
+
+    # 样本生成
     examples_num: int = 3,
     generate_num: int = 5,
+    sample_temperature: float = 50.0,
+    model_sample_temperature: float = 50.0,
+
+    # 数据库评估
     assess_func: Optional[Callable[[list[str], list[float], list[str]], float]] = None,
     assess_interval: Optional[int] = None,
     assess_result_data_path: Optional[str] = None,
     assess_result_pic_path: Optional[str] = None,
-    mutation_func: Optional[Callable[[str], str]] = None,
-    mutation_interval: Optional[int] = None,
-    mutation_num: Optional[int] = None,
-    mutation_temperature: Optional[float] = None,
-    crossover_func: Optional[Callable[[str, str], str]] = None,
-    crossover_interval: Optional[int] = None,
-    crossover_num: Optional[int] = None,
-    crossover_temperature: Optional[float] = None,
+
+    # 模型评估
     model_assess_window_size: int = 20,
     model_assess_initial_score: float = 100.0,
     model_assess_average_order: float = 1.0,
     model_assess_save_result: bool = True,
     model_assess_result_data_path: Optional[str] = None,
     model_assess_result_pic_path: Optional[str] = None,
-    model_sample_temperature: float = 50.0,
-    hand_over_threshold: float = 0.0,
+
+    # 单体突变
+    mutation_func: Optional[Callable[[str], str]] = None,
+    mutation_interval: Optional[int] = None,
+    mutation_num: Optional[int] = None,
+    mutation_temperature: Optional[float] = None,
+
+    # 交叉变异
+    crossover_func: Optional[Callable[[str, str], str]] = None,
+    crossover_interval: Optional[int] = None,
+    crossover_num: Optional[int] = None,
+    crossover_temperature: Optional[float] = None,
+
+    # 相似度判断
     similarity_threshold: float = -1.0,
     similarity_distance_func: Optional[Callable[[str, str], float]] = None,
     similarity_sys_info_thresholds: Optional[list[int]] = None,
     similarity_sys_info_prompts: Optional[list[str]] = None,
+
+    # 初始化阶段清洗
     initialization_skip_evaluation: bool = True,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
+
+    # 其他配置
     idea_uid_length: int = 4,
     record_prompt_in_diary: bool = True,
 ) -> None:
     
     """
-    czy remark (0501): doc string 暂未和项目的最新情况同步，有待维护！  
     启动并运行一个 IdeaSearch 搜索过程。
 
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
-    使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。
+    使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。期间可选地进行突变、交叉、相似性筛查、
+    整体评估与模型评分，以支持不同实验需求。
 
-    使用此函数的基本功能时，用户需自行创建 prologue_section、epilogue_section 以及 evaluate_func。
-    其中 evaluate_func 是一个函数，接收一个字符串作为输入，返回一个二元组 (score, comment)，其中 score 为浮点数评分，
-    comment 是可选的附加信息。我们建议 score 范围为 0.0 到 100.0。
+    使用此函数的基本功能时，用户需提供 prologue_section、epilogue_section 和 evaluate_func。
+    其中 evaluate_func 是一个函数，接收字符串 idea 作为输入，返回一个二元组 (score, info)，score 为浮点数评分，
+    info 是可选的模型反馈信息。建议评分范围在 0.0 到 100.0 之间。
 
     Args:
-        program_name (str): 当前程序或实验的名称。
+        program_name (str): 当前项目的名称。
         prologue_section (str): 用于提示模型采样的前导文本片段。
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
-        database_path (str): 数据库路径，在此路径下存放 .idea 文件和自动生成的 score_sheet.json。
-        diary_path (str): IdeaSearch 的日志文件路径。
-        api_keys_path (str): 包含用于访问 LLM 的 API key 的 JSON 文件路径。
-        models (list[str]): 用于生成 idea 的大语言模型名称列表，应在 api_keys_path 对应文件中定义。
-        model_temperatures (list[float]): 与 models 对应的温度值列表，其长度应与 models 相同。
-        max_interaction_num (int): 数据库允许的最大评估交互次数，超过此值即终止。
-        evaluate_func (Callable[[str], tuple[float, str]]): 用于评估候选 idea 的函数，供 Evaluator 使用，返回 (score, comment)。
-        
-        samplers_num (int): 要创建的 Sampler 实例数量。
-        evaluators_num (int): 要创建的 Evaluator 实例数量。
-        sample_temperature (float): 采样 idea 时的温度参数，影响基于分数与相似度的 softmax 概率。
-        examples_num (int): 每个 Prompt 展示给模型的示例 idea 数量。
-        generate_num (int): 每个 Sampler 每轮生成的候选 idea 数量。
-        assess_func (Optional[Callable[[list[str]], float]]): 评估一组 idea 的整体评分函数，可选。
-        assess_interval (Optional[int]): 每隔多少轮评估一次所有 idea 的整体质量（调用 assess_func）。
-        assess_result_data_path (Optional[str]): 存储每轮整体评估得分的文件路径。
-        mutation_func (Optional[Callable[[str], str]]): 对 idea 进行突变的函数，可选。
-        mutation_interval (Optional[int]): 每隔多少轮调用一次 mutation_func。
-        crossover_func (Optional[Callable[[str, str], str]]): 对两个 idea 进行交叉的函数，可选。
-        crossover_interval (Optional[int]): 每隔多少轮调用一次 crossover_func。
-        model_assess_window_size (int): 模型评估窗口大小，决定各模型得分的滑动平均计算范围。
-        model_assess_initial_score (float): 模型的初始分数，用于冷启动探索，建议设为较高值以鼓励尝试。
-        model_assess_average_order (float): 评估模型时 p-范数的 p 值，影响对最大/最小值的敏感程度。
-        model_sample_temperature (float): 模型采样温度参数，控制模型选择的概率分布平滑程度。
-        hand_over_threshold (float): Evaluator 允许 idea 进入数据库的最低分数门槛。
-        similarity_threshold (float): 判定 idea 是否相似的阈值。默认为 -1.0，即仅完全一致时视为相似。
-        similarity_distance_func (Optional[Callable[[str, str], float]]): 用于衡量 idea 相似度的距离函数，默认为分数差的绝对值。
-        initialization_cleanse_threshold (float): 数据库初始化时清除低质量 idea 的分数阈值。
-        delete_when_initial_cleanse (bool): 若为 True，在初始化清洗时会删除低分文件；否则仅跳过处理。
-        idea_uid_length (int): 每个 idea 存储为 idea_{uid}.idea，uid 的字符长度由此参数决定。
+        database_path (str): 数据库路径，其下 ideas/ 路径用于存放诸 .idea 文件和 score_sheet.json。
+        models (list[str]): 参与生成 idea 的模型名称列表。
+        model_temperatures (list[float]): 各模型的采样温度，与 models 等长。
+        max_interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
+        evaluate_func (Callable[[str], tuple[float, str]]): 对单个 idea 进行评分的函数。
+
+    Keyword Args:
+        # 基础设置
+        score_range (tuple[float, float]): 评分区间范围，用于归一化和显示。
+        hand_over_threshold (float): idea 进入数据库的最低评分要求。
+        system_prompt (Optional[str]): 系统提示词。
+        diary_path (Optional[str]): 日志文件路径。
+        api_keys_path (Optional[str]): API key 配置文件路径。
+        local_models_path (Optional[str]): 本地模型路径（如使用本地推理）。
+
+        # 并发配置
+        samplers_num (int): Sampler 实例数量。
+        evaluators_num (int): Evaluator 实例数量。
+
+        # 样本生成
+        examples_num (int): 每轮展示给模型的历史 idea 数量。
+        generate_num (int): 每轮每个 Sampler 生成的 idea 数量。
+        sample_temperature (float): 控制 idea 选择的 softmax 温度。
+        model_sample_temperature (float): 控制模型选择的 softmax 温度。
+
+        # 数据库评估
+        assess_func (Optional[Callable[[list[str], list[float], list[str]], float]]): 全体 idea 的综合评估函数。
+        assess_interval (Optional[int]): 每隔多少轮进行一次 assess_func 评估。
+        assess_result_data_path (Optional[str]): 存储评估得分的路径（.npz）。
+        assess_result_pic_path (Optional[str]): 存储评估图像的路径（.png）。
+
+        # 模型评估
+        model_assess_window_size (int): 模型滑动平均评估窗口大小。
+        model_assess_initial_score (float): 模型初始得分。
+        model_assess_average_order (float): 模型评分滑动平均的 p 范数。
+        model_assess_save_result (bool): 是否保存模型评估结果。
+        model_assess_result_data_path (Optional[str]): 模型评估结果数据保存路径（.npz）。
+        model_assess_result_pic_path (Optional[str]): 模型评估图像保存路径（.png）。
+
+        # 单体突变
+        mutation_func (Optional[Callable[[str], str]]): idea 的突变函数。
+        mutation_interval (Optional[int]): 每隔多少轮进行一次突变操作。
+        mutation_num (Optional[int]): 每轮进行的突变数量。
+        mutation_temperature (Optional[float]): 控制突变候选选择的 softmax 温度。
+
+        # 交叉变异
+        crossover_func (Optional[Callable[[str, str], str]]): idea 的交叉函数。
+        crossover_interval (Optional[int]): 每隔多少轮进行一次交叉操作。
+        crossover_num (Optional[int]): 每轮交叉生成的 idea 数量。
+        crossover_temperature (Optional[float]): 控制交叉候选选择的 softmax 温度。
+
+        # 相似度判断
+        similarity_threshold (float): idea 相似性的距离阈值，-1 表示仅完全一致为相似。
+        similarity_distance_func (Optional[Callable[[str, str], float]]): idea 的相似度计算函数，默认实现为分数差的绝对值。
+        similarity_sys_info_thresholds (Optional[list[int]]): 有关相似度的系统提示（“重复情况说明”）的诸阈值，为 None 则不开启此系统提示。
+        similarity_sys_info_prompts (Optional[list[str]]): 与 thresholds 对应的系统提示内容。
+
+        # 初始化阶段清洗
+        initialization_skip_evaluation (bool): 是否跳过初始化阶段的评估（尝试从 score_sheet.json 中迅捷加载）。
+        initialization_cleanse_threshold (float): 初始清洗的最低评分阈值。
+        delete_when_initial_cleanse (bool): 清洗时是否直接删除低分 idea。
+
+        # 其他配置
+        idea_uid_length (int): idea 文件名中 uid 的长度。
+        record_prompt_in_diary (bool): 是否将每轮的 Prompt 记录到日志中（建议初创子项目时打开此选项，后续关闭）。
 
     Returns:
         None
     """
     
-    # czy remark (0501): entrance check 暂未和项目的最新情况同步，有待维护！  
     IdeaSearch_entrance_check(
         program_name,
         prologue_section,
         epilogue_section,
         database_path,
-        diary_path,
-        api_keys_path,
         models,
         model_temperatures,
         max_interaction_num,
         evaluate_func,
+        score_range,
+        hand_over_threshold,
+        system_prompt,
+        diary_path,
+        api_keys_path,
+        local_models_path,
         samplers_num,
         evaluators_num,
-        sample_temperature,
         examples_num,
         generate_num,
+        sample_temperature,
+        model_sample_temperature,
         assess_func,
         assess_interval,
         assess_result_data_path,
-        mutation_func,
-        mutation_interval,
-        crossover_func,
-        crossover_interval,
+        assess_result_pic_path,
         model_assess_window_size,
         model_assess_initial_score,
         model_assess_average_order,
-        model_sample_temperature,
-        hand_over_threshold,
+        model_assess_save_result,
+        model_assess_result_data_path,
+        model_assess_result_pic_path,
+        mutation_func,
+        mutation_interval,
+        mutation_num,
+        mutation_temperature,
+        crossover_func,
+        crossover_interval,
+        crossover_num,
+        crossover_temperature,
         similarity_threshold,
         similarity_distance_func,
+        similarity_sys_info_thresholds,
+        similarity_sys_info_prompts,
+        initialization_skip_evaluation,
         initialization_cleanse_threshold,
         delete_when_initial_cleanse,
-        idea_uid_length
+        idea_uid_length,
+        record_prompt_in_diary,
     )
     
     if diary_path is None:
@@ -189,24 +263,36 @@ def IdeaSearch(
     guarantee_path_exist(diary_path)
     clear_file_content(diary_path)
     
-    append_to_file(
-        file_path = diary_path,
-        content_str = f"【系统】 现在开始{program_name}的IdeaSearch！",
-    )
-    
     console_lock = Lock()
+    with console_lock:
+        append_to_file(
+            file_path = diary_path,
+            content_str = f"【系统】 现在开始{program_name}的IdeaSearch！",
+        )
 
     database = Database(
         program_name = program_name,
+        database_path = database_path,
+        models = models,
+        model_temperatures = model_temperatures,
         max_interaction_num = max_interaction_num,
-        examples_num = examples_num,
         evaluate_func = evaluate_func,
         score_range = score_range,
+        hand_over_threshold = hand_over_threshold,
+        diary_path = diary_path,
+        examples_num = examples_num,
+        sample_temperature = sample_temperature,
+        model_sample_temperature = model_sample_temperature,
         assess_func = assess_func,
         assess_interval = assess_interval,
         assess_result_data_path = assess_result_data_path,
         assess_result_pic_path = assess_result_pic_path,
-        hand_over_threshold = hand_over_threshold,
+        model_assess_window_size = model_assess_window_size,
+        model_assess_initial_score = model_assess_initial_score,
+        model_assess_average_order = model_assess_average_order,
+        model_assess_save_result = model_assess_save_result,
+        model_assess_result_data_path = model_assess_result_data_path,
+        model_assess_result_pic_path = model_assess_result_pic_path,
         mutation_func = mutation_func,
         mutation_interval = mutation_interval,
         mutation_num = mutation_num,
@@ -215,51 +301,41 @@ def IdeaSearch(
         crossover_interval = crossover_interval,
         crossover_num = crossover_num,
         crossover_temperature = crossover_temperature,
+        similarity_threshold = similarity_threshold,
         similarity_distance_func = similarity_distance_func,
         default_similarity_distance_func = default_similarity_distance_func,
-        sample_temperature = sample_temperature,
-        console_lock = console_lock,
-        diary_path = diary_path,
-        database_path = database_path,
+        similarity_sys_info_thresholds = similarity_sys_info_thresholds,
+        similarity_sys_info_prompts = similarity_sys_info_prompts,
         initialization_skip_evaluation = initialization_skip_evaluation,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
-        models = models,
-        model_temperatures = model_temperatures,
-        model_assess_window_size = model_assess_window_size,
-        model_assess_initial_score = model_assess_initial_score,
-        model_assess_average_order = model_assess_average_order,
-        model_assess_save_result = model_assess_save_result,
-        model_assess_result_data_path = model_assess_result_data_path,
-        model_assess_result_pic_path = model_assess_result_pic_path,
-        model_sample_temperature = model_sample_temperature,
-        similarity_threshold = similarity_threshold,
-        similarity_sys_info_thresholds = similarity_sys_info_thresholds,
-        similarity_sys_info_prompts = similarity_sys_info_prompts,
         idea_uid_length = idea_uid_length,
+        console_lock = console_lock,
     )
+
     evaluators = [
         Evaluator(
             evaluator_id = i + 1,
             database = database,
             evaluate_func = evaluate_func,
+            hand_over_threshold = hand_over_threshold,
             console_lock = console_lock,
             diary_path = diary_path,
-            hand_over_threshold = hand_over_threshold,
-        ) 
+        )
         for i in range(evaluators_num)
     ]
+
     samplers = [
         Sampler(
             sampler_id = i + 1,
+            system_prompt = system_prompt,
             prologue_section = prologue_section,
             epilogue_section = epilogue_section,
+            database = database,
             evaluators = evaluators,
             generate_num = generate_num,
-            database = database,
             console_lock = console_lock,
             diary_path = diary_path,
-            system_prompt = system_prompt,
             record_prompt_in_diary = record_prompt_in_diary,
         )
         for i in range(samplers_num)
@@ -279,119 +355,181 @@ def IdeaSearch(
                 exit()
                 
     shutdown_model_manager()
-
-    append_to_file(
-        file_path = diary_path,
-        content_str = f"【系统】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
-    )
+    
+    with console_lock:
+        append_to_file(
+            file_path = diary_path,
+            content_str = f"【系统】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
+        )
             
        
-# czy remark (0501): entrance check 暂未和项目的最新情况同步，有待维护！     
 def IdeaSearch_entrance_check(
-    program_name,
-    prologue_section,
-    epilogue_section,
-    database_path,
-    diary_path,
-    api_keys_path,
-    models,
-    model_temperatures,
-    max_interaction_num,
-    evaluate_func,
-    samplers_num,
-    evaluators_num,
-    sample_temperature,
-    examples_num,
-    generate_num,
-    assess_func,
-    assess_interval,
-    assess_result_data_path,
-    mutation_func,
-    mutation_interval,
-    crossover_func,
-    crossover_interval,
-    model_assess_window_size,
-    model_assess_initial_score,
-    model_assess_average_order,
-    model_sample_temperature,
-    hand_over_threshold,
-    similarity_threshold,
-    similarity_distance_func,
-    initialization_cleanse_threshold,
-    delete_when_initial_cleanse,
-    idea_uid_length,
-):
-    # 基础字符串类型检查
+    program_name: str,
+    prologue_section: str,
+    epilogue_section: str,
+    database_path: str,
+    models: list[str],
+    model_temperatures: list[float],
+    max_interaction_num: int,
+    evaluate_func: Callable[[str], tuple[float, str]],
+    score_range: tuple[float, float],
+    hand_over_threshold: float,
+    system_prompt: Optional[str],
+    diary_path: Optional[str],
+    api_keys_path: Optional[str],
+    local_models_path: Optional[str],
+    samplers_num: int,
+    evaluators_num: int,
+    examples_num: int,
+    generate_num: int,
+    sample_temperature: float,
+    model_sample_temperature: float,
+    assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
+    assess_interval: Optional[int],
+    assess_result_data_path: Optional[str],
+    assess_result_pic_path: Optional[str],
+    model_assess_window_size: int,
+    model_assess_initial_score: float,
+    model_assess_average_order: float,
+    model_assess_save_result: bool,
+    model_assess_result_data_path: Optional[str],
+    model_assess_result_pic_path: Optional[str],
+    mutation_func: Optional[Callable[[str], str]],
+    mutation_interval: Optional[int],
+    mutation_num: Optional[int],
+    mutation_temperature: Optional[float],
+    crossover_func: Optional[Callable[[str, str], str]],
+    crossover_interval: Optional[int],
+    crossover_num: Optional[int],
+    crossover_temperature: Optional[float],
+    similarity_threshold: float,
+    similarity_distance_func: Optional[Callable[[str, str], float]],
+    similarity_sys_info_thresholds: Optional[list[int]],
+    similarity_sys_info_prompts: Optional[list[str]],
+    initialization_skip_evaluation: bool,
+    initialization_cleanse_threshold: float,
+    delete_when_initial_cleanse: bool,
+    idea_uid_length: int,
+    record_prompt_in_diary: bool,
+) -> None:
+
     for name, val in {
         "program_name": program_name,
         "prologue_section": prologue_section,
         "epilogue_section": epilogue_section,
         "database_path": database_path,
-        "api_keys_path": api_keys_path,
     }.items():
         if not isinstance(val, str):
-            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应该是 str 类型，但接收到 {type(val).__name__}")
+            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应为 str，但接收到 {type(val).__name__}")
 
-    if diary_path is not None:
-        if not isinstance(diary_path, str):
-            raise TypeError(f"【IdeaSearch参数类型错误】 `{diary_path}` 应该是 None 或 str 类型，但接收到 {type(diary_path).__name__}")
-    
-    # 列表类型检查
+    for optional_str in [
+        diary_path, 
+        system_prompt,
+        api_keys_path,
+        local_models_path, 
+        model_assess_result_data_path, 
+        model_assess_result_pic_path, 
+        assess_result_data_path,
+        assess_result_pic_path,
+    ]:
+        if optional_str is not None and not isinstance(optional_str, str):
+            raise TypeError(f"【IdeaSearch参数类型错误】 可选路径类参数应为 str 或 None，但接收到 {type(optional_str).__name__}")
+        
+    if api_keys_path is None and local_models_path is None:
+        raise ValueError("【IdeaSearch参数值错误】 `api_keys_path` 和 `local_models_path` 至少一者应不为 None ！")
+
     if not isinstance(models, list) or not all(isinstance(m, str) for m in models):
-        raise TypeError("【IdeaSearch参数类型错误】 `models` 应该是 str 类型的列表")
+        raise TypeError("【IdeaSearch参数类型错误】 `models` 应为 str 类型的列表")
     if not isinstance(model_temperatures, list) or not all(isinstance(t, (int, float)) for t in model_temperatures):
-        raise TypeError("【IdeaSearch参数类型错误】 `model_temperatures` 应该是 float 类型的列表")
+        raise TypeError("【IdeaSearch参数类型错误】 `model_temperatures` 应为 float 类型的列表")
 
-    # 整数、浮点数、函数等类型检查
-    if not isinstance(max_interaction_num, int):
-        raise TypeError("【IdeaSearch参数类型错误】 `max_interaction_num` 应该是 int 类型")
-    if not callable(evaluate_func):
-        raise TypeError("【IdeaSearch参数类型错误】 `evaluate_func` 应该是 callable 函数")
-    for name, val in {
+    int_params = {
+        "max_interaction_num": max_interaction_num,
         "samplers_num": samplers_num,
         "evaluators_num": evaluators_num,
         "examples_num": examples_num,
         "generate_num": generate_num,
         "model_assess_window_size": model_assess_window_size,
         "idea_uid_length": idea_uid_length,
-    }.items():
+    }
+    for name, val in int_params.items():
         if not isinstance(val, int):
-            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应该是 int 类型，但接收到 {type(val).__name__}")
-    for name, val in {
+            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应为 int 类型，但接收到 {type(val).__name__}")
+
+    float_params = {
         "sample_temperature": sample_temperature,
+        "model_sample_temperature": model_sample_temperature,
         "model_assess_initial_score": model_assess_initial_score,
         "model_assess_average_order": model_assess_average_order,
-        "model_sample_temperature": model_sample_temperature,
         "hand_over_threshold": hand_over_threshold,
         "similarity_threshold": similarity_threshold,
         "initialization_cleanse_threshold": initialization_cleanse_threshold,
-    }.items():
+    }
+    for name, val in float_params.items():
         if not isinstance(val, (int, float)):
-            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应该是 float 类型，但接收到 {type(val).__name__}")
+            raise TypeError(f"【IdeaSearch参数类型错误】 `{name}` 应为 float 类型，但接收到 {type(val).__name__}")
 
     if not isinstance(delete_when_initial_cleanse, bool):
-        raise TypeError("【IdeaSearch参数类型错误】 `delete_when_initial_cleanse` 应该是 bool 类型")
+        raise TypeError("【IdeaSearch参数类型错误】 `delete_when_initial_cleanse` 应为 bool 类型")
+    if not isinstance(initialization_skip_evaluation, bool):
+        raise TypeError("【IdeaSearch参数类型错误】 `initialization_skip_evaluation` 应为 bool 类型")
+    if not isinstance(record_prompt_in_diary, bool):
+        raise TypeError("【IdeaSearch参数类型错误】 `record_prompt_in_diary` 应为 bool 类型")
+    if not isinstance(model_assess_save_result, bool):
+        raise TypeError("【IdeaSearch参数类型错误】 `model_assess_save_result` 应为 bool 类型")
 
-    # 函数及其配套参数的合法性检查
+    if not callable(evaluate_func):
+        raise TypeError("【IdeaSearch参数类型错误】 `evaluate_func` 应为 callable")
+
     if assess_func is not None:
         if not callable(assess_func):
-            raise TypeError(f"【IdeaSearch参数类型错误】 `assess_func` 应该是 callable 函数")
-        if assess_interval is None or not isinstance(assess_interval, int) or assess_interval <= 0:
-            raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时必须提供正整数的 assess_interval")
+            raise TypeError("【IdeaSearch参数类型错误】 `assess_func` 应为 callable")
+        if not (isinstance(assess_interval, int) and assess_interval > 0):
+            raise ValueError("【IdeaSearch参数值错误】 `assess_interval` 应为正整数")
         if assess_result_data_path is not None and not isinstance(assess_result_data_path, str):
-            raise ValueError("【IdeaSearch参数值错误】 `assess_func` 设置时 assess_result_data_path 应为 None 或一字符串！")
-    
+            raise TypeError("【IdeaSearch参数类型错误】 `assess_result_data_path` 应为 str 或 None")
+        if assess_result_pic_path is not None and not isinstance(assess_result_pic_path, str):
+            raise TypeError("【IdeaSearch参数类型错误】 `assess_result_pic_path` 应为 str 或 None")
+
     if mutation_func is not None:
         if not callable(mutation_func):
-            raise TypeError("【IdeaSearch参数类型错误】 `mutation_func` 应该是 callable 函数")
-        if mutation_interval is None or not isinstance(mutation_interval, int) or mutation_interval <= 0:
-            raise ValueError("【IdeaSearch参数值错误】 `mutation_func` 设置时必须提供正整数的 mutation_interval")
+            raise TypeError("【IdeaSearch参数类型错误】 `mutation_func` 应为 callable")
+        if not (isinstance(mutation_interval, int) and mutation_interval > 0):
+            raise ValueError("【IdeaSearch参数值错误】 `mutation_interval` 应为正整数")
+        if not (isinstance(mutation_num, int) and mutation_num > 0):
+            raise ValueError("【IdeaSearch参数值错误】 `mutation_num` 应为正整数")
+        if not isinstance(mutation_temperature, (int, float)):
+            raise ValueError("【IdeaSearch参数值错误】 `mutation_temperature` 应为 float 类型")
 
     if crossover_func is not None:
         if not callable(crossover_func):
-            raise TypeError("【IdeaSearch参数类型错误】 `crossover_func` 应该是 callable 函数")
-        if crossover_interval is None or not isinstance(crossover_interval, int) or crossover_interval <= 0:
-            raise ValueError("【IdeaSearch参数值错误】 `crossover_func` 设置时必须提供正整数的 crossover_interval")
-        
+            raise TypeError("【IdeaSearch参数类型错误】 `crossover_func` 应为 callable")
+        if not (isinstance(crossover_interval, int) and crossover_interval > 0):
+            raise ValueError("【IdeaSearch参数值错误】 `crossover_interval` 应为正整数")
+        if not (isinstance(crossover_num, int) and crossover_num > 0):
+            raise ValueError("【IdeaSearch参数值错误】 `crossover_num` 应为正整数")
+        if not isinstance(crossover_temperature, (int, float)):
+            raise ValueError("【IdeaSearch参数值错误】 `crossover_temperature` 应为 float 类型")
+
     if similarity_distance_func is not None and not callable(similarity_distance_func):
-        raise TypeError("【IdeaSearch参数类型错误】 `similarity_distance_func` 应该是 Callable[[str, str], float] 或 None")
+        raise TypeError("【IdeaSearch参数类型错误】 `similarity_distance_func` 应为 callable 或 None")
+
+    if similarity_sys_info_thresholds is not None:
+        if not isinstance(similarity_sys_info_thresholds, list) or not all(isinstance(i, int) for i in similarity_sys_info_thresholds):
+            raise TypeError("【IdeaSearch参数类型错误】`similarity_sys_info_thresholds` 应为 int 类型的列表")
+
+        if similarity_sys_info_prompts is None:
+            raise ValueError("【IdeaSearch参数错误】当指定 `similarity_sys_info_thresholds` 时，必须同时提供 `similarity_sys_info_prompts`")
+
+        if not isinstance(similarity_sys_info_prompts, list) or not all(isinstance(s, str) for s in similarity_sys_info_prompts):
+            raise TypeError("【IdeaSearch参数类型错误】`similarity_sys_info_prompts` 应为 str 类型的列表")
+
+        if len(similarity_sys_info_prompts) != len(similarity_sys_info_thresholds) + 1:
+            raise ValueError("【IdeaSearch参数错误】`similarity_sys_info_prompts` 的长度应比 `similarity_sys_info_thresholds` 多 1")
+
+    if score_range is not None:
+        if (not isinstance(score_range, tuple) or len(score_range) != 2
+            or not all(isinstance(x, (int, float)) for x in score_range)):
+            raise TypeError("【IdeaSearch参数类型错误】 `score_range` 应为二元 float 元组")
+
+    return None
