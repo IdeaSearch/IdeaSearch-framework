@@ -13,7 +13,7 @@ class Evaluator:
         evaluate_func,
         console_lock : Lock,
         diary_path: str,
-        evaluator_hand_over_threshold: float,
+        hand_over_threshold: float,
     ):
         
         self.id = evaluator_id
@@ -24,7 +24,7 @@ class Evaluator:
         self.lock = Lock()
         self.status = "Vacant"
         self.diary_path = diary_path
-        self.evaluator_hand_over_threshold = evaluator_hand_over_threshold
+        self.hand_over_threshold = hand_over_threshold
         
 
     def try_acquire(self):
@@ -50,15 +50,14 @@ class Evaluator:
             
             try:
                 score, info = self.evaluate_func(idea)
-                score_result.append(score)
                 
                 if not isinstance(score, float):
                     with self.console_lock:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
-                                f"返回结果中的score应为一浮点数，不应为一个{type(score)}类型的对象！"
+                                f"【{self.id}号评估器】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                             ),
                         )
                     return
@@ -68,8 +67,8 @@ class Evaluator:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
-                                f"返回结果中的score不应为NaN！"
+                                f"【{self.id}号评估器】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 不应为 NaN ！"
                             ),
                         )
                     return
@@ -80,8 +79,8 @@ class Evaluator:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误："
-                                    f"返回结果中的info应为None或一字符串，不应为一个{type(info)}类型的对象！"
+                                    f"【{self.id}号评估器】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                 ),
                             )
                         return
@@ -91,17 +90,19 @@ class Evaluator:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【{self.id}号评估器】 调用{self.program_name}的评估函数时发生错误：\n{e}\n评估终止！"
+                            f"【{self.id}号评估器】 调用 {self.program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
                         ),
                     )  
                 return
             
-            if score >= self.evaluator_hand_over_threshold:
+            score_result.append(score)
+            
+            if score >= self.hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
         self.database.update_model_score(score_result, model, model_temperature)  
         
-        if len(accepted_ideas):
+        if accepted_ideas:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,

@@ -1,11 +1,10 @@
-import time
-import random
 from threading import Lock
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
+from src.utils import append_to_file
 from src.API4LLMs.get_answer import get_answer
 from src.IdeaSearch.evaluator import Evaluator
 from src.IdeaSearch.database import Database
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait
-from src.utils import append_to_file
 
 
 class Sampler:

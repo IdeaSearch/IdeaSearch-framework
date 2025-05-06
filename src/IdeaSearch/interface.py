@@ -55,7 +55,7 @@ def IdeaSearch(
     model_assess_result_data_path: Optional[str] = None,
     model_assess_result_pic_path: Optional[str] = None,
     model_sample_temperature: float = 50.0,
-    evaluator_hand_over_threshold: float = 0.0,
+    hand_over_threshold: float = 0.0,
     similarity_threshold: float = -1.0,
     similarity_distance_func: Optional[Callable[[str, str], float]] = None,
     similarity_sys_info_thresholds: Optional[list[int]] = None,
@@ -106,7 +106,7 @@ def IdeaSearch(
         model_assess_initial_score (float): 模型的初始分数，用于冷启动探索，建议设为较高值以鼓励尝试。
         model_assess_average_order (float): 评估模型时 p-范数的 p 值，影响对最大/最小值的敏感程度。
         model_sample_temperature (float): 模型采样温度参数，控制模型选择的概率分布平滑程度。
-        evaluator_hand_over_threshold (float): Evaluator 允许 idea 进入数据库的最低分数门槛。
+        hand_over_threshold (float): Evaluator 允许 idea 进入数据库的最低分数门槛。
         similarity_threshold (float): 判定 idea 是否相似的阈值。默认为 -1.0，即仅完全一致时视为相似。
         similarity_distance_func (Optional[Callable[[str, str], float]]): 用于衡量 idea 相似度的距离函数，默认为分数差的绝对值。
         initialization_cleanse_threshold (float): 数据库初始化时清除低质量 idea 的分数阈值。
@@ -145,7 +145,7 @@ def IdeaSearch(
         model_assess_initial_score,
         model_assess_average_order,
         model_sample_temperature,
-        evaluator_hand_over_threshold,
+        hand_over_threshold,
         similarity_threshold,
         similarity_distance_func,
         initialization_cleanse_threshold,
@@ -206,6 +206,7 @@ def IdeaSearch(
         assess_interval = assess_interval,
         assess_result_data_path = assess_result_data_path,
         assess_result_pic_path = assess_result_pic_path,
+        hand_over_threshold = hand_over_threshold,
         mutation_func = mutation_func,
         mutation_interval = mutation_interval,
         mutation_num = mutation_num,
@@ -244,7 +245,7 @@ def IdeaSearch(
             evaluate_func = evaluate_func,
             console_lock = console_lock,
             diary_path = diary_path,
-            evaluator_hand_over_threshold = evaluator_hand_over_threshold,
+            hand_over_threshold = hand_over_threshold,
         ) 
         for i in range(evaluators_num)
     ]
@@ -313,7 +314,7 @@ def IdeaSearch_entrance_check(
     model_assess_initial_score,
     model_assess_average_order,
     model_sample_temperature,
-    evaluator_hand_over_threshold,
+    hand_over_threshold,
     similarity_threshold,
     similarity_distance_func,
     initialization_cleanse_threshold,
@@ -361,7 +362,7 @@ def IdeaSearch_entrance_check(
         "model_assess_initial_score": model_assess_initial_score,
         "model_assess_average_order": model_assess_average_order,
         "model_sample_temperature": model_sample_temperature,
-        "evaluator_hand_over_threshold": evaluator_hand_over_threshold,
+        "hand_over_threshold": hand_over_threshold,
         "similarity_threshold": similarity_threshold,
         "initialization_cleanse_threshold": initialization_cleanse_threshold,
     }.items():

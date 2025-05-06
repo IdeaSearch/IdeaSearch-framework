@@ -7,12 +7,12 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from math import isnan
 from threading import Lock
 from pathlib import Path
 from typing import Callable
 from typing import Optional
 from os.path import basename
-
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
 
@@ -59,6 +59,7 @@ class Database:
         assess_interval: Optional[int],
         assess_result_data_path: Optional[str],
         assess_result_pic_path: Optional[str],
+        hand_over_threshold: float,
         mutation_func: Optional[Callable[[str], str]],
         mutation_interval: Optional[int],
         mutation_num: Optional[int],
@@ -108,6 +109,7 @@ class Database:
         self.model_assess_result_data_path = model_assess_result_data_path
         self.model_assess_result_pic_path = model_assess_result_pic_path
         self.max_interaction_num = max_interaction_num
+        self.handover_threshold = hand_over_threshold
         self.examples_num = examples_num
         self.evaluate_func = evaluate_func
         self.score_range = score_range
@@ -629,6 +631,17 @@ class Database:
             
             try:
                 mutated_idea = self.mutation_func(selected_idea.content)
+                if not isinstance(mutated_idea, str):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的单体突变函数时发生错误："
+                                f"返回结果中的 mutated_idea 应为一字符串，不应为一个 {type(mutated_idea)} 类型的对象！"
+                                "\n此轮单体突变意外终止！"
+                            ),
+                        )
+                    return
             except Exception as error:
                 with self.console_lock:
                     append_to_file(
@@ -640,32 +653,96 @@ class Database:
                     )
                 return
             
-            path = self._store_idea(
-                idea = mutated_idea,
-                evaluate_func = self.evaluate_func,
-            )
-            
-            if path is not None:
+            try:
+                score, info = self.evaluate_func(mutated_idea)
+                
+                if not isinstance(score, float):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
+                                "\n此轮单体突变意外终止！"
+                            ),
+                        )
+                    return
+                
+                if isnan(score):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 不应为 NaN ！"
+                                "\n此轮单体突变意外终止！"
+                            ),
+                        )
+                    return
+                
+                if info is not None:
+                    if not isinstance(info, str):
+                        with self.console_lock:
+                            append_to_file(
+                                file_path = self.diary_path,
+                                content_str = (
+                                    f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
+                                    "\n此轮单体突变意外终止！"
+                                ),
+                            )
+                        return
+                
+            except Exception as error:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次单体突变："
-                            f" {basename(selected_idea.path)} 突变为 {basename(path)} "
+                            f"【数据库】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            "\n此轮单体突变意外终止！"
                         ),
-                    )
-                self._sync_score_sheet()
-                self._sync_similar_num_list()
+                    )  
+                return
+            
+            if score >= self.handover_threshold:
+            
+                path = self._store_idea(
+                    idea = mutated_idea,
+                    score = score,
+                    info = info, 
+                )
+                
+                if path is not None:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 第 {index+1} 次单体突变："
+                                f" {basename(selected_idea.path)} 突变为 {basename(path)} "
+                            ),
+                        )
+                    self._sync_score_sheet()
+                    self._sync_similar_num_list()
+                else:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 第 {index+1} 次单体突变发生了错误：\n"
+                                f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
+                            ),
+                        )
+                    return
+                
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次单体突变发生了错误：\n"
-                            f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
+                            f"【数据库】 第 {index+1} 次单体突变结果未达到入库分数阈值"
+                            f"（{self.handover_threshold:.2f}分），已删除！"
                         ),
                     )
-                return
                 
         with self.console_lock:
             append_to_file(
@@ -699,7 +776,7 @@ class Database:
             parent_2 = self.ideas[parent_indices[1]]
 
             try:
-                crossed_content = self.crossover_func(
+                crossover_idea = self.crossover_func(
                     parent_1.content, parent_2.content
                 )
             except Exception as error:
@@ -712,33 +789,97 @@ class Database:
                         ),
                     )
                 return
-
-            path = self._store_idea(
-                idea = crossed_content,
-                evaluate_func = self.evaluate_func,
-            )
-
-            if path is not None:
+            
+            try:
+                score, info = self.evaluate_func(crossover_idea)
+                
+                if not isinstance(score, float):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
+                                "\n此轮交叉变异意外终止！"
+                            ),
+                        )
+                    return
+                
+                if isnan(score):
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"返回结果中的 score 不应为 NaN ！"
+                                "\n此轮交叉变异意外终止！"
+                            ),
+                        )
+                    return
+                
+                if info is not None:
+                    if not isinstance(info, str):
+                        with self.console_lock:
+                            append_to_file(
+                                file_path = self.diary_path,
+                                content_str = (
+                                    f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
+                                    "\n此轮交叉变异意外终止！"
+                                ),
+                            )
+                        return
+                
+            except Exception as error:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次交叉变异："
-                            f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
+                            f"【数据库】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            "\n此轮交叉变异意外终止！"
                         ),
-                    )
-                self._sync_score_sheet()
-                self._sync_similar_num_list()
+                    )  
+                return
+
+            if score >= self.handover_threshold:
+                
+                path = self._store_idea(
+                    idea = crossover_idea,
+                    score = score,
+                    info = info,
+                )
+
+                if path is not None:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 第 {index+1} 次交叉变异："
+                                f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
+                            ),
+                        )
+                    self._sync_score_sheet()
+                    self._sync_similar_num_list()
+                else:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = self.diary_path,
+                            content_str = (
+                                f"【数据库】 第 {index+1} 次交叉变异发生了错误：\n"
+                                f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
+                            ),
+                        )
+                    return
+                
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次交叉变异发生了错误：\n"
-                            f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
+                            f"【数据库】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
+                            f"（{self.handover_threshold:.2f}分），已删除！"
                         ),
                     )
-                return
 
         with self.console_lock:
             append_to_file(
