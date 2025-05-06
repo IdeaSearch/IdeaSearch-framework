@@ -1,362 +1,402 @@
 {
+    "idea_aaki.idea": {
+        "score": 8.151971880872166,
+        "info": "一般般！"
+    },
+    "idea_abwp.idea": {
+        "score": 31.98925911615814,
+        "info": "一般般！"
+    },
+    "idea_asah.idea": {
+        "score": 0.9311309868874369,
+        "info": "一般般！"
+    },
+    "idea_bcpi.idea": {
+        "score": 4.741968736824371,
+        "info": "一般般！"
+    },
+    "idea_bmmb.idea": {
+        "score": 19.58746411024047,
+        "info": "一般般！"
+    },
+    "idea_cgsb.idea": {
+        "score": 3.1656852142951935,
+        "info": "一般般！"
+    },
+    "idea_ckqi.idea": {
+        "score": 27.70871882948766,
+        "info": "一般般！"
+    },
+    "idea_cnus.idea": {
+        "score": 19.69629658194952,
+        "info": "一般般！"
+    },
+    "idea_cqrf.idea": {
+        "score": 33.016419157799355,
+        "info": "一般般！"
+    },
+    "idea_cros.idea": {
+        "score": 19.493898292833066,
+        "info": "一般般！"
+    },
+    "idea_dama.idea": {
+        "score": 4.119487736254258,
+        "info": "一般般！"
+    },
+    "idea_dlcs.idea": {
+        "score": 31.53832965136011,
+        "info": "一般般！"
+    },
+    "idea_dnsk.idea": {
+        "score": 38.60445530775397,
+        "info": "一般般！"
+    },
+    "idea_dsho.idea": {
+        "score": 1.351075838548157,
+        "info": "一般般！"
+    },
+    "idea_dxlk.idea": {
+        "score": 17.436257648804688,
+        "info": "一般般！"
+    },
+    "idea_dykv.idea": {
+        "score": 43.4673656880146,
+        "info": "一般般！"
+    },
+    "idea_epmn.idea": {
+        "score": 29.53050731290356,
+        "info": "一般般！"
+    },
+    "idea_erlx.idea": {
+        "score": 34.054501505834835,
+        "info": "一般般！"
+    },
+    "idea_fdkn.idea": {
+        "score": 26.0642992428136,
+        "info": "一般般！"
+    },
+    "idea_gefh.idea": {
+        "score": 0.039136297502435156,
+        "info": "一般般！"
+    },
+    "idea_hcjw.idea": {
+        "score": 41.764960359514035,
+        "info": "一般般！"
+    },
+    "idea_hcog.idea": {
+        "score": 53.47847045114105,
+        "info": "一般般！"
+    },
+    "idea_hfkf.idea": {
+        "score": 22.733223699021522,
+        "info": "一般般！"
+    },
+    "idea_hitu.idea": {
+        "score": 24.460157964890957,
+        "info": "一般般！"
+    },
+    "idea_hxhv.idea": {
+        "score": 0.9019333375393954,
+        "info": "一般般！"
+    },
+    "idea_hxoz.idea": {
+        "score": 29.04804052816848,
+        "info": "一般般！"
+    },
+    "idea_ihxo.idea": {
+        "score": 6.587388430463775,
+        "info": "一般般！"
+    },
+    "idea_isqf.idea": {
+        "score": 33.32440422664128,
+        "info": "一般般！"
+    },
+    "idea_jwta.idea": {
+        "score": 33.45243787600403,
+        "info": "一般般！"
+    },
+    "idea_kbci.idea": {
+        "score": 39.41534161588184,
+        "info": "一般般！"
+    },
+    "idea_klji.idea": {
+        "score": 36.970715517696604,
+        "info": "一般般！"
+    },
+    "idea_klmi.idea": {
+        "score": 39.677065885083934,
+        "info": "一般般！"
+    },
+    "idea_kxqv.idea": {
+        "score": 5.83926250022909,
+        "info": "一般般！"
+    },
+    "idea_llak.idea": {
+        "score": 21.77904911443232,
+        "info": "一般般！"
+    },
+    "idea_ltmi.idea": {
+        "score": 48.9599801592672,
+        "info": "一般般！"
+    },
+    "idea_lych.idea": {
+        "score": 26.072897453908602,
+        "info": "一般般！"
+    },
+    "idea_mkgy.idea": {
+        "score": 34.114203838264835,
+        "info": "一般般！"
+    },
+    "idea_mnrh.idea": {
+        "score": 21.805634270243075,
+        "info": "一般般！"
+    },
+    "idea_moye.idea": {
+        "score": 49.13014686995802,
+        "info": "一般般！"
+    },
+    "idea_mpwk.idea": {
+        "score": 16.37350716788637,
+        "info": "一般般！"
+    },
+    "idea_mrnt.idea": {
+        "score": 16.24219025985952,
+        "info": "一般般！"
+    },
+    "idea_nabw.idea": {
+        "score": 61.59941800040109,
+        "info": "一般般！"
+    },
+    "idea_nmpp.idea": {
+        "score": 32.94944325606204,
+        "info": "一般般！"
+    },
+    "idea_oyha.idea": {
+        "score": 34.09077031656548,
+        "info": "一般般！"
+    },
+    "idea_oyuq.idea": {
+        "score": 21.373039287486044,
+        "info": "一般般！"
+    },
+    "idea_ozmv.idea": {
+        "score": 27.346773416711436,
+        "info": "一般般！"
+    },
+    "idea_pjeb.idea": {
+        "score": 7.9122044410262875,
+        "info": "一般般！"
+    },
+    "idea_pmvv.idea": {
+        "score": 0.31723096922422034,
+        "info": "一般般！"
+    },
+    "idea_ptdd.idea": {
+        "score": 16.459728357384318,
+        "info": "一般般！"
+    },
+    "idea_puyi.idea": {
+        "score": 57.88496291972881,
+        "info": "一般般！"
+    },
+    "idea_pzbb.idea": {
+        "score": 6.695191235788331,
+        "info": "一般般！"
+    },
+    "idea_qrmh.idea": {
+        "score": 53.49406988593738,
+        "info": "一般般！"
+    },
+    "idea_qskx.idea": {
+        "score": 58.87397583458265,
+        "info": "一般般！"
+    },
+    "idea_qyud.idea": {
+        "score": 27.93962854983841,
+        "info": "一般般！"
+    },
+    "idea_rigm.idea": {
+        "score": 3.5732750773092636,
+        "info": "一般般！"
+    },
+    "idea_rqdk.idea": {
+        "score": 35.759662603607694,
+        "info": "一般般！"
+    },
+    "idea_rwsd.idea": {
+        "score": 56.25342207853079,
+        "info": "一般般！"
+    },
+    "idea_rxcy.idea": {
+        "score": 69.0357041645937,
+        "info": "一般般！"
+    },
+    "idea_sgjz.idea": {
+        "score": 7.862737444439658,
+        "info": "一般般！"
+    },
+    "idea_sqgw.idea": {
+        "score": 44.29255563377451,
+        "info": "一般般！"
+    },
+    "idea_sxrs.idea": {
+        "score": 61.962778675035445,
+        "info": "一般般！"
+    },
+    "idea_tvng.idea": {
+        "score": 62.0407978013327,
+        "info": "一般般！"
+    },
+    "idea_twst.idea": {
+        "score": 55.4997337091658,
+        "info": "一般般！"
+    },
+    "idea_uvyv.idea": {
+        "score": 18.0916618956828,
+        "info": "一般般！"
+    },
+    "idea_vfje.idea": {
+        "score": 11.251158834446022,
+        "info": "一般般！"
+    },
+    "idea_vfmr.idea": {
+        "score": 2.211010337009661,
+        "info": "一般般！"
+    },
+    "idea_vooq.idea": {
+        "score": 44.2397347545275,
+        "info": "一般般！"
+    },
+    "idea_vrwg.idea": {
+        "score": 74.66128564602677,
+        "info": "一般般！"
+    },
+    "idea_vxyk.idea": {
+        "score": 80.55102970629025,
+        "info": "非常好！"
+    },
+    "idea_vyaq.idea": {
+        "score": 42.901144135288575,
+        "info": "一般般！"
+    },
+    "idea_wugv.idea": {
+        "score": 2.3146074045902627,
+        "info": "一般般！"
+    },
+    "idea_wwzf.idea": {
+        "score": 96.1048841032542,
+        "info": "非常好！"
+    },
+    "idea_wyar.idea": {
+        "score": 72.58059488688087,
+        "info": "一般般！"
+    },
+    "idea_xnxd.idea": {
+        "score": 57.617208071288616,
+        "info": "一般般！"
+    },
+    "idea_ygmc.idea": {
+        "score": 1.6931232067070523,
+        "info": "一般般！"
+    },
+    "idea_yjzk.idea": {
+        "score": 67.35141231138076,
+        "info": "一般般！"
+    },
+    "idea_yvsc.idea": {
+        "score": 39.40987435775166,
+        "info": "一般般！"
+    },
+    "idea_yznz.idea": {
+        "score": 8.164811010973938,
+        "info": "一般般！"
+    },
+    "idea_zckv.idea": {
+        "score": 61.07152889730529,
+        "info": "一般般！"
+    },
+    "idea_zies.idea": {
+        "score": 98.89407105572056,
+        "info": "非常好！"
+    },
     "initial_idea.idea": {
-        "score": 14.002470639246285,
+        "score": 75.59560448333433,
         "info": "一般般！"
     },
     "initial_idea10.idea": {
-        "score": 13.345019304466398,
+        "score": 37.23838073922964,
         "info": "一般般！"
     },
     "initial_idea2.idea": {
-        "score": 14.782553440566291,
+        "score": 5.780363262485865,
         "info": "一般般！"
     },
     "initial_idea3.idea": {
-        "score": 25.27756344934481,
+        "score": 49.68378992487293,
         "info": "一般般！"
     },
     "initial_idea4.idea": {
-        "score": 10.082192688869355,
-        "info": "一般般！"
+        "score": 85.2796186778983,
+        "info": "非常好！"
     },
     "initial_idea5.idea": {
-        "score": 30.742841769731406,
+        "score": 23.923137352365043,
         "info": "一般般！"
     },
     "initial_idea6.idea": {
-        "score": 10.986112671076487,
+        "score": 25.23734688923094,
         "info": "一般般！"
     },
     "initial_idea7.idea": {
-        "score": 18.415293269203488,
-        "info": "一般般！"
+        "score": 92.39158604302912,
+        "info": "非常好！"
     },
     "initial_idea8.idea": {
-        "score": 11.886088967121095,
+        "score": 30.666070010839253,
         "info": "一般般！"
     },
     "initial_idea9.idea": {
-        "score": 21.565334613301033,
+        "score": 65.81170024116294,
         "info": "一般般！"
     },
-    "idea_uirs.idea": {
-        "score": 21.719957509324857,
+    "idea_jdtd.idea": {
+        "score": 78.51669106822672,
         "info": "一般般！"
     },
-    "idea_pzbw.idea": {
-        "score": 36.57462708643728,
-        "info": "一般般！"
-    },
-    "idea_tyqx.idea": {
-        "score": 37.62787551085276,
-        "info": "一般般！"
-    },
-    "idea_eayk.idea": {
-        "score": 24.836344152407907,
-        "info": "一般般！"
-    },
-    "idea_qigv.idea": {
-        "score": 4.071350912266656,
-        "info": "一般般！"
-    },
-    "idea_euzc.idea": {
-        "score": 13.493318555869436,
-        "info": "一般般！"
-    },
-    "idea_yybs.idea": {
-        "score": 12.258463849421641,
-        "info": "一般般！"
-    },
-    "idea_vtfz.idea": {
-        "score": 27.293162856029614,
-        "info": "一般般！"
-    },
-    "idea_jwdj.idea": {
-        "score": 37.044397420524625,
-        "info": "一般般！"
-    },
-    "idea_fphq.idea": {
-        "score": 33.049034288712086,
-        "info": "一般般！"
-    },
-    "idea_kwxh.idea": {
-        "score": 19.931753302391776,
-        "info": "一般般！"
-    },
-    "idea_kvxi.idea": {
-        "score": 13.026908993481623,
-        "info": "一般般！"
-    },
-    "idea_cbwk.idea": {
-        "score": 12.630034329176846,
-        "info": "一般般！"
-    },
-    "idea_czoz.idea": {
-        "score": 3.028547136719807,
-        "info": "一般般！"
-    },
-    "idea_wrgx.idea": {
-        "score": 23.07190636252868,
-        "info": "一般般！"
-    },
-    "idea_zwyw.idea": {
-        "score": 10.915243277509385,
-        "info": "一般般！"
-    },
-    "idea_rzkd.idea": {
-        "score": 40.2795753895011,
-        "info": "一般般！"
-    },
-    "idea_oalp.idea": {
-        "score": 17.797641484941995,
-        "info": "一般般！"
-    },
-    "idea_ifxe.idea": {
-        "score": 11.849132590025462,
-        "info": "一般般！"
-    },
-    "idea_uzcq.idea": {
-        "score": 40.50072059338322,
-        "info": "一般般！"
-    },
-    "idea_zldn.idea": {
-        "score": 13.99708776511949,
-        "info": "一般般！"
-    },
-    "idea_wdsy.idea": {
-        "score": 36.708755618922496,
-        "info": "一般般！"
-    },
-    "idea_xtdx.idea": {
-        "score": 32.30287811335332,
-        "info": "一般般！"
-    },
-    "idea_qceb.idea": {
-        "score": 38.4237960512624,
-        "info": "一般般！"
-    },
-    "idea_xofa.idea": {
-        "score": 17.90535848247901,
-        "info": "一般般！"
-    },
-    "idea_lxxo.idea": {
-        "score": 11.125114079373432,
-        "info": "一般般！"
-    },
-    "idea_fyki.idea": {
-        "score": 29.300518289284838,
-        "info": "一般般！"
-    },
-    "idea_aviw.idea": {
-        "score": 28.095541323940846,
-        "info": "一般般！"
-    },
-    "idea_zmvb.idea": {
-        "score": 7.323699086234248,
-        "info": "一般般！"
-    },
-    "idea_kppx.idea": {
-        "score": 11.396608773709604,
-        "info": "一般般！"
-    },
-    "idea_yhfq.idea": {
-        "score": 39.32284099608812,
-        "info": "一般般！"
-    },
-    "idea_fxjf.idea": {
-        "score": 55.406212282524265,
-        "info": "一般般！"
-    },
-    "idea_ausc.idea": {
-        "score": 44.24225632029278,
-        "info": "一般般！"
-    },
-    "idea_gsrs.idea": {
-        "score": 21.459921653066065,
-        "info": "一般般！"
-    },
-    "idea_zkhd.idea": {
-        "score": 4.57128302147909,
-        "info": "一般般！"
-    },
-    "idea_gzju.idea": {
-        "score": 15.362710387896657,
-        "info": "一般般！"
-    },
-    "idea_pxze.idea": {
-        "score": 7.295097890420519,
-        "info": "一般般！"
-    },
-    "idea_txpv.idea": {
-        "score": 58.06618274343668,
-        "info": "一般般！"
-    },
-    "idea_gxpt.idea": {
-        "score": 35.46873119731225,
-        "info": "一般般！"
-    },
-    "idea_yzlc.idea": {
-        "score": 62.614055062157554,
-        "info": "一般般！"
-    },
-    "idea_tesc.idea": {
-        "score": 65.6601860257509,
-        "info": "一般般！"
-    },
-    "idea_ollp.idea": {
-        "score": 8.599631633755573,
-        "info": "一般般！"
-    },
-    "idea_ekua.idea": {
-        "score": 7.844261191797604,
-        "info": "一般般！"
-    },
-    "idea_afoa.idea": {
-        "score": 67.45472536157149,
-        "info": "一般般！"
-    },
-    "idea_ubqd.idea": {
-        "score": 54.44337496972226,
-        "info": "一般般！"
-    },
-    "idea_msac.idea": {
-        "score": 3.66707038916549,
-        "info": "一般般！"
-    },
-    "idea_xksx.idea": {
-        "score": 40.92979946065197,
-        "info": "一般般！"
-    },
-    "idea_sfky.idea": {
-        "score": 57.24998874631929,
-        "info": "一般般！"
-    },
-    "idea_nysz.idea": {
-        "score": 26.081635415604612,
-        "info": "一般般！"
-    },
-    "idea_qupu.idea": {
-        "score": 7.5724568449858864,
-        "info": "一般般！"
-    },
-    "idea_uxxi.idea": {
-        "score": 59.13131021781839,
-        "info": "一般般！"
-    },
-    "idea_klqs.idea": {
-        "score": 20.976818449083385,
-        "info": "一般般！"
-    },
-    "idea_eqmv.idea": {
-        "score": 64.14741018014867,
-        "info": "一般般！"
-    },
-    "idea_cwiz.idea": {
-        "score": 53.18593468064652,
-        "info": "一般般！"
-    },
-    "idea_qzuo.idea": {
-        "score": 27.01987493162155,
-        "info": "一般般！"
-    },
-    "idea_hdch.idea": {
-        "score": 47.12684173869933,
-        "info": "一般般！"
-    },
-    "idea_axwv.idea": {
-        "score": 43.67167996906381,
-        "info": "一般般！"
-    },
-    "idea_qpjz.idea": {
-        "score": 5.870708770073126,
-        "info": "一般般！"
-    },
-    "idea_ugwp.idea": {
-        "score": 4.091940691400795,
-        "info": "一般般！"
-    },
-    "idea_skxr.idea": {
-        "score": 25.119975841728653,
-        "info": "一般般！"
-    },
-    "idea_vcoj.idea": {
-        "score": 20.411725130410723,
-        "info": "一般般！"
-    },
-    "idea_pyua.idea": {
-        "score": 79.40747647027764,
-        "info": "一般般！"
-    },
-    "idea_croe.idea": {
-        "score": 25.668519478864056,
-        "info": "一般般！"
-    },
-    "idea_sivi.idea": {
-        "score": 78.94673264211066,
-        "info": "一般般！"
-    },
-    "idea_sagv.idea": {
-        "score": 28.35716251049315,
-        "info": "一般般！"
-    },
-    "idea_xrsi.idea": {
-        "score": 59.4067318085833,
-        "info": "一般般！"
-    },
-    "idea_eyhr.idea": {
-        "score": 88.81553091390487,
+    "idea_snep.idea": {
+        "score": 83.78212310498773,
         "info": "非常好！"
     },
-    "idea_jzkc.idea": {
-        "score": 34.30650338465465,
+    "idea_xboj.idea": {
+        "score": 50.095319471973,
         "info": "一般般！"
     },
-    "idea_vklz.idea": {
-        "score": 51.40230119485641,
+    "idea_mnly.idea": {
+        "score": 59.397557579224845,
         "info": "一般般！"
     },
-    "idea_xlyb.idea": {
-        "score": 88.6713186868001,
+    "idea_cygc.idea": {
+        "score": 24.596001198855177,
+        "info": "一般般！"
+    },
+    "idea_yegl.idea": {
+        "score": 28.849717803088254,
+        "info": "一般般！"
+    },
+    "idea_lweq.idea": {
+        "score": 33.953912759552985,
+        "info": "一般般！"
+    },
+    "idea_lzkx.idea": {
+        "score": 6.9112407905859925,
+        "info": "一般般！"
+    },
+    "idea_mjvt.idea": {
+        "score": 72.93885838024532,
+        "info": "一般般！"
+    },
+    "idea_dwpd.idea": {
+        "score": 87.9896953546248,
         "info": "非常好！"
-    },
-    "idea_zvqj.idea": {
-        "score": 51.70927971431541,
-        "info": "一般般！"
-    },
-    "idea_abyb.idea": {
-        "score": 77.30494659116903,
-        "info": "一般般！"
-    },
-    "idea_gbmp.idea": {
-        "score": 9.075172357472727,
-        "info": "一般般！"
-    },
-    "idea_joll.idea": {
-        "score": 81.87359117709155,
-        "info": "非常好！"
-    },
-    "idea_ytdz.idea": {
-        "score": 3.9646300649914923,
-        "info": "一般般！"
-    },
-    "idea_bdwu.idea": {
-        "score": 34.65130833400867,
-        "info": "一般般！"
-    },
-    "idea_tmch.idea": {
-        "score": 25.20015512116885,
-        "info": "一般般！"
-    },
-    "idea_yvmc.idea": {
-        "score": 36.32139061984209,
-        "info": "一般般！"
-    },
-    "idea_tudd.idea": {
-        "score": 32.03137405488806,
-        "info": "一般般！"
-    },
-    "idea_pipa.idea": {
-        "score": 38.53869787656592,
-        "info": "一般般！"
     }
 }

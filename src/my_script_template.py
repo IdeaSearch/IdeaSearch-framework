@@ -39,7 +39,7 @@ def IdeaSearch_interface()-> None:
     model_assess_save_result = [
         False,
         True,
-    ][1]
+    ][0]
     model_assess_result_data_path = None  # use default: database_path + "data/model_scores.npz"
     model_assess_result_pic_path = None  # use default: database_path + "pic/model_scores.png"
     model_sample_temperature = 60.0
@@ -51,7 +51,7 @@ def IdeaSearch_interface()-> None:
     assess_func = [
         None,
         TemplateProgram_assess,
-    ][1]
+    ][0]
     assess_interval = 1
     assess_result_data_path = None # use default: database_path + "data/database_assessment.npz"
     assess_result_pic_path = None # use default: database_path + "pic/database_assessment.png"
@@ -90,7 +90,7 @@ def IdeaSearch_interface()-> None:
     ][0]
     
     # Max interaction num
-    max_interaction_num = 80
+    max_interaction_num = 10
     
     # Paths
     database_path = f"programs/{program_name}/database/"

@@ -463,7 +463,8 @@ class Database:
                                 f"其总得分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
-                    self._sync_model_score_result()
+                    if self.model_assess_save_result:
+                        self._sync_model_score_result()
                     return
                 
                 index += 1
