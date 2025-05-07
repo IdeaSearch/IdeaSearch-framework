@@ -91,7 +91,7 @@ def IdeaSearch_interface()-> None:
     ][0]
     
     # Max interaction num
-    max_interaction_num = 10
+    max_interaction_num = 80
     
     # Paths
     database_path = f"programs/{program_name}/database/"
