@@ -53,6 +53,7 @@ def IdeaSearch(
     # 数据库评估
     assess_func: Optional[Callable[[list[str], list[float], list[str]], float]] = None,
     assess_interval: Optional[int] = None,
+    assess_baseline: Optional[float] = None,
     assess_result_data_path: Optional[str] = None,
     assess_result_pic_path: Optional[str] = None,
 
@@ -135,6 +136,7 @@ def IdeaSearch(
         # 数据库评估
         assess_func (Optional[Callable[[list[str], list[float], list[str]], float]]): 全体 idea 的综合评估函数。
         assess_interval (Optional[int]): 每隔多少轮进行一次 assess_func 评估。
+        assess_baseline (Optional[int]): 数据库评估的基线，会在图像中显示。
         assess_result_data_path (Optional[str]): 存储评估得分的路径（.npz）。
         assess_result_pic_path (Optional[str]): 存储评估图像的路径（.png）。
 
@@ -200,6 +202,7 @@ def IdeaSearch(
         model_sample_temperature,
         assess_func,
         assess_interval,
+        assess_baseline,
         assess_result_data_path,
         assess_result_pic_path,
         model_assess_window_size,
@@ -285,6 +288,7 @@ def IdeaSearch(
         model_sample_temperature = model_sample_temperature,
         assess_func = assess_func,
         assess_interval = assess_interval,
+        assess_baseline = assess_baseline,
         assess_result_data_path = assess_result_data_path,
         assess_result_pic_path = assess_result_pic_path,
         model_assess_window_size = model_assess_window_size,
@@ -386,6 +390,7 @@ def IdeaSearch_entrance_check(
     model_sample_temperature: float,
     assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
     assess_interval: Optional[int],
+    assess_baseline: Optional[float],
     assess_result_data_path: Optional[str],
     assess_result_pic_path: Optional[str],
     model_assess_window_size: int,
@@ -486,6 +491,8 @@ def IdeaSearch_entrance_check(
             raise TypeError("【IdeaSearch参数类型错误】 `assess_func` 应为 callable")
         if not (isinstance(assess_interval, int) and assess_interval > 0):
             raise ValueError("【IdeaSearch参数值错误】 `assess_interval` 应为正整数")
+        if assess_baseline is not None and not isinstance(assess_baseline, (int, float)):
+            raise TypeError("【IdeaSearch参数类型错误】 `assess_baseline` 应为 None 或 float")
         if assess_result_data_path is not None and not isinstance(assess_result_data_path, str):
             raise TypeError("【IdeaSearch参数类型错误】 `assess_result_data_path` 应为 str 或 None")
         if assess_result_pic_path is not None and not isinstance(assess_result_pic_path, str):

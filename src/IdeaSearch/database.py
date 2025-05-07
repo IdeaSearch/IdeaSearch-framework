@@ -64,6 +64,7 @@ class Database:
         model_sample_temperature: float,
         assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
         assess_interval: Optional[int],
+        assess_baseline: Optional[float],
         assess_result_data_path: Optional[str],
         assess_result_pic_path: Optional[str],
         model_assess_window_size: int,
@@ -252,6 +253,7 @@ class Database:
             self.assess_on = True
             self.assess_func = assess_func
             self.assess_interval = assess_interval
+            self.assess_baseline = assess_baseline
             self.assess_result_data_path = assess_result_data_path
             self.assess_result_pic_path = assess_result_pic_path
             self.assess_result_ndarray = np.zeros((1 + (max_interaction_num // assess_interval),))
@@ -997,14 +999,25 @@ class Database:
             database_scores = self.assess_result_ndarray,
         )
         
+        point_num = len(self.assess_result_ndarray_x_axis)
+        auto_markersize = self._get_auto_markersize(point_num)
+        
         plt.figure(figsize=(10, 6))
         plt.plot(
             self.assess_result_ndarray_x_axis, 
             self.assess_result_ndarray, 
             label='Database Score', 
             color='dodgerblue', 
-            marker='o'
+            marker='o',
+            markersize = auto_markersize,
         )
+        if self.assess_baseline is not None:
+            plt.axhline(
+                y=self.assess_baseline,
+                color='red',
+                linestyle='--',
+                label='Baseline',
+            )
         plt.title("Database Assessment")
         plt.xlabel("Interaction No.")
         plt.ylabel("Database Score")
@@ -1050,6 +1063,9 @@ class Database:
             interaction_num=self.scores_of_models_x_axis,
             **scores_of_models_dict
         )
+        
+        point_num = len(self.scores_of_models_x_axis)
+        auto_markersize = self._get_auto_markersize(point_num)
 
         plt.figure(figsize=(10, 6))
         for model_label, model_scores in scores_of_models_dict.items():
@@ -1057,7 +1073,8 @@ class Database:
                 self.scores_of_models_x_axis,
                 model_scores,
                 label=model_label,
-                marker='o'
+                marker='o',
+                markersize = auto_markersize,
             )
         plt.title("Model Scores")
         plt.xlabel("Interaction No.")
@@ -1076,6 +1093,24 @@ class Database:
                     f" {basename(self.model_assess_result_data_path)} 与 {basename(self.model_assess_result_pic_path)} 已更新！"
                 ),
             )
+            
+            
+    def _get_auto_markersize(
+        self, 
+        point_num: int
+    )-> int:
+        
+        if point_num <= 20:
+            auto_markersize = 8
+        elif point_num <= 50:
+            auto_markersize = 6
+        elif point_num <= 100:
+            auto_markersize = 4
+        else:
+            auto_markersize = 2
+            
+        return auto_markersize
+
 
 def get_label(
     x: int, 
