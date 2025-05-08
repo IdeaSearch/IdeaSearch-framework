@@ -175,7 +175,7 @@ def IdeaSearch(
         # 其他配置
         idea_uid_length (int): idea 文件名中 uid 的长度。
         record_prompt_in_diary (bool): 是否将每轮的 Prompt 记录到日志中（建议初创子项目时打开此选项，后续关闭）。
-        evaluate_func_accept_evaluator_id (bool): 是否需要将evaluator的id传入evaluate_func（以提高并行性）。
+        evaluate_func_accept_evaluator_id (bool): 允许额外将evaluator的id传入evaluate_func（以提高并行性）；需要提供默认值。
 
     Returns:
         None
