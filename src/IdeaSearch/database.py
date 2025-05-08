@@ -462,8 +462,12 @@ class Database:
                     self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
                     p = self.model_assess_average_order
                     scores_array = np.array(score_result)
-                    self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
-                    self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
+                    if p != np.inf:
+                        self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
+                        self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
+                    else:
+                        self.model_recent_scores[index][-1] = np.max(scores_array)
+                        self.model_scores[index] = np.max(self.model_recent_scores[index])
                     with self.console_lock:    
                         append_to_file(
                             file_path = self.diary_path,
