@@ -115,7 +115,8 @@ class Evaluator:
                     content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给数据库！",
                 )
                 
-            self.database.receive_result(accepted_ideas, self.id)
+            source = f"由 {model}(T={model_temperature:.2f}) 生成"
+            self.database.receive_result(accepted_ideas, self.id, source)
             
         else:
             with self.console_lock:

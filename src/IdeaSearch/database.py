@@ -31,13 +31,15 @@ class Idea:
         evaluate_func, 
         content = None, 
         score = None, 
-        info = None
+        info = None,
+        source = None,
     ):
         self.path = str(path)
+        self.source = source
         if evaluate_func is not None:
             with open(path, 'r', encoding = "UTF-8") as file:
                 self.content = file.read()
-            self.score, self.info = evaluate_func(self.content) 
+            self.score, self.info = evaluate_func(self.content)
         else:
             self.content = content
             self.score = score
@@ -166,6 +168,7 @@ class Database:
         # 初始化ideas列表（疑似存在mac OS系统的兼容性问题）
         self.ideas: list[Idea] = []
         path_to_search = Path(self.path).resolve()
+        source = "初始化时读入"
         for path in path_to_search.rglob('*.idea'):
             
             if os.path.isfile(path):
@@ -187,19 +190,20 @@ class Database:
                             content = content,
                             score = score,
                             info = info,
+                            source = source, 
                         )
                         
                         if info is not None:
                             with self.console_lock:
                                 append_to_file(
                                     file_path=self.diary_path,
-                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的得分与评语！",
+                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分与评语！",
                                 )
                         else:
                             with self.console_lock:
                                 append_to_file(
                                     file_path=self.diary_path,
-                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的得分！",
+                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分！",
                                 )
                         
                     else:
@@ -212,12 +216,14 @@ class Database:
                         idea = Idea(
                             path = path,
                             evaluate_func = evaluate_func,
+                            source = source,
                         )
                     
                 else:
                     idea = Idea(
                         path = path,
                         evaluate_func = evaluate_func,
+                        source = source,
                     )
                 
                 if idea.score < initialization_cleanse_threshold:
@@ -227,14 +233,14 @@ class Database:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件 {basename(path)} 得分未达到{initialization_cleanse_threshold:.2f}，已删除。",
+                                content_str=f"【数据库】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
                             )
                             
                     else:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件 {basename(path)} 得分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                                content_str=f"【数据库】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
                             )
                             
                 else:
@@ -278,7 +284,7 @@ class Database:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【数据库】 初始 ideas 的整体质量得分为：{database_initial_score:.2f}！",
+                        content_str = f"【数据库】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
                     )
                     
             except Exception as error:
@@ -461,8 +467,8 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 模型 {model}(T={model_temperature:.2f}) 此轮得分为 {self.model_recent_scores[index][-1]:.2f} ，"
-                                f"其总得分已被更新为 {self.model_scores[index]:.2f} ！"
+                                f"【数据库】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
+                                f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
                     if self.model_assess_save_result:
@@ -484,7 +490,9 @@ class Database:
         self, 
         result: list[tuple[Idea, float, str]], 
         evaluator_id: int,
+        source: str,
     )-> None:
+        
         with self.lock:
     
             for idea_content, score, info in result:
@@ -493,6 +501,7 @@ class Database:
                     idea = idea_content,
                     score = score,
                     info = info,
+                    source = source,
                 )
                 
             with self.console_lock:    
@@ -512,6 +521,7 @@ class Database:
             basename(idea.path): {
                 "score": idea.score,
                 "info": idea.info if idea.info is not None else "",
+                "source": idea.source if idea.source is not None else "未知",
             }
             for idea in self.ideas
         }
@@ -587,7 +597,7 @@ class Database:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 当前库中 ideas 的整体质量得分为：{database_score:.2f}！",
+                    content_str = f"【数据库】 当前库中 ideas 的整体质量评分为：{database_score:.2f}！",
                 )
                 
         except Exception as error:
@@ -707,12 +717,15 @@ class Database:
                     )  
                 return
             
+            source = f"由{basename(selected_idea.path)}突变而来"
+            
             if score >= self.handover_threshold:
             
                 path = self._store_idea(
                     idea = mutated_idea,
                     score = score,
                     info = info, 
+                    source = source,
                 )
                 
                 if path is not None:
@@ -854,6 +867,8 @@ class Database:
                         ),
                     )  
                 return
+            
+            source = f"由 {basename(parent_1.path)} 和 {basename(parent_2.path)} 交叉而来"
 
             if score >= self.handover_threshold:
                 
@@ -861,6 +876,7 @@ class Database:
                     idea = crossover_idea,
                     score = score,
                     info = info,
+                    source = source,
                 )
 
                 if path is not None:
@@ -908,7 +924,7 @@ class Database:
             
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 各模型目前得分情况如下：",
+                content_str = "【数据库】 各模型目前评分情况如下：",
             )
             
             for index, model in enumerate(self.models):
@@ -929,6 +945,7 @@ class Database:
         evaluate_func: Optional[Callable[[str, str], float]] = None,
         score: Optional[float] = None,
         info: Optional[str] = None,
+        source: Optional[str] = None,
     )-> Optional[str]:
         
         """
@@ -944,8 +961,9 @@ class Database:
         Args:
             idea (str): 需要存储的 idea 内容（字符串格式）。
             evaluate_func (Optional[Callable[[str, str], float]]): 用于评价 idea 的函数。
-            score (Optional[float]): 预设的 idea 得分。
+            score (Optional[float]): 预设的 idea 评分。
             info (Optional[str]): 与 idea 相关的附加信息。
+            source (Optional[str]): idea 的来源。
 
         Returns:
             Optional[str]: 成功则返回该 idea 对应的文件路径；若出错则返回 None。
@@ -963,6 +981,7 @@ class Database:
                 content = idea,
                 score = score,
                 info = info,
+                source = source,
             ))
                 
             return path
