@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from time import perf_counter
 from math import isnan
 from threading import Lock
 from pathlib import Path
@@ -517,6 +518,8 @@ class Database:
             
     def _sync_score_sheet(self):
         
+        start_time = perf_counter()
+        
         score_sheet = {
             basename(idea.path): {
                 "score": idea.score,
@@ -528,15 +531,20 @@ class Database:
 
         with open(self.path + "score_sheet.json", 'w', encoding='utf-8') as json_file:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
+            
+        end_time = perf_counter()
+        total_time = end_time - start_time
         
         with self.console_lock:   
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【数据库】  {self.program_name} 的 score sheet 已更新！",
+                content_str = f"【数据库】  {self.program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
             )
             
     
     def _sync_similar_num_list(self):
+        
+        start_time = perf_counter()
         
         self.idea_similar_nums = []
 
@@ -553,10 +561,13 @@ class Database:
                     similar_count += 1
             self.idea_similar_nums.append(similar_count)
             
+        end_time = perf_counter()
+        total_time = end_time - start_time
+            
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 成功将idea_similar_nums与ideas同步！",
+                content_str = f"【数据库】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
             )
     
     
@@ -571,6 +582,8 @@ class Database:
     
     
     def _assess_database(self)-> None:
+        
+        start_time = perf_counter()
         
         with self.console_lock:
             append_to_file(
@@ -594,10 +607,14 @@ class Database:
                 infos,
             )
             get_database_score_success = True
+            
+            end_time = perf_counter()
+            total_time = end_time - start_time
+            
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 当前库中 ideas 的整体质量评分为：{database_score:.2f}！",
+                    content_str = f"【数据库】 当前库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
                 )
                 
         except Exception as error:
