@@ -15,6 +15,7 @@ class Evaluator:
         hand_over_threshold: float,
         console_lock : Lock,
         diary_path: str,
+        evaluate_func_accept_evaluator_id: bool,
     ):
         
         self.id = evaluator_id
@@ -26,6 +27,7 @@ class Evaluator:
         self.status = "Vacant"
         self.diary_path = diary_path
         self.hand_over_threshold = hand_over_threshold
+        self.evaluate_func_accept_evaluator_id = evaluate_func_accept_evaluator_id
         
 
     def try_acquire(self):
@@ -50,7 +52,10 @@ class Evaluator:
         for idea in generated_ideas:
             
             try:
-                score, info = self.evaluate_func(idea)
+                if self.evaluate_func_accept_evaluator_id:
+                    score, info = self.evaluate_func(idea, self.id)
+                else:
+                    score, info = self.evaluate_func(idea)
                 
                 if not isinstance(score, float):
                     with self.console_lock:

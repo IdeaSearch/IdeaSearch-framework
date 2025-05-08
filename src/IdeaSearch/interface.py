@@ -91,6 +91,7 @@ def IdeaSearch(
     # 其他配置
     idea_uid_length: int = 4,
     record_prompt_in_diary: bool = True,
+    evaluate_func_accept_evaluator_id: bool = False,
 ) -> None:
     
     """
@@ -174,6 +175,7 @@ def IdeaSearch(
         # 其他配置
         idea_uid_length (int): idea 文件名中 uid 的长度。
         record_prompt_in_diary (bool): 是否将每轮的 Prompt 记录到日志中（建议初创子项目时打开此选项，后续关闭）。
+        evaluate_func_accept_evaluator_id (bool): 是否需要将evaluator的id传入evaluate_func（以提高并行性）。
 
     Returns:
         None
@@ -228,6 +230,7 @@ def IdeaSearch(
         delete_when_initial_cleanse,
         idea_uid_length,
         record_prompt_in_diary,
+        evaluate_func_accept_evaluator_id,
     )
     
     if diary_path is None:
@@ -325,6 +328,7 @@ def IdeaSearch(
             hand_over_threshold = hand_over_threshold,
             console_lock = console_lock,
             diary_path = diary_path,
+            evaluate_func_accept_evaluator_id = evaluate_func_accept_evaluator_id,
         )
         for i in range(evaluators_num)
     ]
@@ -416,6 +420,7 @@ def IdeaSearch_entrance_check(
     delete_when_initial_cleanse: bool,
     idea_uid_length: int,
     record_prompt_in_diary: bool,
+    evaluate_func_accept_evaluator_id: bool,
 ) -> None:
 
     for name, val in {
@@ -480,6 +485,8 @@ def IdeaSearch_entrance_check(
         raise TypeError("【IdeaSearch参数类型错误】 `initialization_skip_evaluation` 应为 bool 类型")
     if not isinstance(record_prompt_in_diary, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `record_prompt_in_diary` 应为 bool 类型")
+    if not isinstance(evaluate_func_accept_evaluator_id, bool):
+        raise TypeError("【IdeaSearch参数类型错误】 `evaluate_func_accept_evaluator_id` 应为 bool 类型")
     if not isinstance(model_assess_save_result, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `model_assess_save_result` 应为 bool 类型")
 
