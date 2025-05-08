@@ -263,7 +263,7 @@ class Database:
             self.assess_result_data_path = assess_result_data_path
             self.assess_result_pic_path = assess_result_pic_path
             self.assess_result_ndarray = np.zeros((1 + (max_interaction_num // assess_interval),))
-            self.assess_result_ndarray_index = 1
+            self.assess_result_ndarray_length = 1
             self.assess_result_ndarray_x_axis = np.linspace(
                 start = 0, 
                 stop = max_interaction_num, 
@@ -317,7 +317,7 @@ class Database:
             
         if self.model_assess_save_result:
             self.scores_of_models = np.zeros((1+self.max_interaction_num, len(self.models)))
-            self.scores_of_models_index = 0
+            self.scores_of_models_length = 0
             self.scores_of_models_x_axis = np.linspace(
                 start = 0, 
                 stop = max_interaction_num, 
@@ -611,8 +611,8 @@ class Database:
                     ),
                 )
                 
-        self.assess_result_ndarray[self.assess_result_ndarray_index] = database_score
-        self.assess_result_ndarray_index += 1
+        self.assess_result_ndarray[self.assess_result_ndarray_length] = database_score
+        self.assess_result_ndarray_length += 1
         
         self._sync_database_assess_result(
             is_initialization = False,
@@ -1021,10 +1021,15 @@ class Database:
         point_num = len(self.assess_result_ndarray_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
         
+        x_axis_range = (0, len(self.assess_result_ndarray_x_axis))
+        x_axis_range_expand_ratio = 0.08
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        
         plt.figure(figsize=(10, 6))
         plt.plot(
-            self.assess_result_ndarray_x_axis, 
-            self.assess_result_ndarray, 
+            self.assess_result_ndarray_x_axis[:self.assess_result_ndarray_length], 
+            self.assess_result_ndarray[:self.assess_result_ndarray_length], 
             label='Database Score', 
             color='dodgerblue', 
             marker='o',
@@ -1040,6 +1045,7 @@ class Database:
         plt.title("Database Assessment")
         plt.xlabel("Interaction No.")
         plt.ylabel("Database Score")
+        plt.xlim(x_axis_range)
         plt.ylim(self.score_range)
         plt.grid(True)
         plt.legend()
@@ -1068,8 +1074,8 @@ class Database:
                     
     def _sync_model_score_result(self):
         
-        self.scores_of_models[self.scores_of_models_index] = self.model_scores
-        self.scores_of_models_index += 1
+        self.scores_of_models[self.scores_of_models_length] = self.model_scores
+        self.scores_of_models_length += 1
         
         scores_of_models = self.scores_of_models.T
         
@@ -1085,12 +1091,17 @@ class Database:
         
         point_num = len(self.scores_of_models_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
+        
+        x_axis_range = (0, len(self.scores_of_models_x_axis))
+        x_axis_range_expand_ratio = 0.08
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
 
         plt.figure(figsize=(10, 6))
         for model_label, model_scores in scores_of_models_dict.items():
             plt.plot(
-                self.scores_of_models_x_axis,
-                model_scores,
+                self.scores_of_models_x_axis[:self.scores_of_models_length],
+                model_scores[:self.scores_of_models_length],
                 label=model_label,
                 marker='o',
                 markersize = auto_markersize,
@@ -1098,6 +1109,7 @@ class Database:
         plt.title("Model Scores")
         plt.xlabel("Interaction No.")
         plt.ylabel("Model Score")
+        plt.xlim(x_axis_range)
         plt.ylim(self.score_range)
         plt.grid(True)
         plt.legend()
