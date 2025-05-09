@@ -1,6 +1,7 @@
 from threading import Lock
 from math import isnan
 from typing import Callable
+from os.path import basename
 from src.IdeaSearch.database import Database
 from src.utils import append_to_file
 
@@ -44,10 +45,13 @@ class Evaluator:
         generated_ideas: list[str],
         model: str,
         model_temperature: float,
+        example_idea_paths: list[str],
     )-> None:
         
         accepted_ideas = []
         score_result = []
+        
+        example_idea_string = "，".join([basename(path)] for path in example_idea_paths)
         
         for idea in generated_ideas:
             
@@ -115,7 +119,7 @@ class Evaluator:
                     content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给数据库！",
                 )
                 
-            source = f"由 {model}(T={model_temperature:.2f}) 生成"
+            source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
             self.database.receive_result(accepted_ideas, self.id, source)
             
         else:

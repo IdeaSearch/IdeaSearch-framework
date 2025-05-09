@@ -749,7 +749,7 @@ class Database:
                     )  
                 return
             
-            source = f"由{basename(selected_idea.path)}突变而来"
+            source = f"由 {basename(selected_idea.path)} 突变而来"
             
             if score >= self.handover_threshold:
             

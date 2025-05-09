@@ -173,10 +173,11 @@ class Sampler:
                     ),
                 )
             
-            # 寻找空闲 evaluator
+            example_idea_paths = [current_idea.path for current_idea in examples]
+            
             evaluator = self._get_idle_evaluator()
             if evaluator:
-                evaluator.evaluate(generated_ideas, model, model_temperature)
+                evaluator.evaluate(generated_ideas, model, model_temperature, example_idea_paths)
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
