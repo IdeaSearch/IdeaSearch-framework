@@ -173,7 +173,7 @@ class Sampler:
                     ),
                 )
             
-            example_idea_paths = [current_idea.path for current_idea in examples]
+            example_idea_paths = [current_idea[-1] for current_idea in examples]
             
             evaluator = self._get_idle_evaluator()
             if evaluator:

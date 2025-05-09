@@ -418,6 +418,7 @@ class Database:
                     example_idea.info,
                     similar_num,
                     similarity_prompt,
+                    example_idea.path,
                 ))
 
             return selected_examples
