@@ -551,19 +551,30 @@ class Database:
         start_time = perf_counter()
         
         self.idea_similar_nums = []
-
-        for i, idea_i in enumerate(self.ideas):
-            similar_count = 0
-            for j, idea_j in enumerate(self.ideas):
-                if i == j or idea_i.content == idea_j.content:
-                    similar_count += 1
-                if self.similarity_distance_func == self.default_similarity_distance_func:
-                    score_diff = abs(idea_i.score - idea_j.score)
-                else:
-                    score_diff = self.similarity_distance_func(idea_i.content, idea_j.content)
-                if score_diff <= self.similarity_threshold:
-                    similar_count += 1
-            self.idea_similar_nums.append(similar_count)
+        
+        if self.similarity_distance_func == self.default_similarity_distance_func:
+            
+            scores = np.array([idea.score for idea in self.ideas])
+            diff_matrix = np.abs(scores[:, None] - scores[None, :])
+            for i, idea_i in enumerate(self.ideas):
+                similar_count = np.sum(diff_matrix[i] <= self.similarity_threshold)
+                self.idea_similar_nums.append(int(similar_count))
+            
+        else:
+            for i, idea_i in enumerate(self.ideas):
+                
+                similar_count = 0
+                
+                for j, idea_j in enumerate(self.ideas):
+                    
+                    if i == j or idea_i.content == idea_j.content:
+                        similar_count += 1
+                        continue
+                        
+                    score_diff = self.similarity_distance_func(idea_i.content, idea_j.content) 
+                    if score_diff <= self.similarity_threshold: similar_count += 1
+                        
+                self.idea_similar_nums.append(similar_count)
             
         end_time = perf_counter()
         total_time = end_time - start_time
