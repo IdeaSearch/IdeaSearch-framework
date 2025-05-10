@@ -66,7 +66,7 @@ class Sampler:
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
             for index, example in enumerate(examples):
-                idea, score, info, similar_num, similarity_prompt = example
+                idea, score, info, similar_num, similarity_prompt, _ = example
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
                 examples_section += f'{idea}\n'

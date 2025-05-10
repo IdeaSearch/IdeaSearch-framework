@@ -1,9 +1,14 @@
 import re
 import ast
+import astor
 import random
+import numpy as np
 from typing import List
 from typing import Tuple
+from typing import TypeVar
 from typing import Callable
+from time import perf_counter
+from src.Tools.ScriptExecutor.script_executor import execute_python_script
 
 
 __all__ = [
@@ -21,44 +26,23 @@ def check_ansatz_format(
     """
     检查输入的表达式是否符合预定义的拟设（ansatz）格式要求。
 
-    参数说明：
-    ----------
-    expression : str
-        被检查的数学表达式字符串。
+    本函数会：
+    - 校验表达式中使用的运算符、变量、函数是否符合预定义要求；
+    - 确保变量名、函数名、参数名称等符号合法，并且符合语法要求；
+    - 校验表达式中的参数是否按规定编号且连续，不允许存在常数。
 
-    variables : list[str]
-        表达式中允许使用的变量名列表，所有变量必须严格来自该列表。
-
-    functions : list[str]
-        表达式中允许使用的函数名列表，函数名必须为裸函数名（如 'sin'），
-        不允许包含模块前缀（如 'np.sin'）。
-
-    格式要求：
-    ----------
-    1. 表达式仅允许使用以下运算符：+、-、*、/、**，按 Python 默认优先级解析；
-       其中 + 和 - 可作为一元运算符（unary operator）。
-
-    2. 所有变量名必须来自 `variables` 列表，表达式中不允许出现其他变量。
-
-    3. 表达式不得使用任何常数，允许的“参数”格式为 'para' 加正整数编号，例如 'para1'、'para2' 等；
-       且必须从 para1 开始，连续编号，中间不允许跳过（如 para1、para3 是不合法的），但是允许重复
-       （如可以出现两次 para1 ）。
-
-    4. 只能调用 `functions` 列表中明确允许的函数。
-
-    5. 表达式中只允许出现以下字符：英文字母、数字、下划线、加号、减号、星号、斜杠、
-       括号和英文逗号（,）；不允许出现其他符号（如小数点、引号、汉字等）。
-
-    注意：
-    -----
-    本函数也会首先对 `variables` 和 `functions` 中的内容进行合法性校验，
-    若其中包含非法名称（如带模块前缀的函数名），将立即抛出异常。
+    参数：
+        expression (str): 被检查的数学表达式字符串。
+        variables (list[str]): 允许使用的变量名列表，表达式中的变量必须严格来自该列表。
+        functions (list[str]): 允许使用的函数名列表，函数名必须为裸函数名，不带模块前缀。
 
     返回值：
-    -------
-    int
-        如果表达式合法，返回其中符合格式的参数数量（参数最高至 'paraN' 则返回正整数N）；
-        如果表达式不合法，返回 0。
+        int: 
+            - 如果表达式合法，返回最大参数编号（即 'paramN' 的 N 值）。
+            - 如果表达式不合法，返回 0。
+
+    注意：
+        本函数会首先对 `variables` 和 `functions` 中的内容进行合法性校验，若包含非法名称（如带模块前缀的函数名），将抛出异常。
     """
     
     identifier_pattern = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -78,7 +62,7 @@ def check_ansatz_format(
     used_names = set()
     used_funcs = set()
 
-    para_indices = set()
+    param_indices = set()
 
     def visit(node):
         if isinstance(node, ast.BinOp) or isinstance(node, ast.UnaryOp):
@@ -105,11 +89,11 @@ def check_ansatz_format(
         elif isinstance(node, ast.Name):
             name = node.id
             used_names.add(name)
-            if name.startswith("para"):
-                match = re.fullmatch(r"para([1-9][0-9]*)", name)
+            if name.startswith("param"):
+                match = re.fullmatch(r"param([1-9][0-9]*)", name)
                 if not match:
                     raise ValueError(f"非法参数名称 '{name}'")
-                para_indices.add(int(match.group(1)))
+                param_indices.add(int(match.group(1)))
             elif name not in variables and name not in functions:
                 raise ValueError(f"使用了非法变量或未注册函数 '{name}'")
         elif isinstance(node, ast.Constant):
@@ -124,63 +108,130 @@ def check_ansatz_format(
     except Exception:
         return 0
 
-    if para_indices:
-        max_index = max(para_indices)
-        if sorted(para_indices) != list(range(1, max_index + 1)):
+    if param_indices:
+        max_index = max(param_indices)
+        if sorted(param_indices) != list(range(1, max_index + 1)):
             return 0
         return max_index
     else:
         return 0
     
     
+UseNumericAnsatzReturnType = TypeVar("use_numeric_ansatz_return_type")
+
 def use_ansatz(
     ansatz: str,
-    para_num: int,
-    para_ranges: List[Tuple[float, float]],
-    numeric_ansatz_evaluate_func: Callable[[str], float],
+    param_num: int,
+    param_ranges: List[Tuple[float, float]],
+    use_numeric_ansatz: Callable[[str], UseNumericAnsatzReturnType],
     trial_num: int,
     seed: int
-) -> List[float]:
+) -> List[UseNumericAnsatzReturnType]:
+    
+    """
+    在给定参数范围内多次采样，替换参数后评估 ansatz 表达式，并返回全部评估结果。
+
+    本函数会：
+    - 使用固定随机种子，生成 trial_num 组参数；
+    - 将参数依次替换进 ansatz 表达式，构造出完整可计算的表达式；
+    - 调用用户提供的评估函数 use_numeric_ansatz 执行每一个表达式；
+    - 返回所有评估结果构成的列表。
+
+    参数：
+        ansatz (str): 含有 param1、param2 等参数占位符的表达式字符串。
+        param_num (int): 参数个数，必须为正整数。
+        param_ranges (list[tuple[float, float]]): 每个参数的取值范围，长度必须等于 param_num。
+        use_numeric_ansatz (Callable[[str], UseNumericAnsatzReturnType]): 用于评估表达式的函数，接受字符串返回任意类型。
+        trial_num (int): 评估次数，即生成多少组随机参数。
+        seed (int): 随机种子，用于保证参数采样过程可复现。
+
+    返回值：
+        list[UseNumericAnsatzReturnType]: 包含每次评估结果的列表，类型由 use_numeric_ansatz 的返回值决定。
+    """
+    
     random_generator = random.Random(seed)
     results = []
-    
+
     for _ in range(trial_num):
         parameter_values = [
-            random_generator.uniform(para_ranges[i][0], para_ranges[i][1]) 
-            for i in range(para_num)
+            random_generator.uniform(param_ranges[i][0], param_ranges[i][1])
+            for i in range(param_num)
         ]
-        
+
         expression = ansatz
-        
         for i, value in enumerate(parameter_values):
-            param_name = f"para{i + 1}"
-            expression = replace_param_with_value(expression, param_name, value)
-        
-        result = numeric_ansatz_evaluate_func(expression)
+            param_name = f"param{i + 1}"
+            
+            tree = ast.parse(expression, mode='eval')
+            class ParamReplacer(ast.NodeTransformer):
+                def visit_Name(self, node):
+                    if node.id == param_name:
+                        return ast.Constant(value)
+                    return node
+
+            transformer = ParamReplacer()
+            modified_tree = transformer.visit(tree)
+            ast.fix_missing_locations(modified_tree)
+            expression = astor.to_source(modified_tree).strip()
+
+        result = use_numeric_ansatz(expression)
         results.append(result)
-    
+
     return results
-
-def replace_param_with_value(expression: str, param_name: str, value: float) -> str:
-    tree = ast.parse(expression, mode='eval')
-    
-    class ParamReplacer(ast.NodeTransformer):
-        def visit_Name(self, node):
-            if node.id == param_name:
-                return ast.Constant(value)
-            return node
-
-    transformer = ParamReplacer()
-    modified_tree = transformer.visit(tree)
-    ast.fix_missing_locations(modified_tree)
-    
-    return compile(modified_tree, filename="<ast>", mode="eval")
     
     
 if __name__ == "__main__":
     
-    print(check_ansatz_format(
-        expression = "sqrt(x) + para1 / para1 + cos(para2 * x)",
-        variables = ["x"],
-        functions = ["sqrt", "cos"]
-    ))
+    # 函数用例
+    
+    ansatz = "(x - param1) ** param2"
+    variables = ["x"]
+    functions = []
+    
+    ansatz_param_num = check_ansatz_format(
+        expression = ansatz,
+        variables = variables,
+        functions = functions,
+    )
+    
+    if ansatz_param_num:
+        
+        param_ranges = [
+            (2.0, 4.0),
+            (2.0, 4.0),
+        ]
+        
+        def use_numeric_ansatz(numeric_ansatz):
+            
+            script = f"""if __name__ == "__main__":
+    x = 5.0
+    print({numeric_ansatz}, end = "")
+"""
+
+            run_script_result = execute_python_script(
+                script_content = script,
+                timeout_seconds = 1,
+                python_command = "python",
+            )
+            
+            if not run_script_result["success"]: return 100.0
+            
+            return float(run_script_result["stdout"])
+        
+        start = perf_counter()
+
+        ansatz_output_list = use_ansatz(
+            ansatz = ansatz,
+            param_num = ansatz_param_num,
+            param_ranges = param_ranges,
+            use_numeric_ansatz = use_numeric_ansatz,
+            trial_num = 300,
+            seed = 114514,
+        )
+        
+        end = perf_counter()
+
+        print(f"拟设最小值：{np.min(ansatz_output_list)} （用时 {int(end-start)} 秒）")  
+        
+    else:
+        print("拟设格式有误！")

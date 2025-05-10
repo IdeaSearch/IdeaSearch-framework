@@ -51,7 +51,7 @@ class Evaluator:
         accepted_ideas = []
         score_result = []
         
-        example_idea_string = "，".join([basename(path)] for path in example_idea_paths)
+        example_idea_string = "，".join(basename(path) for path in example_idea_paths)
         
         for idea in generated_ideas:
             

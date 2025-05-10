@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest import main as unittest_main
-from ansatz import check_ansatz_format
-from ansatz_testcases import check_format_testcases
+from src.Tools.Ansatz.ansatz import check_ansatz_format
+from src.Tools.Ansatz.ansatz_testcases import check_format_testcases
 
 
 class TestCheckAnsatzFormat(TestCase):
