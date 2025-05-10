@@ -182,8 +182,7 @@ def use_ansatz(
     
 if __name__ == "__main__":
     
-    # 函数用例
-    
+    # check_ansatz_format 和 use_ansatz 的使用例
     ansatz = "(x - param1) ** param2"
     variables = ["x"]
     functions = []
