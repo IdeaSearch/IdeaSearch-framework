@@ -4,34 +4,15 @@ from scipy.integrate import quad
 
 
 __all__ = [
-    "compute_1d_integral",
     "calculate_chi_squared",
+    "compute_1d_func_integral",
 ]
-
-
-def compute_1d_integral(
-    func: Callable,
-    start: float,
-    end: float,
-    absolute_error: float,
-    relative_error: float,
-)-> float:
-    
-    integral_result = quad(
-        func = func, 
-        a = start,
-        b = end,
-        epsabs = absolute_error, 
-        epsrel = relative_error,
-    )[0]
-    
-    return integral_result
 
 
 def calculate_chi_squared(
     predicted_data, 
     ground_truth_data, 
-    errors
+    errors,
 ):
     
     """
@@ -63,3 +44,43 @@ def calculate_chi_squared(
 
     chi_squared = np.sum(((predicted_data - ground_truth_data) / errors) ** 2)
     return chi_squared
+
+
+def compute_1d_func_integral(
+    func: Callable[[float], float],
+    start: float,
+    end: float,
+    absolute_error: float,
+    relative_error: float,
+)-> float:
+    
+    """
+    计算一维函数在指定区间内的定积分。
+
+    使用 SciPy 的 quad 方法进行数值积分，允许用户设置绝对误差和相对误差控制精度。
+
+    参数：
+        func (Callable[[float], float]): 被积函数，接受一个 float 类型参数并返回 float。
+        start (float): 积分区间起点。
+        end (float): 积分区间终点。
+        absolute_error (float): 积分允许的绝对误差容限。
+        relative_error (float): 积分允许的相对误差容限。
+
+    返回值：
+        float: 计算得到的积分值。
+    """
+    
+    integral_result = quad(
+        func = func, 
+        a = start,
+        b = end,
+        epsabs = absolute_error, 
+        epsrel = relative_error,
+    )[0]
+    
+    return integral_result
+
+
+if __name__ == "__main__":
+    
+    pass
