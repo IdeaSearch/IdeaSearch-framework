@@ -46,12 +46,16 @@ class Evaluator:
         model: str,
         model_temperature: float,
         example_idea_paths: list[str],
+        example_idea_scores: list[float],
     )-> None:
         
         accepted_ideas = []
         score_result = []
         
-        example_idea_string = "，".join(basename(path) for path in example_idea_paths)
+        example_idea_string = "，".join(
+            f"{basename(path)}({score:.2f})" 
+            for path, score in zip(example_idea_paths, example_idea_scores)
+        )
         
         for idea in generated_ideas:
             

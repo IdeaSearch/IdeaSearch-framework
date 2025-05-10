@@ -750,7 +750,7 @@ class Database:
                     )  
                 return
             
-            source = f"由 {basename(selected_idea.path)} 突变而来"
+            source = f"由 {basename(selected_idea.path)}({selected_idea.score:.2f}) 突变而来"
             
             if score >= self.handover_threshold:
             
@@ -845,10 +845,10 @@ class Database:
                         file_path = self.diary_path,
                         content_str = (
                             f"【数据库】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
-                            f"{error}\n此轮交叉变异意外终止！"
+                            f"{error}"
                         ),
                     )
-                return
+                continue
             
             try:
                 score, info = self.evaluate_func(crossover_idea)
@@ -901,7 +901,7 @@ class Database:
                     )  
                 return
             
-            source = f"由 {basename(parent_1.path)} 和 {basename(parent_2.path)} 交叉而来"
+            source = f"由 {basename(parent_1.path)}({parent_1.score:.2f}) 和 {basename(parent_2.path)}({parent_2.score:.2f}) 交叉而来"
 
             if score >= self.handover_threshold:
                 

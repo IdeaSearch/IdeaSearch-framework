@@ -1,6 +1,7 @@
 import ast
-import random
 import astor
+import random
+import traceback
 
 
 __all__ = [
@@ -11,14 +12,18 @@ __all__ = [
     "crossover_functions",
 ]
 
+import ast
+import astor
+import random
+
 
 def perturb_constants(
     code: str, 
     perturb_factor: float = 0.3
 ) -> str:
-    
     """
-    遍历代码中的常数，将每个常数值上下扰动一定的比例（默认30%）。
+    遍历代码中的常数，将每个常数值上下扰动一定的比例（默认30%），
+    自动跳过 range(...) 的参数，以避免浮点数报错。
     
     参数:
         code (str): 输入的 Python 代码字符串。
@@ -28,13 +33,47 @@ def perturb_constants(
         str: 修改后的 Python 代码字符串。
     """
     
-    tree = ast.parse(code)
-    
-    for node in ast.walk(tree):
+    class PerturbTransformer(ast.NodeTransformer):
+        def visit_Call(self, node):
+            # 特判 range(...) 调用，记录其所有参数节点 id
+            if isinstance(node.func, ast.Name) and node.func.id == "range":
+                for arg in node.args:
+                    # 标记这些节点为 "range 参数"，不进行扰动
+                    arg._is_range_arg = True
+            self.generic_visit(node)
+            return node
         
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            perturbation = random.uniform(1 - perturb_factor, 1 + perturb_factor)
-            node.value = node.value * perturbation
+        def visit_Constant(self, node):
+            if isinstance(node.value, (int, float)) and not getattr(node, "_is_range_arg", False):
+                perturbation = random.uniform(1 - perturb_factor, 1 + perturb_factor)
+                node.value = node.value * perturbation
+            return node
+
+    tree = ast.parse(code)
+    tree = PerturbTransformer().visit(tree)
+    return astor.to_source(tree)
+
+
+def flip_if_condition(
+    code: str, 
+    flip_prob: float = 0.5
+)-> str:
+    
+    """
+    遍历代码，翻转 if 条件的测试部分，以给定的概率（默认为50%）使用 not 关键字翻转条件。
+
+    参数:
+        code (str): 输入的 Python 代码字符串。
+        flip_prob (float): 翻转条件的概率，默认为 0.5。
+
+    返回值:
+        str: 修改后的 Python 代码字符串。
+    """
+    
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.If) and random.random() < flip_prob:
+            node.test = ast.UnaryOp(op=ast.Not(), operand=node.test)
     
     return astor.to_source(tree)
 
@@ -123,50 +162,67 @@ def crossover_functions(
         str: 合成后的新函数代码字符串。
     """
 
-    def parse_and_get_function(code: str) -> ast.FunctionDef:
-        mod = ast.parse(code)
+    def parse_and_get_function(code: str, label: str) -> ast.FunctionDef:
+        try:
+            mod = ast.parse(code)
+        except SyntaxError as e:
+            raise SyntaxError(f"[解析失败 - {label}] 语法错误: {e.msg} (line {e.lineno})\n{code}") from e
         for node in mod.body:
             if isinstance(node, ast.FunctionDef):
                 return node
-        raise ValueError("代码中未找到函数定义。")
+        raise ValueError(f"[解析失败 - {label}] 未找到函数定义。请确认输入是否为合法函数。")
 
-    func1 = parse_and_get_function(code1)
-    func2 = parse_and_get_function(code2)
+    try:
+        func1 = parse_and_get_function(code1, "code1")
+        func2 = parse_and_get_function(code2, "code2")
 
-    body1 = func1.body
-    body2 = func2.body
+        # 检查函数签名是否一致
+        if ast.dump(func1.args) != ast.dump(func2.args):
+            raise ValueError("[签名不一致] 两个函数的参数不完全相同，无法交叉。")
 
-    i, j = 0, 0
-    mixed_body = []
-    done1 = done2 = False
+        body1 = func1.body
+        body2 = func2.body
 
-    while not (done1 and done2):
-        choose_first = (not done1 and (done2 or random.random() < 0.5))
-        if choose_first and i < len(body1):
-            stmt = body1[i]
-            mixed_body.append(stmt)
-            i += 1
-            if isinstance(stmt, ast.Return): break
-        elif not choose_first and j < len(body2):
-            stmt = body2[j]
-            mixed_body.append(stmt)
-            j += 1
-            if isinstance(stmt, ast.Return): break
-        if i >= len(body1): done1 = True
-        if j >= len(body2): done2 = True
+        i, j = 0, 0
+        mixed_body = []
+        done1 = done2 = False
 
-    new_func = ast.FunctionDef(
-        name=func1.name,
-        args=func1.args,
-        body=mixed_body,
-        decorator_list=[],
-        returns=func1.returns,
-        type_comment=func1.type_comment,
-        lineno=1
-    )
+        while not (done1 and done2):
+            choose_first = (not done1 and (done2 or random.random() < 0.5))
+            if choose_first and i < len(body1):
+                stmt = body1[i]
+                mixed_body.append(stmt)
+                i += 1
+                if isinstance(stmt, ast.Return): break
+            elif not choose_first and j < len(body2):
+                stmt = body2[j]
+                mixed_body.append(stmt)
+                j += 1
+                if isinstance(stmt, ast.Return): break
+            if i >= len(body1): done1 = True
+            if j >= len(body2): done2 = True
 
-    mod = ast.Module(body=[new_func], type_ignores=[])
-    return ast.unparse(mod)
+        new_func = ast.FunctionDef(
+            name=func1.name,
+            args=func1.args,
+            body=mixed_body,
+            decorator_list=[],
+            returns=func1.returns,
+            type_comment=func1.type_comment,
+            lineno=1
+        )
+
+        mod = ast.Module(body=[new_func], type_ignores=[])
+        return ast.unparse(mod)
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        raise RuntimeError(
+            f"[函数交叉失败] 出现异常：{e.__class__.__name__}: {e}\n"
+            f"--- code1 ---\n{code1}\n"
+            f"--- code2 ---\n{code2}\n"
+            f"--- traceback ---\n{tb}"
+        ) from e
 
 
 if __name__ == "__main__":

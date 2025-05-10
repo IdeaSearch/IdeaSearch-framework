@@ -174,10 +174,19 @@ class Sampler:
                 )
             
             example_idea_paths = [current_idea[-1] for current_idea in examples]
+            example_idea_scores = [current_idea[1] for current_idea in examples]
             
             evaluator = self._get_idle_evaluator()
             if evaluator:
-                evaluator.evaluate(generated_ideas, model, model_temperature, example_idea_paths)
+                
+                evaluator.evaluate(
+                    generated_ideas = generated_ideas, 
+                    model = model, 
+                    model_temperature = model_temperature, 
+                    example_idea_paths = example_idea_paths, 
+                    example_idea_scores = example_idea_scores
+                )
+                
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
