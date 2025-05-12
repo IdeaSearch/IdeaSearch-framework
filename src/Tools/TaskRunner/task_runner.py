@@ -1,7 +1,10 @@
+import re
 import os
 import shlex
 import tempfile
 import subprocess
+import numpy as np
+from typing import Optional
 from threading import Lock
 
 
@@ -10,40 +13,47 @@ __all__ = [
     "delete_file",
     "execute_python_script",
     "execute_command",
+    "measure_perf_runtime",
 ]
 
 
 tempfile_lock = Lock()
 
 def get_tmp_file_path(
-    suffix: str = "", 
-    prefix: str = "tmp_", 
-    directory: str = None
+    suffix: Optional[str] = "",
+    prefix: str = "tmp_",
+    directory: Optional[str] = None,
 ) -> str:
     
     """
-    在线程安全的环境中生成一个临时文件的路径。
+    在线程安全的环境中生成一个临时文件路径或临时目录。
 
     本函数会：
-      - 在线程锁保护下生成一个唯一的临时文件路径。
-    
+      - 如果 suffix 为 None，则创建一个临时目录并返回其路径；
+      - 否则，在线程锁保护下生成一个唯一的临时文件路径（不创建文件）。
+
     Args:
-        suffix (str): 文件后缀名，默认空字符串。
-        prefix (str): 文件前缀，默认 "tmp_"。
-        directory (str): 临时文件保存的目录，默认 None（即使用系统默认临时目录）。
+        suffix (str or None): 文件后缀名；若为 None，则表示创建临时目录。
+        prefix (str): 文件或目录前缀，默认 "tmp_"。
+        directory (str): 保存路径，默认使用系统临时目录。
 
     Returns:
-        str: 生成的临时文件路径。
+        str: 生成的临时文件路径或临时目录路径。
     """
-
     with tempfile_lock:
-        tmp_file_path = tempfile.mktemp(
-            suffix = suffix, 
-            prefix = prefix, 
-            dir = directory,
-        )
-        
-    return tmp_file_path
+        if suffix is None:
+            tmp_dir_path = tempfile.mkdtemp(
+                prefix = prefix,
+                dir = directory,
+            )
+            return tmp_dir_path
+        else:
+            tmp_file_path = tempfile.mktemp(
+                suffix = suffix,
+                prefix = prefix,
+                dir = directory,
+            )
+            return tmp_file_path
 
 
 def delete_file(
@@ -51,13 +61,13 @@ def delete_file(
 ) -> None:
     
     """
-    删除指定的文件或目录。
+    删除指定的文件或空目录。
 
     本函数会：
-      - 在线程锁保护下删除指定路径的文件或目录。
+      - 在线程锁保护下删除指定路径的文件或空目录。
     
     Args:
-        path (str): 要删除的文件或目录路径。
+        path (str): 要删除的文件或空目录路径。
     """
     
     with tempfile_lock:
@@ -182,9 +192,47 @@ def execute_python_script(
     )
     
     return result_info
-       
-        
 
 
+def measure_perf_runtime(
+    path: str,
+    trial_num: int = 3
+) -> float:
+    """
+    使用 Linux 的 perf 工具测量一个可执行文件的平均运行时间（秒）.
 
+    本函数会：
+      - 通过 perf 工具多次执行给定的 .out 可执行文件
+      - 解析 stderr 输出中 "seconds time elapsed" 所对应的浮点数字符串
+      - 返回所有成功测量结果的平均值（单位：秒）
 
+    注意事项：
+      - perf 可能需要较高权限（例如 root 或 perf_event_paranoid 设定）
+      - perf 会向 stderr 输出统计信息，因此本函数通过 stderr 进行解析
+      - 若全部测量失败（无法解析时间），将抛出 RuntimeError
+
+    Args:
+        path (str): 可执行文件的路径（例如 "./a.out"）
+        trial_num (int): 执行次数，默认 3 次以获得更稳健的平均值
+
+    Returns:
+        float: 平均运行时间（单位：秒）
+    """
+    times = []
+    pattern = r"([\d.]+)\s+seconds time elapsed"
+
+    for _ in range(trial_num):
+        result = subprocess.run(
+            ["perf", "stat", path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        match = re.search(pattern, result.stderr)
+        if match:
+            times.append(float(match.group(1)))
+
+    if times:
+        return float(np.mean(times))
+    else:
+        raise RuntimeError(f"测量可执行文件 {path} 的运行时间时全部失败，可能是权限不足或 perf 未安装.")
