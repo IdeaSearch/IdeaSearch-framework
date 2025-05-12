@@ -1,98 +1,74 @@
 import os
 import shlex
 import tempfile
-import threading
 import subprocess
+from threading import Lock
 
 
 __all__ = [
+    "get_tmp_file_path",
+    "delete_file",
     "execute_python_script",
-    "execute_shell_command",
+    "execute_command",
 ]
 
 
-tempfile_lock = threading.Lock()
+tempfile_lock = Lock()
 
-
-def execute_python_script(
-    script_content: str,
-    timeout_seconds: int = 300,
-    python_command: str = "python",
-) -> dict:
+def get_tmp_file_path(
+    suffix: str = "", 
+    prefix: str = "tmp_", 
+    directory: str = None
+) -> str:
     
     """
-    在线程安全的环境中临时生成并执行一段 Python 脚本，并捕获其输出与状态。
+    在线程安全的环境中生成一个临时文件的路径。
 
     本函数会：
-      - 在线程锁保护下生成唯一的临时目录与 Python 脚本文件；
-      - 执行该脚本，捕获标准输出、错误输出和退出码；
-      - 删除临时文件与目录，保持文件系统整洁；
-      - 返回包含执行结果信息的字典。
-
+      - 在线程锁保护下生成一个唯一的临时文件路径。
+    
     Args:
-        script_content (str): 要执行的 Python 脚本内容（字符串形式）。
-        timeout_seconds (int): 最长允许的执行时间（单位：秒）。默认 300 秒。
-        python_command (str): Python 可执行命令（如 "python" 或 "python3"）。默认 "python"。
+        suffix (str): 文件后缀名，默认空字符串。
+        prefix (str): 文件前缀，默认 "tmp_"。
+        directory (str): 临时文件保存的目录，默认 None（即使用系统默认临时目录）。
 
     Returns:
-        dict: 包含以下字段的执行结果信息：
-            - success (bool): 是否成功执行（即退出码为 0）。
-            - stdout (str): 脚本的标准输出。
-            - stderr (str): 脚本的标准错误输出。
-            - timeout (bool): 是否超时退出。
-            - exit_code (int): 子进程的退出码。
-            - exception (Optional[str]): 如果执行中发生异常，记录异常类型与信息，否则为 None。
+        str: 生成的临时文件路径。
+    """
+
+    with tempfile_lock:
+        tmp_file_path = tempfile.mktemp(
+            suffix = suffix, 
+            prefix = prefix, 
+            dir = directory,
+        )
+        
+    return tmp_file_path
+
+
+def delete_file(
+    path: str
+) -> None:
+    
+    """
+    删除指定的文件或目录。
+
+    本函数会：
+      - 在线程锁保护下删除指定路径的文件或目录。
+    
+    Args:
+        path (str): 要删除的文件或目录路径。
     """
     
-    result_info = {
-        "success": False,
-        "stdout": "",
-        "stderr": "",
-        "timeout": False,
-        "exit_code": None,
-        "exception": None
-    }
-
-    try:
-       
-        with tempfile_lock:
-            temp_dir = tempfile.mkdtemp()
-            tmp_file_path = os.path.join(temp_dir, "script.py")
-            
-        with open(tmp_file_path, "w", encoding="utf-8") as tmp_file:
-            tmp_file.write(script_content)
-       
-        process = subprocess.run(
-            [python_command, tmp_file_path],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout_seconds,
-        )
-
-        result_info["stdout"] = process.stdout
-        result_info["stderr"] = process.stderr
-        result_info["exit_code"] = process.returncode
-        result_info["success"] = (process.returncode == 0)
-
-    except subprocess.TimeoutExpired as e:
-        result_info["timeout"] = True
-        result_info["exception"] = f"TimeoutExpired: {e}"
-        
-    except Exception as e:
-        result_info["exception"] = f"{type(e).__name__}: {e}"
-        
-    finally:
-        with tempfile_lock:
-            if os.path.exists(tmp_file_path):
-                os.remove(tmp_file_path)
-            if os.path.exists(temp_dir):
-                os.rmdir(temp_dir)
-
-    return result_info
+    with tempfile_lock:
+        if os.path.exists(path):
+            if os.path.isdir(path):
+                os.rmdir(path)
+            else:
+                os.remove(path)
 
 
-def execute_shell_command(
+def execute_command(
     command: str,
     timeout_seconds: int = 300,
     shell: bool = False,
@@ -156,4 +132,59 @@ def execute_shell_command(
         result_info["exception"] = f"{type(e).__name__}: {e}"
 
     return result_info
+
+
+def execute_python_script(
+    script_content: str,
+    timeout_seconds: int = 300,
+    python_command: str = "python",
+) -> dict:
+    
+    """
+    在线程安全的环境中临时生成并执行一段 Python 脚本，并捕获其输出与状态。
+
+    本函数会：
+      - 在线程锁保护下生成唯一的临时目录与 Python 脚本文件；
+      - 执行该脚本，捕获标准输出、错误输出和退出码；
+      - 删除临时文件与目录，保持文件系统整洁；
+      - 返回包含执行结果信息的字典。
+
+    Args:
+        script_content (str): 要执行的 Python 脚本内容（字符串形式）。
+        timeout_seconds (int): 最长允许的执行时间（单位：秒）。默认 300 秒。
+        python_command (str): Python 可执行命令（如 "python" 或 "python3"）。默认 "python"。
+
+    Returns:
+        dict: 包含以下字段的执行结果信息：
+            - success (bool): 是否成功执行（即退出码为 0）。
+            - stdout (str): 脚本的标准输出。
+            - stderr (str): 脚本的标准错误输出。
+            - timeout (bool): 是否超时退出。
+            - exit_code (int): 子进程的退出码。
+            - exception (Optional[str]): 如果执行中发生异常，记录异常类型与信息，否则为 None。
+    """
+       
+    tmp_file_path = get_tmp_file_path(
+        suffix = ".py"
+    )
+        
+    with open(tmp_file_path, "w", encoding="utf-8") as tmp_file:
+        tmp_file.write(script_content)
+        
+    result_info =  execute_command(
+        command = python_command + " " + tmp_file_path,
+        timeout_seconds = timeout_seconds,
+        shell = False,
+    )
+    
+    delete_file(
+        path = tmp_file_path
+    )
+    
+    return result_info
+       
+        
+
+
+
 
