@@ -12,10 +12,6 @@ __all__ = [
     "crossover_functions",
 ]
 
-import ast
-import astor
-import random
-
 
 def perturb_constants(
     code: str, 
