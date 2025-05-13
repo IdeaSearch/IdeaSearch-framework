@@ -1,25 +1,23 @@
-import re
 import os
 import shlex
 import tempfile
 import subprocess
-import numpy as np
 from typing import Optional
 from threading import Lock
 
 
 __all__ = [
-    "get_tmp_file_path",
-    "delete_file",
-    "execute_python_script",
+    "get_tmp_path",
+    "delete_path",
     "execute_command",
-    "measure_perf_runtime",
+    "execute_python_script",
 ]
 
 
 tempfile_lock = Lock()
 
-def get_tmp_file_path(
+
+def get_tmp_path(
     suffix: Optional[str] = "",
     prefix: str = "tmp_",
     directory: Optional[str] = None,
@@ -56,7 +54,7 @@ def get_tmp_file_path(
             return tmp_file_path
 
 
-def delete_file(
+def delete_path(
     path: str
 ) -> None:
     
@@ -174,7 +172,7 @@ def execute_python_script(
             - exception (Optional[str]): 如果执行中发生异常，记录异常类型与信息，否则为 None。
     """
        
-    tmp_file_path = get_tmp_file_path(
+    tmp_file_path = get_tmp_path(
         suffix = ".py"
     )
         
@@ -187,52 +185,8 @@ def execute_python_script(
         shell = False,
     )
     
-    delete_file(
+    delete_path(
         path = tmp_file_path
     )
     
     return result_info
-
-
-def measure_perf_runtime(
-    path: str,
-    trial_num: int = 3
-) -> float:
-    """
-    使用 Linux 的 perf 工具测量一个可执行文件的平均运行时间（秒）.
-
-    本函数会：
-      - 通过 perf 工具多次执行给定的 .out 可执行文件
-      - 解析 stderr 输出中 "seconds time elapsed" 所对应的浮点数字符串
-      - 返回所有成功测量结果的平均值（单位：秒）
-
-    注意事项：
-      - perf 可能需要较高权限（例如 root 或 perf_event_paranoid 设定）
-      - perf 会向 stderr 输出统计信息，因此本函数通过 stderr 进行解析
-      - 若全部测量失败（无法解析时间），将抛出 RuntimeError
-
-    Args:
-        path (str): 可执行文件的路径（例如 "./a.out"）
-        trial_num (int): 执行次数，默认 3 次以获得更稳健的平均值
-
-    Returns:
-        float: 平均运行时间（单位：秒）
-    """
-    times = []
-    pattern = r"([\d.]+)\s+seconds time elapsed"
-
-    for _ in range(trial_num):
-        result = subprocess.run(
-            ["perf", "stat", path],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        match = re.search(pattern, result.stderr)
-        if match:
-            times.append(float(match.group(1)))
-
-    if times:
-        return float(np.mean(times))
-    else:
-        raise RuntimeError(f"测量可执行文件 {path} 的运行时间时全部失败，可能是权限不足或 perf 未安装.")
