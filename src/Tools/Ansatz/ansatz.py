@@ -9,7 +9,7 @@ from typing import TypeVar
 from typing import Callable
 from time import perf_counter
 from scipy.optimize import minimize
-from src.Tools.ScriptExecutor.script_executor import execute_python_script
+from src.Tools.TaskRunner.task_runner import execute_python_script
 
 
 __all__ = [
