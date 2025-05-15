@@ -6,3 +6,4 @@ document/**
 .idea/
 .idea/**
 __pycache__
+*.out
