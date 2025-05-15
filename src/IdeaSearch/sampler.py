@@ -1,4 +1,7 @@
 from threading import Lock
+from typing import Optional
+from typing import Callable
+from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from src.utils import append_to_file
@@ -20,6 +23,7 @@ class Sampler:
         console_lock: Lock,
         diary_path: str,
         record_prompt_in_diary: str,
+        filter_func: Optional[Callable[[str], str]],
     ):
         self.id = sampler_id
         self.database = database
@@ -32,6 +36,7 @@ class Sampler:
         self.console_lock = console_lock
         self.diary_path = diary_path
         self.record_prompt_in_diary = record_prompt_in_diary
+        self.filter_func = filter_func
 
     def run(self):
         
@@ -66,9 +71,24 @@ class Sampler:
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
             for index, example in enumerate(examples):
-                idea, score, info, similar_num, similarity_prompt, _ = example
+                idea, score, info, similar_num, similarity_prompt, path = example
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
+                
+                if self.filter_func is not None:
+                    try:
+                        idea = self.filter_func(idea)
+                    except Exception as error:
+                        with self.console_lock:
+                            append_to_file(
+                                file_path = self.diary_path,
+                                content_str = (
+                                    f"【{self.id}号采样器】 "
+                                    f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
+                                    f"{error}\n延用原来的 idea ！"
+                                ),
+                            )
+
                 examples_section += f'{idea}\n'
                 examples_section += f"评分：{score:.2f}\n"
                 if info is not None:

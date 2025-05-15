@@ -38,6 +38,7 @@ def get_tmp_path(
     Returns:
         str: 生成的临时文件路径或临时目录路径。
     """
+    
     with tempfile_lock:
         if suffix is None:
             tmp_dir_path = tempfile.mkdtemp(

@@ -92,6 +92,7 @@ def IdeaSearch(
     idea_uid_length: int = 4,
     record_prompt_in_diary: bool = True,
     evaluate_func_accept_evaluator_id: bool = False,
+    filter_func: Optional[Callable[[str], str]] = None,
 ) -> None:
     
     """
@@ -176,6 +177,7 @@ def IdeaSearch(
         idea_uid_length (int): idea 文件名中 uid 的长度。
         record_prompt_in_diary (bool): 是否将每轮的 Prompt 记录到日志中（建议初创子项目时打开此选项，后续关闭）。
         evaluate_func_accept_evaluator_id (bool): 允许额外将evaluator的id传入evaluate_func（以提高并行性）；需要提供默认值。
+        filter_func (Optional[Callable[[str], str]]): 采样拼prompt前可以先过一遍自行实现的filter_func（以去掉代码头、多余文字）。
 
     Returns:
         None
@@ -231,6 +233,7 @@ def IdeaSearch(
         idea_uid_length,
         record_prompt_in_diary,
         evaluate_func_accept_evaluator_id,
+        filter_func,
     )
     
     if diary_path is None:
@@ -345,6 +348,7 @@ def IdeaSearch(
             console_lock = console_lock,
             diary_path = diary_path,
             record_prompt_in_diary = record_prompt_in_diary,
+            filter_func = filter_func,
         )
         for i in range(samplers_num)
     ]
@@ -421,6 +425,7 @@ def IdeaSearch_entrance_check(
     idea_uid_length: int,
     record_prompt_in_diary: bool,
     evaluate_func_accept_evaluator_id: bool,
+    filter_func: Optional[Callable[[str], str]] = None,
 ) -> None:
 
     for name, val in {
@@ -545,5 +550,8 @@ def IdeaSearch_entrance_check(
         if (not isinstance(score_range, tuple) or len(score_range) != 2
             or not all(isinstance(x, (int, float)) for x in score_range)):
             raise TypeError("【IdeaSearch参数类型错误】 `score_range` 应为二元 float 元组")
-
+        
+    if filter_func is not None and not callable(filter_func):
+        raise TypeError("【IdeaSearch参数类型错误】`filter_func` 应为 None 或 str -> str 的函数")
+    
     return None
