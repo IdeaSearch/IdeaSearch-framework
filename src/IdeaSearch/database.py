@@ -1061,7 +1061,7 @@ class Database:
         point_num = len(self.assess_result_ndarray_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
         
-        x_axis_range = (0, len(self.assess_result_ndarray_x_axis))
+        x_axis_range = (0, self.max_interaction_num)
         x_axis_range_expand_ratio = 0.08
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
@@ -1132,7 +1132,7 @@ class Database:
         point_num = len(self.scores_of_models_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
         
-        x_axis_range = (0, len(self.scores_of_models_x_axis))
+        x_axis_range = (0, self.max_interaction_num)
         x_axis_range_expand_ratio = 0.08
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)

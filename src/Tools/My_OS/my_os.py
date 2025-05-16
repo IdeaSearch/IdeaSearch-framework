@@ -37,6 +37,7 @@ def guarantee_path_exist(path):
         # 创建路径
         os.makedirs(path)
         
+ 
 def assert_path_exist(path, err_message = None):
     """
     断言给定路径存在
