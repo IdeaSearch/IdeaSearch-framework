@@ -554,12 +554,19 @@ class Database:
         self.idea_similar_nums = []
         
         if self.similarity_distance_func == self.default_similarity_distance_func:
-            
+
             scores = np.array([idea.score for idea in self.ideas])
             diff_matrix = np.abs(scores[:, None] - scores[None, :])
+
             for i, idea_i in enumerate(self.ideas):
-                similar_count = np.sum(diff_matrix[i] <= self.similarity_threshold)
-                self.idea_similar_nums.append(int(similar_count))
+                score_similar_indices = set(np.where(diff_matrix[i] <= self.similarity_threshold)[0])
+                content_equal_indices = set(
+                    j for j, idea_j in enumerate(self.ideas)
+                    if idea_j.content == idea_i.content
+                )
+                total_similar_indices = score_similar_indices | content_equal_indices
+
+                self.idea_similar_nums.append(len(total_similar_indices))
             
         else:
             for i, idea_i in enumerate(self.ideas):
