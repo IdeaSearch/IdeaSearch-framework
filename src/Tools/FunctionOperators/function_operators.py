@@ -1,3 +1,4 @@
+import re
 import ast
 import astor
 import random
@@ -10,6 +11,7 @@ __all__ = [
     "insert_random_return",
     "merge_adjacent_if",
     "crossover_functions",
+    "extract_first_python_code_block",
 ]
 
 
@@ -406,3 +408,26 @@ if __name__ == "__main__":
     )
     
     print(new_code)
+    
+    
+def extract_first_python_code_block(
+    llm_response: str,
+) -> str:
+    """从 LLM 输出中提取第一个 Python 代码块（Markdown 格式）。
+
+    Args:
+        llm_response (str): LLM 的响应文本，可能包含 Markdown 格式的代码块。
+
+    Returns:
+        str: 提取出的第一个 Python 代码块内容（去除前后空白）。如果找不到代码块，则返回原始文本。
+    """
+    llm_response = llm_response.strip()
+    if '`' in llm_response:
+        code_blocks = re.findall(
+            r"```(?:python)?\s*(.*?)\s*```",
+            llm_response,
+            flags=re.DOTALL | re.IGNORECASE
+        )
+        if code_blocks:
+            return code_blocks[0].strip()
+    return llm_response
