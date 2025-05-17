@@ -278,6 +278,8 @@ class Database:
                      
         if assess_func is not None:
             
+            self.assess_interaction_count = 0
+            
             assert assess_interval is not None
             
             self.assess_on = True
@@ -485,9 +487,11 @@ class Database:
             
             if self.assess_on:
                 
+                self.assess_interaction_count += 1
+                
                 assert self.assess_interval is not None
                 
-                if self.interaction_count % self.assess_interval == 0:
+                if self.assess_interaction_count % self.assess_interval == 0:
                     self._assess_database()
             
             index = 0
