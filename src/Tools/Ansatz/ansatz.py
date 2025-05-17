@@ -142,7 +142,7 @@ def use_ansatz_random_trial(
     参数：
         ansatz (str): 含有 param1、param2 等参数占位符的表达式字符串。
         param_num (int): 参数个数，必须为正整数。
-        param_ranges (list[tuple[float, float]]): 每个参数的取值范围，长度必须等于 param_num。
+        param_ranges (list[Tuple[float, float]]): 每个参数的取值范围，长度必须等于 param_num。
         use_numeric_ansatz (Callable[[str], UseNumericAnsatzReturnType]): 用于评估表达式的函数，接受字符串返回任意类型。
         trial_num (int): 随机尝试次数，即生成多少组参数进行评估。
         seed (int): 随机种子，用于保证参数采样过程可复现。
@@ -204,7 +204,7 @@ def use_ansatz_optimize(
     参数：
         ansatz (str): 含有 param1、param2 等参数占位符的表达式字符串。
         param_num (int): 参数个数，必须为正整数。
-        param_ranges (list[tuple[float, float]]): 每个参数的取值范围，长度必须等于 param_num。
+        param_ranges (list[Tuple[float, float]]): 每个参数的取值范围，长度必须等于 param_num。
         use_numeric_ansatz (Callable[[str], float]): 用于评估表达式的函数，接受完整表达式字符串，返回一个 float 值。
         trial_num (int): 优化尝试次数，即从随机参数范围内生成多少个初始点并进行优化。
         seed (int): 随机种子，用于保证初始化参数生成过程可复现。

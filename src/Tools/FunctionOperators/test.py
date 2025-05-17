@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def priority(current_point: tuple[int, int, int, int, int, int, int, int], history_points: list[tuple[int, int, int, int, int, int, int, int]]) -> float:
+def priority(current_point: Tuple[int, int, int, int, int, int, int, int], history_points: list[Tuple[int, int, int, int, int, int, int, int]]) -> float:
     current = np.array(current_point)
     current = np.array(current_point)
     set_size = len(history_points)

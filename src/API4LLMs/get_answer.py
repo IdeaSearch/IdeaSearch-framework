@@ -13,7 +13,7 @@ __all__ = [
 
 def get_answer(
     model_name : str, 
-    model_temperature : Optional[str],
+    model_temperature : Optional[float],
     system_prompt: str,
     prompt : str,
 ):
@@ -45,7 +45,7 @@ def get_answer_online(
     api_key: str,
     base_url: str,
     model: str,
-    temperature: float,
+    temperature: Optional[float],
     system_prompt: str,
     prompt: str,
 )-> str:
@@ -74,13 +74,19 @@ def get_answer_online(
             ],
             stream = False
         )
-
-    return response.choices[0].message.content
+        
+    response_content = response.choices[0].message.content
+    
+    if response_content is not None:
+        return response_content
+    
+    else:
+        return ""
 
 
 def get_answer_local(
     port: int,
-    temperature: float,
+    temperature: Optional[float],
     system_prompt: str,
     prompt: str,
 ) -> str:

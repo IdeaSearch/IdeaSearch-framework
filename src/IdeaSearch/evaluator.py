@@ -1,6 +1,8 @@
 from threading import Lock
 from math import isnan
+from typing import Tuple
 from typing import Callable
+from typing import Optional
 from os.path import basename
 from src.IdeaSearch.database import Database
 from src.utils import append_to_file
@@ -12,11 +14,10 @@ class Evaluator:
         self, 
         evaluator_id: int,
         database : Database,
-        evaluate_func: Callable[[str], tuple[float, str]],
+        evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
         hand_over_threshold: float,
         console_lock : Lock,
         diary_path: str,
-        evaluate_func_accept_evaluator_id: bool,
     ):
         
         self.id = evaluator_id
@@ -28,7 +29,6 @@ class Evaluator:
         self.status = "Vacant"
         self.diary_path = diary_path
         self.hand_over_threshold = hand_over_threshold
-        self.evaluate_func_accept_evaluator_id = evaluate_func_accept_evaluator_id
         
 
     def try_acquire(self):
@@ -60,10 +60,8 @@ class Evaluator:
         for idea in generated_ideas:
             
             try:
-                if self.evaluate_func_accept_evaluator_id:
-                    score, info = self.evaluate_func(idea, self.id)
-                else:
-                    score, info = self.evaluate_func(idea)
+                
+                score, info = self.evaluate_func(idea)
                 
                 if not isinstance(score, float):
                     with self.console_lock:

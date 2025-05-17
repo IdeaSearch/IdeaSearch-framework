@@ -1,5 +1,6 @@
 import concurrent.futures
 from threading import Lock
+from typing import Tuple
 from typing import Callable
 from typing import Optional
 # from typing import List
@@ -28,12 +29,12 @@ def IdeaSearch(
     models: list[str],
     model_temperatures: list[float],
     max_interaction_num: int,
-    evaluate_func: Callable[[str], tuple[float, str]],
+    evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
     
     *,  # 选填参数分界线
     
     # 基础设置
-    score_range: tuple[float, float] = (0.0, 100.0),
+    score_range: Tuple[float, float] = (0.0, 100.0),
     hand_over_threshold: float = 0.0,
     system_prompt: Optional[str] = None,
     diary_path: Optional[str] = None,
@@ -51,7 +52,7 @@ def IdeaSearch(
     model_sample_temperature: float = 50.0,
 
     # 数据库评估
-    assess_func: Optional[Callable[[list[str], list[float], list[str]], float]] = None,
+    assess_func: Optional[Callable[[list[str], list[float], list[Optional[str]]], float]] = None,
     assess_interval: Optional[int] = None,
     assess_baseline: Optional[float] = None,
     assess_result_data_path: Optional[str] = None,
@@ -91,7 +92,6 @@ def IdeaSearch(
     # 其他配置
     idea_uid_length: int = 4,
     record_prompt_in_diary: bool = True,
-    evaluate_func_accept_evaluator_id: bool = False,
     filter_func: Optional[Callable[[str], str]] = None,
 ) -> None:
     
@@ -114,11 +114,11 @@ def IdeaSearch(
         models (list[str]): 参与生成 idea 的模型名称列表。
         model_temperatures (list[float]): 各模型的采样温度，与 models 等长。
         max_interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
-        evaluate_func (Callable[[str], tuple[float, str]]): 对单个 idea 进行评分的函数。
+        evaluate_func (Callable[[str], Tuple[float, str]]): 对单个 idea 进行评分的函数。
 
     Keyword Args:
         # 基础设置
-        score_range (tuple[float, float]): 评分区间范围，用于归一化和显示。
+        score_range (Tuple[float, float]): 评分区间范围，用于归一化和显示。
         hand_over_threshold (float): idea 进入数据库的最低评分要求。
         system_prompt (Optional[str]): 系统提示词。
         diary_path (Optional[str]): 日志文件路径。
@@ -176,7 +176,6 @@ def IdeaSearch(
         # 其他配置
         idea_uid_length (int): idea 文件名中 uid 的长度。
         record_prompt_in_diary (bool): 是否将每轮的 Prompt 记录到日志中（建议初创子项目时打开此选项，后续关闭）。
-        evaluate_func_accept_evaluator_id (bool): 允许额外将evaluator的id传入evaluate_func（以提高并行性）；需要提供默认值。
         filter_func (Optional[Callable[[str], str]]): 采样拼prompt前可以先过一遍自行实现的filter_func（以去掉代码头、多余文字）。
 
     Returns:
@@ -232,7 +231,6 @@ def IdeaSearch(
         delete_when_initial_cleanse,
         idea_uid_length,
         record_prompt_in_diary,
-        evaluate_func_accept_evaluator_id,
         filter_func,
     )
     
@@ -331,7 +329,6 @@ def IdeaSearch(
             hand_over_threshold = hand_over_threshold,
             console_lock = console_lock,
             diary_path = diary_path,
-            evaluate_func_accept_evaluator_id = evaluate_func_accept_evaluator_id,
         )
         for i in range(evaluators_num)
     ]
@@ -383,8 +380,8 @@ def IdeaSearch_entrance_check(
     models: list[str],
     model_temperatures: list[float],
     max_interaction_num: int,
-    evaluate_func: Callable[[str], tuple[float, str]],
-    score_range: tuple[float, float],
+    evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
+    score_range: Tuple[float, float],
     hand_over_threshold: float,
     system_prompt: Optional[str],
     diary_path: Optional[str],
@@ -396,7 +393,7 @@ def IdeaSearch_entrance_check(
     generate_num: int,
     sample_temperature: float,
     model_sample_temperature: float,
-    assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
+    assess_func: Optional[Callable[[list[str], list[float], list[Optional[str]]], float]],
     assess_interval: Optional[int],
     assess_baseline: Optional[float],
     assess_result_data_path: Optional[str],
@@ -424,7 +421,6 @@ def IdeaSearch_entrance_check(
     delete_when_initial_cleanse: bool,
     idea_uid_length: int,
     record_prompt_in_diary: bool,
-    evaluate_func_accept_evaluator_id: bool,
     filter_func: Optional[Callable[[str], str]] = None,
 ) -> None:
 
@@ -490,8 +486,6 @@ def IdeaSearch_entrance_check(
         raise TypeError("【IdeaSearch参数类型错误】 `initialization_skip_evaluation` 应为 bool 类型")
     if not isinstance(record_prompt_in_diary, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `record_prompt_in_diary` 应为 bool 类型")
-    if not isinstance(evaluate_func_accept_evaluator_id, bool):
-        raise TypeError("【IdeaSearch参数类型错误】 `evaluate_func_accept_evaluator_id` 应为 bool 类型")
     if not isinstance(model_assess_save_result, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `model_assess_save_result` 应为 bool 类型")
 
@@ -547,7 +541,7 @@ def IdeaSearch_entrance_check(
             raise ValueError("【IdeaSearch参数错误】`similarity_sys_info_prompts` 的长度应比 `similarity_sys_info_thresholds` 多 1")
 
     if score_range is not None:
-        if (not isinstance(score_range, tuple) or len(score_range) != 2
+        if (not isinstance(score_range, Tuple) or len(score_range) != 2
             or not all(isinstance(x, (int, float)) for x in score_range)):
             raise TypeError("【IdeaSearch参数类型错误】 `score_range` 应为二元 float 元组")
         

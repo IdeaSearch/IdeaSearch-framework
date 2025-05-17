@@ -12,7 +12,7 @@ evaluate_upper_bound = 30.0
 
 def evaluate(
     idea: str,
-)-> tuple[float, Optional[str]]:
+)-> Tuple[float, Optional[str]]:
     
     """
     对大语言模型生成的答案进行评估，返回分数和评语。
@@ -21,7 +21,7 @@ def evaluate(
         idea (str): 大语言模型生成的程序/文本。
 
     Returns:
-        tuple[float, str]: 包含两个元素的元组：
+        Tuple[float, str]: 包含两个元素的元组：
             - float: 回答的评分（0~100）。
             - str: 对回答的简要评语或解释信息（可为 None）。
     """

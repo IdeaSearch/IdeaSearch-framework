@@ -11,8 +11,10 @@ from time import perf_counter
 from math import isnan
 from threading import Lock
 from pathlib import Path
+from typing import Tuple
 from typing import Callable
 from typing import Optional
+from typing import List
 from os.path import basename
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
@@ -28,12 +30,12 @@ class Idea:
     
     def __init__(
         self, 
-        path,
-        evaluate_func, 
-        content = None, 
-        score = None, 
-        info = None,
-        source = None,
+        path: str,
+        evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]], 
+        content: Optional[str] = None, 
+        score: Optional[float] = None, 
+        info: Optional[str] = None,
+        source: Optional[str] = None,
     ):
         self.path = str(path)
         self.source = source
@@ -58,14 +60,14 @@ class Database:
         models: list[str],
         model_temperatures: list[float],
         max_interaction_num: int,
-        evaluate_func: Callable[[str], tuple[float, str]],
-        score_range: tuple[float, float],
+        evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
+        score_range: Tuple[float, float],
         hand_over_threshold: float,
         diary_path: Optional[str],
         examples_num: int,
         sample_temperature: float,
         model_sample_temperature: float,
-        assess_func: Optional[Callable[[list[str], list[float], list[str]], float]],
+        assess_func: Optional[Callable[[list[str], list[float], list[Optional[str]]], float]],
         assess_interval: Optional[int],
         assess_baseline: Optional[float],
         assess_result_data_path: Optional[str],
@@ -117,6 +119,8 @@ class Database:
         self.default_similarity_distance_func = default_similarity_distance_func
         self.idea_uid_length = idea_uid_length
         self.console_lock = console_lock
+        
+        score_sheet_backup: Optional[dict] = None
         
         if initialization_skip_evaluation:
             try:
@@ -174,7 +178,12 @@ class Database:
             
             if os.path.isfile(path):
                 
+                idea: Optional[Idea] = None
+                
                 if initialization_skip_evaluation:
+                    
+                    assert score_sheet_backup is not None
+                    
                     if basename(path) in score_sheet_backup:
                         
                         with open(path, 'r', encoding = "UTF-8") as file:
@@ -186,7 +195,7 @@ class Database:
                         if info == "": info = None
                             
                         idea = Idea(
-                            path = path,
+                            path = str(path),
                             evaluate_func = None,
                             content = content,
                             score = score,
@@ -215,17 +224,19 @@ class Database:
                             )
                             
                         idea = Idea(
-                            path = path,
+                            path = str(path),
                             evaluate_func = evaluate_func,
                             source = source,
                         )
                     
                 else:
                     idea = Idea(
-                        path = path,
+                        path = str(path),
                         evaluate_func = evaluate_func,
                         source = source,
                     )
+                
+                assert idea.score is not None
                 
                 if idea.score < initialization_cleanse_threshold:
                     
@@ -252,11 +263,23 @@ class Database:
                             content_str=f"【数据库】 初始文件 {basename(path)} 已评分并加入数据库。",
                         )
                         
-        ideas: list[str] = [current_idea.content for current_idea in self.ideas]
-        scores: list[float] = [current_idea.score for current_idea in self.ideas]
-        infos: list[Optional[str]] = [current_idea.info for current_idea in self.ideas]   
+        ideas: list[str] = []
+        scores: list[float] = []
+        infos: list[Optional[str]] = []
+                        
+        for current_idea in self.ideas:
+            
+            assert current_idea.content is not None
+            assert current_idea.score is not None
+            
+            ideas.append(current_idea.content)
+            scores.append(current_idea.score)
+            infos.append(current_idea.info)
                      
         if assess_func is not None:
+            
+            assert assess_interval is not None
+            
             self.assess_on = True
             self.assess_func = assess_func
             self.assess_interval = assess_interval
@@ -344,7 +367,7 @@ class Database:
     
     def get_examples(
         self
-    ) -> list[Idea]:
+    )-> Optional[list[Tuple]]:
         
         with self.lock:
             
@@ -361,14 +384,23 @@ class Database:
                     )
             
             if self.assess_on:
+                
+                assert self.assess_interval is not None
+                
                 if self.interaction_count % self.assess_interval == 0:
                     self._assess_database()
             
             if self.mutation_on:
+                
+                assert self.mutation_interval is not None
+                
                 if self.interaction_count % self.mutation_interval == 0:
                     self._mutate()
             
             if self.crossover_on:
+                
+                assert self.crossover_interval is not None
+                
                 if self.interaction_count % self.crossover_interval == 0:
                     self._crossover()
             
@@ -402,6 +434,9 @@ class Database:
                 example_idea = self.ideas[selected_index]
                 
                 if self.similarity_sys_info_on:
+                    
+                    assert self.similarity_sys_info_prompts is not None
+                    
                     similar_num = self.idea_similar_nums[selected_index]
                     similarity_prompt = get_label(
                         x = similar_num,
@@ -424,7 +459,7 @@ class Database:
             return selected_examples
         
         
-    def get_model(self) -> tuple[str, float]:
+    def get_model(self) -> Tuple[str, float]:
         
         with self.lock:
             
@@ -494,7 +529,7 @@ class Database:
         
     def receive_result(
         self, 
-        result: list[tuple[Idea, float, str]], 
+        result: list[Tuple[str, float, str]], 
         evaluator_id: int,
         source: str,
     )-> None:
@@ -578,6 +613,9 @@ class Database:
                     if i == j or idea_i.content == idea_j.content:
                         similar_count += 1
                         continue
+                    
+                    assert idea_i.content is not None
+                    assert idea_j.content is not None
                         
                     score_diff = self.similarity_distance_func(idea_i.content, idea_j.content) 
                     if score_diff <= self.similarity_threshold: similar_count += 1
@@ -618,6 +656,10 @@ class Database:
         scores: list[float] = []
         infos: list[Optional[str]] = []
         for idea in self.ideas:
+            
+            assert idea.content is not None
+            assert idea.score is not None
+            
             ideas.append(idea.content)
             scores.append(idea.score)
             infos.append(idea.info)
@@ -668,6 +710,8 @@ class Database:
                 content_str = "【数据库】 现在开始进行单体突变！",
             )
             
+        assert self.mutation_num is not None
+            
         for index in range(self.mutation_num):
             
             probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
@@ -683,6 +727,7 @@ class Database:
             selected_idea = self.ideas[selected_index]
             
             try:
+                assert selected_idea.content is not None
                 mutated_idea = self.mutation_func(selected_idea.content)
                 if not isinstance(mutated_idea, str):
                     with self.console_lock:
@@ -814,6 +859,8 @@ class Database:
                 file_path = self.diary_path,
                 content_str = "【数据库】 现在开始进行交叉变异！",
             )
+            
+        assert self.crossover_num is not None
 
         for index in range(self.crossover_num):
             
@@ -982,7 +1029,7 @@ class Database:
     def _store_idea(
         self, 
         idea: str,
-        evaluate_func: Optional[Callable[[str, str], float]] = None,
+        evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]] = None,
         score: Optional[float] = None,
         info: Optional[str] = None,
         source: Optional[str] = None,
@@ -1052,6 +1099,9 @@ class Database:
         get_database_score_success: bool,
     )-> None:
         
+        assert self.assess_result_data_path is not None
+        assert self.assess_result_pic_path is not None
+        
         np.savez_compressed(
             file = self.assess_result_data_path, 
             interaction_num = self.assess_result_ndarray_x_axis,
@@ -1113,6 +1163,9 @@ class Database:
                     
                     
     def _sync_model_score_result(self):
+        
+        assert self.model_assess_result_data_path is not None
+        assert self.model_assess_result_pic_path is not None
         
         self.scores_of_models[self.scores_of_models_length] = self.model_scores
         self.scores_of_models_length += 1

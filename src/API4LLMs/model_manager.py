@@ -115,7 +115,7 @@ class ModelManager:
     def get_online_model_instance(
         self,
         model_name: str,
-    )-> tuple[str, str, str]:
+    )-> Tuple[str, str, str]:
         
         with self.lock:
             
@@ -186,7 +186,7 @@ def is_online_model(
 
 def get_online_model_instance(
     model_name: str,
-)-> tuple[str, str, str]:
+)-> Tuple[str, str, str]:
     return model_manager.get_online_model_instance(model_name)
 
 

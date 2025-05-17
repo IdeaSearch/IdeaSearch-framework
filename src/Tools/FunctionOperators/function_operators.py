@@ -224,8 +224,8 @@ def crossover_functions(
 if __name__ == "__main__":
     
     code1 = r"""def priority(
-    current_point: tuple[int, int, int, int, int, int, int, int],
-    history_points: list[tuple[int, int, int, int, int, int, int, int]],
+    current_point: Tuple[int, int, int, int, int, int, int, int],
+    history_points: list[Tuple[int, int, int, int, int, int, int, int]],
 ) -> float:
     current = np.array(current_point)
     set_size = len(history_points)
@@ -312,8 +312,8 @@ if __name__ == "__main__":
 """
 
     code2 = r"""def priority(
-    current_point: tuple[int, int, int, int, int, int, int, int],
-    history_points: list[tuple[int, int, int, int, int, int, int, int]],
+    current_point: Tuple[int, int, int, int, int, int, int, int],
+    history_points: list[Tuple[int, int, int, int, int, int, int, int]],
 ) -> float:
 
     current = np.array(current_point)

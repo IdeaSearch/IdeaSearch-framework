@@ -1,6 +1,8 @@
 from threading import Lock
 from typing import Optional
 from typing import Callable
+from typing import Tuple
+from typing import List
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
@@ -18,11 +20,11 @@ class Sampler:
         prologue_section: str,
         epilogue_section: str,
         database: Database,
-        evaluators: Evaluator,
+        evaluators: List[Evaluator],
         generate_num: int,
         console_lock: Lock,
         diary_path: str,
-        record_prompt_in_diary: str,
+        record_prompt_in_diary: bool,
         filter_func: Optional[Callable[[str], str]],
     ):
         self.id = sampler_id
@@ -145,7 +147,7 @@ class Sampler:
                     ),
                 )
                 
-            generated_ideas = [None] * self.generate_num
+            generated_ideas = [""] * self.generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
@@ -227,7 +229,9 @@ class Sampler:
             )
 
 
-    def _get_idle_evaluator(self) -> Evaluator:
+    def _get_idle_evaluator(
+        self
+    )-> Optional[Evaluator]:
         for evaluator in self.evaluators:
             if evaluator.try_acquire():
                 with self.console_lock:

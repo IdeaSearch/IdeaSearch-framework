@@ -1,4 +1,4 @@
-from collections import namedtuple
+from collections import namedTuple
 
 
 __all__ = [
@@ -6,7 +6,7 @@ __all__ = [
 ]
 
 
-CheckFormatCase = namedtuple("CheckFormatCase", ["expression", "variables", "functions", "expected"])
+CheckFormatCase = namedTuple("CheckFormatCase", ["expression", "variables", "functions", "expected"])
 
 check_format_testcases = [
     
