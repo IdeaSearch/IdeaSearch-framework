@@ -383,13 +383,6 @@ class Database:
                         ),
                     )
             
-            if self.assess_on:
-                
-                assert self.assess_interval is not None
-                
-                if self.interaction_count % self.assess_interval == 0:
-                    self._assess_database()
-            
             if self.mutation_on:
                 
                 assert self.mutation_interval is not None
@@ -553,6 +546,14 @@ class Database:
             
             self._sync_score_sheet()
             self._sync_similar_num_list()
+            
+            if self.assess_on:
+                
+                assert self.assess_interval is not None
+                
+                if self.interaction_count % self.assess_interval == 0:
+                    self._assess_database()
+            
             
     # ----------------------------- 内部调用动作 -----------------------------           
             
