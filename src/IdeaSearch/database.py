@@ -483,6 +483,13 @@ class Database:
         
         with self.lock:
             
+            if self.assess_on:
+                
+                assert self.assess_interval is not None
+                
+                if self.interaction_count % self.assess_interval == 0:
+                    self._assess_database()
+            
             index = 0
             
             while index < len(self.models):
@@ -546,13 +553,6 @@ class Database:
             
             self._sync_score_sheet()
             self._sync_similar_num_list()
-            
-            if self.assess_on:
-                
-                assert self.assess_interval is not None
-                
-                if self.interaction_count % self.assess_interval == 0:
-                    self._assess_database()
             
             
     # ----------------------------- 内部调用动作 -----------------------------           
