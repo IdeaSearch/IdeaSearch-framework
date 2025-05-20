@@ -162,8 +162,8 @@ model_manager = ModelManager()
 # ----------------------------- APIs -----------------------------
 
 def init_model_manager(
-    api_keys_path: Optional[str],
-    local_models_path: Optional[str],
+    api_keys_path: Optional[str] = None,
+    local_models_path: Optional[str] = None,
 )-> None:
     
     if api_keys_path is None and local_models_path is None:
