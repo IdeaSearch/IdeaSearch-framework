@@ -116,6 +116,7 @@ class ModelManager:
             else:
                 raise ValueError(f" 模型 {model_name} 未被 model manager 记录！")
             
+            
     def get_online_model_instance(
         self,
         model_name: str,
