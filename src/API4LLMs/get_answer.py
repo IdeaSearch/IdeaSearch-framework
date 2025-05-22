@@ -75,13 +75,17 @@ def get_answer_online(
             stream = False
         )
         
-    response_content = response.choices[0].message.content
-    
-    if response_content is not None:
-        return response_content
+    if isinstance(response, str):
+        return response
     
     else:
-        return ""
+        response_content = response.choices[0].message.content
+        
+        if response_content is not None:
+            return response_content
+        
+        else:
+            return ""
 
 
 def get_answer_local(
