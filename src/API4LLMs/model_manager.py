@@ -85,18 +85,21 @@ class ModelManager:
                             port = local_models_dict[model_name][index]["port"]
                             path = local_models_dict[model_name][index]["path"]
                             
-                            port = launch_model_inference_port(
-                                port = port,
-                                model_path = path,
-                            )
+                            # 懒加载，此时不执行 launch port 逻辑
+                            # port = launch_model_inference_port(
+                            #     port = port,
+                            #     model_path = path,
+                            # )
                             
                             local_model_instances.append({
                                 "port": port,
+                                "path": path,
                             })
                         
                         self._local_models[model_name] = {
                             "instances": local_model_instances,
                             "next_choice_index": 0,
+                            "loaded": False,
                         }
                     
             else:
@@ -140,6 +143,22 @@ class ModelManager:
         with self.lock:
             
             local_model = self._local_models[model_name]
+            
+            if not local_model["loaded"]:
+                
+                for index, local_model_instance in enumerate(local_model["instances"]):
+                    
+                    port = local_model_instance["port"]
+                    path = local_model_instance["path"]
+                    
+                    port = launch_model_inference_port(
+                        port = port,
+                        model_path = path,
+                    )
+                    
+                    self._local_models[model_name]["instances"][index]["port"] = port
+                    
+                self._local_models[model_name]["loaded"] = True
             
             index_backup = local_model["next_choice_index"]
             self._local_models[model_name]["next_choice_index"] = (local_model["next_choice_index"]+1) % len(local_model["instances"])
