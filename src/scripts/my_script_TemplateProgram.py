@@ -1,4 +1,4 @@
-from src.IdeaSearch.interface import IdeaSearch
+from IdeaSearch.old_interface import IdeaSearch
 from programs.TemplateProgram.user_code.prompt import system_prompt as TemplateProgram_system_prompt
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section

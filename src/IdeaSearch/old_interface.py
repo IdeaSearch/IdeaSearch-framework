@@ -10,8 +10,8 @@ from src.utils import clear_file_content
 from src.utils import append_to_file
 from src.API4LLMs.model_manager import init_model_manager
 from src.API4LLMs.model_manager import shutdown_model_manager
-# from src.IdeaSearch.database import Idea
-from src.IdeaSearch.database import Database
+# from src.IdeaSearch.island import Idea
+from IdeaSearch.island import Island
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 
@@ -51,7 +51,7 @@ def IdeaSearch(
     sample_temperature: float = 50.0,
     model_sample_temperature: float = 50.0,
 
-    # 数据库评估
+    # 岛屿评估
     assess_func: Optional[Callable[[list[str], list[float], list[Optional[str]]], float]] = None,
     assess_interval: Optional[int] = None,
     assess_baseline: Optional[float] = None,
@@ -99,7 +99,7 @@ def IdeaSearch(
     启动并运行一个 IdeaSearch 搜索过程。
 
     该函数会创建一个线程安全的 Database 实例，并初始化指定数量的 Sampler 和 Evaluator 实例，
-    使用线程池并发运行所有 Sampler，直到数据库达到最大交互次数为止。期间可选地进行突变、交叉、相似性筛查、
+    使用线程池并发运行所有 Sampler，直到岛屿达到最大交互次数为止。期间可选地进行突变、交叉、相似性筛查、
     整体评估与模型评分，以支持不同实验需求。
 
     使用此函数的基本功能时，用户需提供 prologue_section、epilogue_section 和 evaluate_func。
@@ -110,7 +110,7 @@ def IdeaSearch(
         program_name (str): 当前项目的名称。
         prologue_section (str): 用于提示模型采样的前导文本片段。
         epilogue_section (str): 用于提示模型采样的结尾文本片段。
-        database_path (str): 数据库路径，其下 ideas/ 路径用于存放诸 .idea 文件和 score_sheet.json。
+        database_path (str): 岛屿路径，其下 ideas/ 路径用于存放诸 .idea 文件和 score_sheet.json。
         models (list[str]): 参与生成 idea 的模型名称列表。
         model_temperatures (list[float]): 各模型的采样温度，与 models 等长。
         max_interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
@@ -119,7 +119,7 @@ def IdeaSearch(
     Keyword Args:
         # 基础设置
         score_range (Tuple[float, float]): 评分区间范围，用于归一化和显示。
-        hand_over_threshold (float): idea 进入数据库的最低评分要求。
+        hand_over_threshold (float): idea 进入岛屿的最低评分要求。
         system_prompt (Optional[str]): 系统提示词。
         diary_path (Optional[str]): 日志文件路径。
         api_keys_path (Optional[str]): API key 配置文件路径。
@@ -135,10 +135,10 @@ def IdeaSearch(
         sample_temperature (float): 控制 idea 选择的 softmax 温度。
         model_sample_temperature (float): 控制模型选择的 softmax 温度。
 
-        # 数据库评估
+        # 岛屿评估
         assess_func (Optional[Callable[[list[str], list[float], list[str]], float]]): 全体 idea 的综合评估函数。
         assess_interval (Optional[int]): 每隔多少轮进行一次 assess_func 评估。
-        assess_baseline (Optional[int]): 数据库评估的基线，会在图像中显示。
+        assess_baseline (Optional[int]): 岛屿评估的基线，会在图像中显示。
         assess_result_data_path (Optional[str]): 存储评估得分的路径（.npz）。
         assess_result_pic_path (Optional[str]): 存储评估图像的路径（.png）。
 
@@ -242,9 +242,9 @@ def IdeaSearch(
         
     if assess_func is not None:
         if assess_result_data_path is None:
-            assess_result_data_path = database_path + "data/database_assessment.npz"
+            assess_result_data_path = database_path + "data/island_assessment.npz"
         if assess_result_pic_path is None:
-            assess_result_pic_path = database_path + "pic/database_assessment.png"
+            assess_result_pic_path = database_path + "pic/island_assessment.png"
             
     if model_assess_save_result:
         if model_assess_result_data_path is None:
@@ -277,7 +277,7 @@ def IdeaSearch(
             content_str = f"【系统】 现在开始{program_name}的IdeaSearch！",
         )
 
-    database = Database(
+    island = Island(
         program_name = program_name,
         database_path = database_path,
         models = models,
@@ -324,7 +324,7 @@ def IdeaSearch(
     evaluators = [
         Evaluator(
             evaluator_id = i + 1,
-            database = database,
+            island = island,
             evaluate_func = evaluate_func,
             hand_over_threshold = hand_over_threshold,
             console_lock = console_lock,
@@ -339,7 +339,7 @@ def IdeaSearch(
             system_prompt = system_prompt,
             prologue_section = prologue_section,
             epilogue_section = epilogue_section,
-            database = database,
+            island = island,
             evaluators = evaluators,
             generate_num = generate_num,
             console_lock = console_lock,

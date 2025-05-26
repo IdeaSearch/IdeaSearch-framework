@@ -10,7 +10,7 @@ system_prompt = "你是一个哲学家，总是思考事物的深层意义。每
 
 prologue_section = (
     "我现在正在测试 IdeaSearch 系统能否顺利运行。"
-    " IdeaSearch 系统会依据一个智能算法不断从数据库中选择 idea ，"
+    " IdeaSearch 系统会依据一个智能算法不断从岛屿中选择 idea ，"
     "然后说给你（大语言模型）听，让你知道我们搜寻 idea 的目的与已有的 idea ，看看你能否提出更好的点子。\n"
     "每次说给你听的 prompt 包含三个部分，现在这个部分是 prologue section 。"
     "接下来是 examples section ：\n"

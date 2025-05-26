@@ -1,7 +1,7 @@
 from threading import Lock
 from typing import Optional
 from typing import Callable
-from typing import Tuple
+# from typing import Tuple
 from typing import List
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
@@ -9,7 +9,12 @@ from concurrent.futures import as_completed
 from src.utils import append_to_file
 from src.API4LLMs.get_answer import get_answer
 from src.IdeaSearch.evaluator import Evaluator
-from src.IdeaSearch.database import Database
+from IdeaSearch.island import Island
+
+
+__all__ = [
+    "Sampler",
+]
 
 
 class Sampler:
@@ -19,7 +24,7 @@ class Sampler:
         system_prompt: str,
         prologue_section: str,
         epilogue_section: str,
-        database: Database,
+        island: Island,
         evaluators: List[Evaluator],
         generate_num: int,
         console_lock: Lock,
@@ -28,8 +33,8 @@ class Sampler:
         filter_func: Optional[Callable[[str], str]],
     ):
         self.id = sampler_id
-        self.database = database
-        self.program_name = database.program_name
+        self.island = island
+        self.program_name = island.program_name
         self.system_prompt = system_prompt
         self.prologue_section = prologue_section
         self.epilogue_section = epilogue_section
@@ -48,7 +53,7 @@ class Sampler:
                 content_str = f"【{self.id}号采样器】 已开始工作！",
             )
         
-        while self.database.get_status() == "Running":
+        while self.island.get_status() == "Running":
             
             with self.console_lock:
                 append_to_file(
@@ -56,7 +61,7 @@ class Sampler:
                     content_str = f"【{self.id}号采样器】 已开始新一轮采样！",
                 )
             
-            examples = self.database.get_examples()
+            examples = self.island.get_examples()
             if examples is None: 
                 with self.console_lock:
                     append_to_file(
@@ -68,7 +73,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【{self.id}号采样器】 已从数据库采样 {len(examples)} 个idea！",
+                        content_str = f"【{self.id}号采样器】 已从岛屿采样 {len(examples)} 个idea！",
                     )
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
@@ -97,7 +102,7 @@ class Sampler:
                     examples_section += f"评语：{info}\n"
                 if similar_num is not None:
                     examples_section += (
-                        f"重复情况说明：目前数据库里有{similar_num}个例子和这个例子相似\n"
+                        f"重复情况说明：目前岛屿里有{similar_num}个例子和这个例子相似\n"
                         f"{similarity_prompt}\n"
                     )
             
@@ -107,11 +112,11 @@ class Sampler:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 正在询问数据库使用何模型。。。"
+                        f"【{self.id}号采样器】 正在询问岛屿使用何模型。。。"
                     ),
                 )
             
-            model, model_temperature = self.database.get_model()
+            model, model_temperature = self.island.get_model()
             
             with self.console_lock:
                 append_to_file(

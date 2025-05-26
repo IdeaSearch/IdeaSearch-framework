@@ -4,16 +4,23 @@ from typing import Tuple
 from typing import Callable
 from typing import Optional
 from os.path import basename
-from src.IdeaSearch.database import Database
+from IdeaSearch.island import Island
 from src.utils import append_to_file
+
+
+__all__ = [
+    "Evaluator",
+]
 
 
 class Evaluator:
     
+    # ----------------------------- 评估器初始化 -----------------------------
+    
     def __init__(
         self, 
         evaluator_id: int,
-        database : Database,
+        island : Island,
         evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
         hand_over_threshold: float,
         console_lock : Lock,
@@ -21,8 +28,8 @@ class Evaluator:
     ):
         
         self.id = evaluator_id
-        self.database = database
-        self.program_name = database.program_name
+        self.island = island
+        self.program_name = island.program_name
         self.evaluate_func = evaluate_func
         self.console_lock = console_lock
         self.lock = Lock()
@@ -30,6 +37,7 @@ class Evaluator:
         self.diary_path = diary_path
         self.hand_over_threshold = hand_over_threshold
         
+    # ----------------------------- 外部调用动作 ----------------------------- 
 
     def try_acquire(self):
         acquired = self.lock.acquire(blocking=False)
@@ -112,23 +120,23 @@ class Evaluator:
             if score >= self.hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
-        self.database.update_model_score(score_result, model, model_temperature)  
+        self.island.update_model_score(score_result, model, model_temperature)  
         
         if accepted_ideas:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给数据库！",
+                    content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
                 )
                 
             source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
-            self.database.receive_result(accepted_ideas, self.id, source)
+            self.island.receive_result(accepted_ideas, self.id, source)
             
         else:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【{self.id}号评估器】 评估结束，此轮采样没有生成可递交给数据库的满足条件的 idea ！",
+                    content_str = f"【{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
                 )
                     
     

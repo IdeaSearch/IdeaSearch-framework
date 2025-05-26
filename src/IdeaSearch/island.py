@@ -22,7 +22,7 @@ from src.utils import guarantee_path_exist
 
 __all__ = [
     "Idea",
-    "Database",
+    "Island",
 ]
 
 
@@ -49,9 +49,9 @@ class Idea:
             self.info = info
 
 
-class Database:
+class Island:
 
-    # ----------------------------- 数据库初始化 ----------------------------- 
+    # ----------------------------- 岛屿初始化 ----------------------------- 
 
     def __init__(
         self,
@@ -129,7 +129,7 @@ class Database:
                 with self.console_lock:
                     append_to_file(
                         file_path=self.diary_path,
-                        content_str=f"【数据库】 已从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件！",
+                        content_str=f"【岛屿】 已从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件！",
                     )
             except Exception as error:
                 score_sheet_backup = {}
@@ -137,7 +137,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 未从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件，报错：\n"
+                            f"【岛屿】 未从 {self.path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件，报错：\n"
                             f"{error}\n"
                             "请检查该行为是否符合预期！"
                         ),
@@ -207,20 +207,20 @@ class Database:
                             with self.console_lock:
                                 append_to_file(
                                     file_path=self.diary_path,
-                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分与评语！",
+                                    content_str=f"【岛屿】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分与评语！",
                                 )
                         else:
                             with self.console_lock:
                                 append_to_file(
                                     file_path=self.diary_path,
-                                    content_str=f"【数据库】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分！",
+                                    content_str=f"【岛屿】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分！",
                                 )
                         
                     else:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 没有在 score_sheet.json 中找到初始文件 {basename(path)} ，迅捷加载失败！",
+                                content_str=f"【岛屿】 没有在 score_sheet.json 中找到初始文件 {basename(path)} ，迅捷加载失败！",
                             )
                             
                         idea = Idea(
@@ -245,14 +245,14 @@ class Database:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
+                                content_str=f"【岛屿】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
                             )
                             
                     else:
                         with self.console_lock:
                             append_to_file(
                                 file_path=self.diary_path,
-                                content_str=f"【数据库】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                                content_str=f"【岛屿】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
                             )
                             
                 else:
@@ -260,7 +260,7 @@ class Database:
                     with self.console_lock:
                         append_to_file(
                             file_path=self.diary_path,
-                            content_str=f"【数据库】 初始文件 {basename(path)} 已评分并加入数据库。",
+                            content_str=f"【岛屿】 初始文件 {basename(path)} 已评分并加入岛屿。",
                         )
                         
         ideas: list[str] = []
@@ -310,7 +310,7 @@ class Database:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = f"【数据库】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
+                        content_str = f"【岛屿】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
                     )
                     
             except Exception as error:
@@ -319,7 +319,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 评估库中初始 ideas 的整体质量时遇到错误：\n"
+                            f"【岛屿】 评估库中初始 ideas 的整体质量时遇到错误：\n"
                             f"{error}"
                         ),
                     )
@@ -380,7 +380,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 已分发交互次数为： {self.interaction_count} ，"
+                            f"【岛屿】 已分发交互次数为： {self.interaction_count} ，"
                             f"还剩 {self.max_interaction_num-self.interaction_count} 次！"
                         ),
                     )
@@ -405,7 +405,7 @@ class Database:
                 with self.console_lock:
                     append_to_file(
                         file_path = self.diary_path,
-                        content_str = "【数据库】 发生异常： ideas 列表为空！",
+                        content_str = "【岛屿】 发生异常： ideas 列表为空！",
                     )
                 exit()
                 
@@ -512,7 +512,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
+                                f"【岛屿】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
                                 f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
@@ -525,7 +525,7 @@ class Database:
             with self.console_lock:    
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 出现错误！未知的模型名称及温度： {model}(T={model_temperature:.2f}) ！",
+                    content_str = f"【岛屿】 出现错误！未知的模型名称及温度： {model}(T={model_temperature:.2f}) ！",
                 )
                 
             exit()  
@@ -552,7 +552,7 @@ class Database:
             with self.console_lock:    
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入数据库。",
+                    content_str = f"【岛屿】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入岛屿。",
                 )
             
             self._sync_score_sheet()
@@ -583,7 +583,7 @@ class Database:
         with self.console_lock:   
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【数据库】  {self.program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
+                content_str = f"【岛屿】  {self.program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
             )
             
     
@@ -633,7 +633,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【数据库】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
+                content_str = f"【岛屿】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
             )
     
     
@@ -642,7 +642,7 @@ class Database:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = "【数据库】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
+                    content_str = "【岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
                 )
             self.status = "Terminated"
     
@@ -654,7 +654,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 现在开始评估库中 ideas 的整体质量！",
+                content_str = "【岛屿】 现在开始评估库中 ideas 的整体质量！",
             )
             
         ideas: list[str] = []
@@ -684,7 +684,7 @@ class Database:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
-                    content_str = f"【数据库】 当前库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
+                    content_str = f"【岛屿】 当前库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
                 )
                 
         except Exception as error:
@@ -693,7 +693,7 @@ class Database:
                 append_to_file(
                     file_path = self.diary_path,
                     content_str = (
-                        f"【数据库】 评估库中 ideas 的整体质量时遇到错误：\n"
+                        f"【岛屿】 评估库中 ideas 的整体质量时遇到错误：\n"
                         f"{error}"
                     ),
                 )
@@ -712,7 +712,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 现在开始进行单体突变！",
+                content_str = "【岛屿】 现在开始进行单体突变！",
             )
             
         assert self.mutation_num is not None
@@ -739,7 +739,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的单体突变函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的单体突变函数时发生错误："
                                 f"返回结果中的 mutated_idea 应为一字符串，不应为一个 {type(mutated_idea)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -750,7 +750,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
+                            f"【岛屿】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
                             f"{error}\n此轮单体突变意外终止！"
                         ),
                     )
@@ -764,7 +764,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -776,7 +776,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -789,7 +789,7 @@ class Database:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮单体突变意外终止！"
                                 ),
@@ -801,7 +801,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮单体突变意外终止！"
                         ),
                     )  
@@ -823,7 +823,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 第 {index+1} 次单体突变："
+                                f"【岛屿】 第 {index+1} 次单体突变："
                                 f" {basename(selected_idea.path)} 突变为 {basename(path)} "
                             ),
                         )
@@ -834,7 +834,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 第 {index+1} 次单体突变发生了错误：\n"
+                                f"【岛屿】 第 {index+1} 次单体突变发生了错误：\n"
                                 f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
                             ),
                         )
@@ -845,7 +845,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次单体突变结果未达到入库分数阈值"
+                            f"【岛屿】 第 {index+1} 次单体突变结果未达到入库分数阈值"
                             f"（{self.handover_threshold:.2f}分），已删除！"
                         ),
                     )
@@ -853,7 +853,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 此轮单体突变已结束。",
+                content_str = "【岛屿】 此轮单体突变已结束。",
             )
     
     
@@ -862,7 +862,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 现在开始进行交叉变异！",
+                content_str = "【岛屿】 现在开始进行交叉变异！",
             )
             
         assert self.crossover_num is not None
@@ -892,7 +892,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的交叉变异函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的交叉变异函数时发生错误："
                                 f"返回结果中的 crossover_idea 应为一字符串，不应为一个 {type(crossover_idea)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -903,7 +903,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
+                            f"【岛屿】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
                             f"{error}"
                         ),
                     )
@@ -917,7 +917,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -929,7 +929,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -942,7 +942,7 @@ class Database:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【数据库】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮交叉变异意外终止！"
                                 ),
@@ -954,7 +954,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮交叉变异意外终止！"
                         ),
                     )  
@@ -976,7 +976,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 第 {index+1} 次交叉变异："
+                                f"【岛屿】 第 {index+1} 次交叉变异："
                                 f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
                             ),
                         )
@@ -987,7 +987,7 @@ class Database:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【数据库】 第 {index+1} 次交叉变异发生了错误：\n"
+                                f"【岛屿】 第 {index+1} 次交叉变异发生了错误：\n"
                                 f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
                             ),
                         )
@@ -998,7 +998,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
+                            f"【岛屿】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
                             f"（{self.handover_threshold:.2f}分），已删除！"
                         ),
                     )
@@ -1006,7 +1006,7 @@ class Database:
         with self.console_lock:
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 此轮交叉变异已结束。",
+                content_str = "【岛屿】 此轮交叉变异已结束。",
             )
         
         
@@ -1016,7 +1016,7 @@ class Database:
             
             append_to_file(
                 file_path = self.diary_path,
-                content_str = "【数据库】 各模型目前评分情况如下：",
+                content_str = "【岛屿】 各模型目前评分情况如下：",
             )
             
             for index, model in enumerate(self.models):
@@ -1125,7 +1125,7 @@ class Database:
         plt.plot(
             self.assess_result_ndarray_x_axis[:self.assess_result_ndarray_length], 
             self.assess_result_ndarray[:self.assess_result_ndarray_length], 
-            label='Database Score', 
+            label='Island Score', 
             color='dodgerblue', 
             marker='o',
             markersize = auto_markersize,
@@ -1137,9 +1137,9 @@ class Database:
                 linestyle='--',
                 label='Baseline',
             )
-        plt.title("Database Assessment")
+        plt.title("Island Assessment")
         plt.xlabel("Interaction No.")
-        plt.ylabel("Database Score")
+        plt.ylabel("Island Score")
         plt.xlim(x_axis_range)
         plt.ylim(self.score_range)
         plt.grid(True)
@@ -1152,7 +1152,7 @@ class Database:
                 append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 初始质量评估结束，"
+                            f"【岛屿】 初始质量评估结束，"
                             f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
                         ),
                     )
@@ -1161,7 +1161,7 @@ class Database:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【数据库】 此轮质量评估结束，"
+                            f"【岛屿】 此轮质量评估结束，"
                             f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
                         ),
                     )
@@ -1218,7 +1218,7 @@ class Database:
             append_to_file(
                 file_path=self.diary_path,
                 content_str=(
-                    f"【数据库】 "
+                    f"【岛屿】 "
                     f" {basename(self.model_assess_result_data_path)} 与 {basename(self.model_assess_result_pic_path)} 已更新！"
                 ),
             )
