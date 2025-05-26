@@ -84,6 +84,7 @@ class IdeaSearcher:
         self._idea_uid_length: int = 6
         self._record_prompt_in_diary: bool = False
         self._filter_func: Optional[Callable[[str], str]] = None
+        self._generation_bonus: float = 0.0
 
 
         def evaluate_func(
@@ -800,6 +801,18 @@ class IdeaSearcher:
             self._filter_func = value
 
 
+    def set_generation_bonus(
+        self,
+        value: float,
+    ) -> None:
+
+        if not isinstance(value, float):
+            raise TypeError(f"【IdeaSearcher】 参数`generation_bonus`类型应为float，实为{str(type(value))}")
+
+        with self._lock:
+            self._generation_bonus = value
+
+
     def get_program_name(
         self,
     )-> Optional[str]:
@@ -1134,6 +1147,13 @@ class IdeaSearcher:
     )-> Optional[Callable[[str], str]]:
         
             return self._filter_func
+
+
+    def get_generation_bonus(
+        self,
+    )-> float:
+        
+            return self._generation_bonus
 
     # ----------------------------- 内部调用动作 ----------------------------- 
     

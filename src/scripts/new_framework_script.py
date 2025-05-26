@@ -45,6 +45,8 @@ def main():
     ideasearcher.set_assess_func(TemplateProgram_assess)
     ideasearcher.set_assess_interval(1)
     
+    ideasearcher.set_generation_bonus(2.0)
+
     diary_path = "programs/TemplateProgram/database/log/diary.txt"
     clear_file_content(diary_path)
     ideasearcher.set_diary_path(diary_path)

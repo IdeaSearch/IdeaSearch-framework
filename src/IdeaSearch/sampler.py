@@ -71,7 +71,7 @@ class Sampler:
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
             for index, example in enumerate(examples):
-                idea, score, info, similar_num, similarity_prompt, path = example
+                idea, score, info, similar_num, similarity_prompt, path, _ = example
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
                 
@@ -193,8 +193,10 @@ class Sampler:
                     ),
                 )
             
-            example_idea_paths = [current_idea[-1] for current_idea in examples]
+            example_idea_paths = [current_idea[-2] for current_idea in examples]
             example_idea_scores = [current_idea[1] for current_idea in examples]
+            example_idea_levels = [current_idea[-1] for current_idea in examples]
+            level = max(example_idea_levels) + 1
             
             evaluator = self._get_idle_evaluator()
             if evaluator:
@@ -204,7 +206,8 @@ class Sampler:
                     model = model, 
                     model_temperature = model_temperature, 
                     example_idea_paths = example_idea_paths, 
-                    example_idea_scores = example_idea_scores
+                    example_idea_scores = example_idea_scores,
+                    level = level,
                 )
                 
                 with self.console_lock:

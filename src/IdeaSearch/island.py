@@ -31,13 +31,15 @@ class Idea:
         self, 
         path: str,
         evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]], 
-        content: Optional[str] = None, 
+        level: int,
+        content: Optional[str] = None,
         score: Optional[float] = None, 
         info: Optional[str] = None,
         source: Optional[str] = None,
     ):
         self.path = str(path)
         self.source = source
+        self.level = level
         if evaluate_func is not None:
             with open(path, 'r', encoding = "UTF-8") as file:
                 self.content = file.read()
@@ -163,6 +165,7 @@ class Island:
                             
                         idea = Idea(
                             path = str(path),
+                            level = 0,
                             evaluate_func = None,
                             content = content,
                             score = score,
@@ -191,6 +194,7 @@ class Island:
                             )
                             
                         idea = Idea(
+                            level = 0,
                             path = str(path),
                             evaluate_func = evaluate_func,
                             source = source,
@@ -198,6 +202,7 @@ class Island:
                     
                 else:
                     idea = Idea(
+                        level = 0,
                         path = str(path),
                         evaluate_func = evaluate_func,
                         source = source,
@@ -439,7 +444,8 @@ class Island:
                     )
                 exit()
                 
-            probabilities = np.array([idea.score for idea in self.ideas])
+            generation_bonus = self.ideasearcher.get_generation_bonus()
+            probabilities = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas])
             probabilities /= self.ideasearcher.get_sample_temperature()
             max_value = np.max(probabilities)
             probabilities = np.exp(probabilities - max_value)
@@ -479,6 +485,7 @@ class Island:
                     similar_num,
                     similarity_prompt,
                     example_idea.path,
+                    example_idea.level,
                 ))
 
             return selected_examples
@@ -578,6 +585,7 @@ class Island:
         result: list[Tuple[str, float, str]], 
         evaluator_id: int,
         source: str,
+        level: int,
     )-> None:
         
         with self.lock:
@@ -586,6 +594,7 @@ class Island:
                 
                 self._store_idea(
                     idea = idea_content,
+                    level = level,
                     score = score,
                     info = info,
                     source = source,
@@ -614,11 +623,12 @@ class Island:
                 "score": idea.score,
                 "info": idea.info if idea.info is not None else "",
                 "source": idea.source if idea.source is not None else "未知",
+                "level": idea.level,
             }
             for idea in self.ideas
         }
 
-        with open(self.path + "score_sheet.json", 'w', encoding='utf-8') as json_file:
+        with open(self.path + f"score_sheet_island{self.island_id}.json", 'w', encoding='utf-8') as json_file:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
             
         end_time = perf_counter()
@@ -869,6 +879,7 @@ class Island:
                     score = score,
                     info = info, 
                     source = source,
+                    level = selected_idea.level + 1,
                 )
                 
                 if path is not None:
@@ -1027,6 +1038,7 @@ class Island:
                     score = score,
                     info = info,
                     source = source,
+                    level = max(parent_1.level, parent_2.level) + 1,
                 )
 
                 if path is not None:
@@ -1097,6 +1109,7 @@ class Island:
     def _store_idea(
         self, 
         idea: str,
+        level: int,
         evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]] = None,
         score: Optional[float] = None,
         info: Optional[str] = None,
@@ -1132,6 +1145,7 @@ class Island:
                 
             self.ideas.append(Idea(
                 path = path,
+                level = level,
                 evaluate_func = evaluate_func,
                 content = idea,
                 score = score,

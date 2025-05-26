@@ -46,6 +46,7 @@ class Evaluator:
         model_temperature: float,
         example_idea_paths: list[str],
         example_idea_scores: list[float],
+        level: int,
     )-> None:
         
         hand_over_threshold = self.ideasearcher.get_hand_over_threshold()
@@ -128,7 +129,7 @@ class Evaluator:
                 )
                 
             source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
-            self.island.receive_result(accepted_ideas, self.id, source)
+            self.island.receive_result(accepted_ideas, self.id, source, level)
             
         else:
             with self.console_lock:
