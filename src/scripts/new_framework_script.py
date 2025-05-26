@@ -42,7 +42,10 @@ def main():
         None,
         TemplateProgram_crossover,
     ][0])
-    ideasearcher.set_assess_func(TemplateProgram_assess)
+    ideasearcher.set_assess_func([
+        None,
+        TemplateProgram_assess,
+    ][0])
     ideasearcher.set_assess_interval(1)
     
     ideasearcher.set_generation_bonus(2.0)
@@ -51,6 +54,7 @@ def main():
     clear_file_content(diary_path)
     ideasearcher.set_diary_path(diary_path)
 
+    # add two islands
     ideasearcher.add_island()
     ideasearcher.add_island()
     
@@ -60,6 +64,7 @@ def main():
         ideasearcher.set_crossover_num(epoch * 2)
         
         ideasearcher.run(5)
+        ideasearcher.repopulate_islands()
         
     ideasearcher.shutdown_models()
 

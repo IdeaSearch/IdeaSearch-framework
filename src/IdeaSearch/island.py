@@ -71,6 +71,8 @@ class Island:
         self.lock = Lock()
         self.status = "Running"
         self.random_generator = np.random.default_rng()
+        self._best_score = -114514.0
+        self._best_idea = None
         
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
@@ -105,8 +107,6 @@ class Island:
                             "请检查该行为是否符合预期！"
                         ),
                     )
-        
-        guarantee_path_exist(self.path + "score_sheet.json")
 
         mutation_func = self.ideasearcher.get_mutation_func()
         if mutation_func is not None:
@@ -631,13 +631,19 @@ class Island:
         with open(self.path + f"score_sheet_island{self.island_id}.json", 'w', encoding='utf-8') as json_file:
             json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
             
+        for idea in self.ideas:
+            assert idea.score is not None
+            if idea.score > self._best_score:
+                self._best_score = idea.score
+                self._best_idea = idea
+            
         end_time = perf_counter()
         total_time = end_time - start_time
         
         with self.console_lock:   
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【{self.island_id}号岛屿】  {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
+                content_str = f"【{self.island_id}号岛屿】 {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
             )
             
     

@@ -214,6 +214,45 @@ class IdeaSearcher:
                             content_str = f"【IdeaSearcher】 {island_id}号岛屿的{sampler_id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                         )
                         exit()
+                        
+                        
+    def repopulate_islands(
+        self,
+    )-> None:
+    
+        with self._lock:
+        
+            with self._console_lock:
+                append_to_file(
+                    file_path = self._diary_path,
+                    content_str = f"【IdeaSearcher】 现在 ideas 开始在岛屿间重分布"
+                )
+            
+            island_ids = self._islands.keys()
+            
+            island_ids = sorted(
+                island_ids,
+                key = lambda id: self._islands[id]._best_score,
+                reverse = True,
+            )
+            
+            N = len(island_ids)
+            M = N // 2
+            
+            for index in range(M):
+            
+                island_to_colonize = self._islands[island_ids[index]]
+                
+                self._islands[island_ids[-index]].ideas = [
+                    island_to_colonize._best_idea
+                ]
+                self._islands[island_ids[-index]].idea_similar_nums = [1]
+                
+            with self._console_lock:
+                append_to_file(
+                    file_path = self._diary_path,
+                    content_str = f"【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
+                )
                 
                 
     def shutdown_models(
