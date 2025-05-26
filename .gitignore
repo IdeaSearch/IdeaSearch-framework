@@ -7,3 +7,4 @@ document/**
 .idea/**
 __pycache__
 *.out
+nohup*

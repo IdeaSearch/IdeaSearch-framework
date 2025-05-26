@@ -242,7 +242,7 @@ def merge_mat_files(input_mat_paths, output_mat_path):
         # 加载 `.mat` 文件中的数据
         data = scipy.io.loadmat(mat_path)
         for key, value in data.items():
-            # 忽略系统生成的键（以 `__` 开头的键）
+            # 忽略IdeaSearcher生成的键（以 `__` 开头的键）
             if key.startswith('__'):
                 continue
             # 如果键不存在于 `merged_data` 中，则将其添加到 `merged_data`

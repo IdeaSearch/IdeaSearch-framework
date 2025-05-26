@@ -14,11 +14,9 @@ from pathlib import Path
 from typing import Tuple
 from typing import Callable
 from typing import Optional
-from typing import List
 from os.path import basename
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
-from src.IdeaSearch.ideasearcher import IdeaSearcher
 
 
 __all__ = [
@@ -56,14 +54,29 @@ class Island:
 
     def __init__(
         self,
-        ideasearcher: IdeaSearcher,
+        ideasearcher,
+        island_id: int,
         default_similarity_distance_func: Callable[[str, str], float],
         console_lock: Lock,
-    ) -> None:
+    )-> None:
 
         self.ideasearcher = ideasearcher
         self.default_similarity_distance_func = default_similarity_distance_func
         self.console_lock = console_lock
+        self.island_id = island_id
+        self.interaction_count = 0
+        self.interaction_num = 0
+        self.lock = Lock()
+        self.status = "Running"
+        self.random_generator = np.random.default_rng()
+        
+        
+    def link_samplers(
+        self,
+        samplers
+    )-> None:
+        
+        self.samplers = samplers
         
         
     def initialize(self):
@@ -131,7 +144,7 @@ class Island:
         else:
             self.similarity_sys_info_on = False
         
-        # 初始化ideas列表（疑似存在mac OS系统的兼容性问题）
+        # 初始化ideas列表（疑似存在mac OSIdeaSearcher的兼容性问题）
         evaluate_func = self.ideasearcher.get_evaluate_func()
         initialization_cleanse_threshold = self.ideasearcher.get_initialization_cleanse_threshold()
         delete_when_initial_cleanse = self.ideasearcher.get_delete_when_initial_cleanse()
@@ -328,11 +341,6 @@ class Island:
           
         self._sync_score_sheet()
         self._sync_similar_num_list()
-        
-        self.interaction_count = 0
-        self.lock = Lock()
-        self.status = "Running"
-        self.random_generator = np.random.default_rng()
     
     # ----------------------------- 外部调用动作 ----------------------------- 
     

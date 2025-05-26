@@ -1,16 +1,8 @@
 from threading import Lock
-from typing import Optional
-from typing import Callable
-# from typing import Tuple
-from typing import List
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from src.utils import append_to_file
-from src.API4LLMs.get_answer import get_answer
-from src.IdeaSearch.evaluator import Evaluator
-from src.IdeaSearch.island import Island
-from src.IdeaSearch.ideasearcher import IdeaSearcher
 
 
 __all__ = [
@@ -21,10 +13,10 @@ __all__ = [
 class Sampler:
     def __init__(
         self, 
-        ideasearcher: IdeaSearcher,
+        ideasearcher,
         sampler_id: int, 
-        island: Island,
-        evaluators: List[Evaluator],
+        island,
+        evaluators,
         console_lock: Lock,
     ):
         
@@ -158,7 +150,7 @@ class Sampler:
 
                 future_to_index = {
                     executor.submit(
-                        get_answer, 
+                        self.ideasearcher._get_answer, 
                         model, 
                         model_temperature, 
                         system_prompt, 
@@ -237,7 +229,7 @@ class Sampler:
 
     def _get_idle_evaluator(
         self
-    )-> Optional[Evaluator]:
+    ):
         
         diary_path = self.ideasearcher.get_diary_path()
         

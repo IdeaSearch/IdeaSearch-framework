@@ -1,3 +1,4 @@
+import concurrent.futures
 import os
 import json
 import random
@@ -15,12 +16,16 @@ from typing import Tuple
 from typing import Callable
 from typing import Optional
 from typing import List
+from typing import Dict
 from os.path import basename
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
 from src.API4LLMs.model_manager import ModelManager
 from src.API4LLMs.get_answer import get_answer_online
 from src.API4LLMs.get_answer import get_answer_local
+from src.IdeaSearch.sampler import Sampler
+from src.IdeaSearch.evaluator import Evaluator
+from src.IdeaSearch.island import Island
 
 
 class IdeaSearcher:
@@ -31,9 +36,6 @@ class IdeaSearcher:
         self
     ) -> None:
     
-        self._lock: Lock = Lock()
-        self._model_manager: ModelManager = ModelManager()
-        
         self._program_name: Optional[str] = None
         self._prologue_section: Optional[str] = None
         self._epilogue_section: Optional[str] = None
@@ -48,10 +50,10 @@ class IdeaSearcher:
         self._diary_path: Optional[str] = None
         self._api_keys_path: Optional[str] = None
         self._local_models_path: Optional[str] = None
-        self._samplers_num: int = 5
-        self._evaluators_num: int = 5
+        self._samplers_num: int = 3
+        self._evaluators_num: int = 3
         self._examples_num: int = 3
-        self._generate_num: int = 5
+        self._generate_num: int = 3
         self._sample_temperature: float = 50.0
         self._model_sample_temperature: float = 50.0
         self._assess_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]] = None
@@ -84,6 +86,22 @@ class IdeaSearcher:
         self._record_prompt_in_diary: bool = True
         self._filter_func: Optional[Callable[[str], str]] = None
 
+
+        def evaluate_func(
+            idea: str,
+        )-> Tuple[float, Optional[str]]:
+            return 0.0, None
+    
+        def default_similarity_distance_func(idea1, idea2):
+            return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
+    
+        self._lock: Lock = Lock()
+        self._console_lock: Lock = Lock()
+        self._model_manager: ModelManager = ModelManager()
+        self._islands: Dict[int, Island] = {}
+        self._next_island_id: int = 1
+        self._default_similarity_distance_func = default_similarity_distance_func
+
     # ----------------------------- 外部调用动作 ----------------------------- 
     
     def load_models(
@@ -103,6 +121,88 @@ class IdeaSearcher:
                 
             if self._local_models_path is not None:
                 self._model_manager.load_local_models(self._local_models_path)
+                
+                
+    def add_island(
+        self,
+    )-> int:
+        
+        with self._lock:
+        
+            evaluators_num = self._evaluators_num
+            samplers_num = self._samplers_num
+            
+            island_id = self._next_island_id
+            self._next_island_id += 1
+        
+            island = Island(
+                ideasearcher = self,
+                island_id = island_id,
+                default_similarity_distance_func = self._default_similarity_distance_func,
+                console_lock = self._console_lock,
+            )
+            
+            evaluators = [
+                Evaluator(
+                    ideasearcher = self,
+                    evaluator_id = i + 1,
+                    island = island,
+                    console_lock = self._console_lock,
+                )
+                for i in range(evaluators_num)
+            ]
+
+            samplers = [
+                Sampler(
+                    ideasearcher = self,
+                    sampler_id = i + 1,
+                    island = island,
+                    evaluators = evaluators,
+                    console_lock = self._console_lock,
+                )
+                for i in range(samplers_num)
+            ]
+            
+            island.link_samplers(samplers)
+            
+            self._islands[island_id] = island
+            
+            return island_id
+            
+    
+    def run(
+        self,
+        additional_interaction_num: int,
+    )-> None:
+
+        with self._lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 必要参数`{missing_param}`未设置，无法运行！")
+        
+            max_workers_num = 0
+            for island_id in self._islands:
+                max_workers_num += len(self._islands[island_id].samplers)
+            
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers = max_workers_num
+            ) as executor:
+            
+                futures = {executor.submit(sampler.run): sampler 
+                    for island_id in self._islands
+                    for sampler in self._islands[island_id].samplers
+                }
+                for future in concurrent.futures.as_completed(futures):
+                    sampler = futures[future]
+                    try:
+                        _ = future.result() 
+                    except Exception as e:
+                        append_to_file(
+                            file_path = self._diary_path,
+                            content_str = f"【IdeaSearcher】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                        )
+                        exit()
                 
                 
     def shutdown_models(
@@ -239,7 +339,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -251,7 +351,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -263,7 +363,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -275,7 +375,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`local_models_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -371,7 +471,7 @@ class IdeaSearcher:
         value: Optional[int],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[int])):
+        if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为{str(type(value))}")
 
         with self._lock:
@@ -383,7 +483,7 @@ class IdeaSearcher:
         value: Optional[float],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[float])):
+        if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为{str(type(value))}")
 
         with self._lock:
@@ -395,7 +495,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -407,7 +507,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -467,7 +567,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -479,7 +579,7 @@ class IdeaSearcher:
         value: Optional[str],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[str])):
+        if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
 
         with self._lock:
@@ -503,7 +603,7 @@ class IdeaSearcher:
         value: Optional[int],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[int])):
+        if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为{str(type(value))}")
 
         with self._lock:
@@ -515,7 +615,7 @@ class IdeaSearcher:
         value: Optional[int],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[int])):
+        if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为{str(type(value))}")
 
         with self._lock:
@@ -527,7 +627,7 @@ class IdeaSearcher:
         value: Optional[float],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[float])):
+        if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为{str(type(value))}")
 
         with self._lock:
@@ -551,7 +651,7 @@ class IdeaSearcher:
         value: Optional[int],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[int])):
+        if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为{str(type(value))}")
 
         with self._lock:
@@ -563,7 +663,7 @@ class IdeaSearcher:
         value: Optional[int],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[int])):
+        if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为{str(type(value))}")
 
         with self._lock:
@@ -575,7 +675,7 @@ class IdeaSearcher:
         value: Optional[float],
     ) -> None:
 
-        if not (value is None or isinstance(value, Optional[float])):
+        if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为{str(type(value))}")
 
         with self._lock:
@@ -1096,3 +1196,58 @@ class IdeaSearcher:
                 system_prompt = system_prompt,
                 prompt = prompt,
             )
+            
+            
+    def _check_runnability(
+        self,
+    )-> Optional[str]:
+        
+        missing_param = None
+        
+        if self._program_name is None:
+            missing_param = "program_name"
+            return missing_param
+        
+        if self._prologue_section is None:
+            missing_param = "prologue_section"
+            return missing_param
+        
+        if self._epilogue_section is None:
+            missing_param = "epilogue_section"
+            return missing_param
+        
+        if self._database_path is None:
+            missing_param = "database_path"
+            return missing_param
+        
+        if self._models is None:
+            missing_param = "models"
+            return missing_param
+        
+        if self._model_temperatures is None:
+            missing_param = "model_temperatures"
+            return missing_param
+        
+        if self._evaluate_func is None:
+            missing_param = "evaluate_func"
+            return missing_param
+        
+        if self._diary_path is None:
+            self._diary_path = self._database_path + "log/diary.txt"
+            
+        if self._system_prompt is None:
+            self._system_prompt = "You're a helpful assistant."
+            
+        if self._assess_func is not None:
+            if self._assess_result_data_path is None:
+                self._assess_result_data_path = self._database_path + "data/island_assessment.npz"
+            if self._assess_result_pic_path is None:
+                self._assess_result_pic_path = self._database_path + "pic/island_assessment.png"
+                
+        if self._model_assess_save_result:
+            if self._model_assess_result_data_path is None:
+                self._model_assess_result_data_path = self._database_path + "data/model_scores.npz"
+            if self._model_assess_result_pic_path is None:
+                self._model_assess_result_pic_path = self._database_path + "pic/model_scores.png"
+                
+        return missing_param

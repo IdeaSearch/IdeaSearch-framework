@@ -3,6 +3,7 @@ from threading import Lock
 from typing import Tuple
 from typing import Callable
 from typing import Optional
+from typing import Dict
 # from typing import List
 # from pathlib import Path
 from src.utils import guarantee_path_exist
@@ -113,14 +114,14 @@ def IdeaSearch(
         database_path (str): 岛屿路径，其下 ideas/ 路径用于存放诸 .idea 文件和 score_sheet.json。
         models (list[str]): 参与生成 idea 的模型名称列表。
         model_temperatures (list[float]): 各模型的采样温度，与 models 等长。
-        interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
+        interaction_num (int): 最大交互轮数，超过此值后IdeaSearcher自动终止。
         evaluate_func (Callable[[str], Tuple[float, str]]): 对单个 idea 进行评分的函数。
 
     Keyword Args:
         # 基础设置
         score_range (Tuple[float, float]): 评分区间范围，用于归一化和显示。
         hand_over_threshold (float): idea 进入岛屿的最低评分要求。
-        system_prompt (Optional[str]): 系统提示词。
+        system_prompt (Optional[str]): IdeaSearcher提示词。
         diary_path (Optional[str]): 日志文件路径。
         api_keys_path (Optional[str]): API key 配置文件路径。
         local_models_path (Optional[str]): 本地模型路径（如使用本地推理）。
@@ -165,8 +166,8 @@ def IdeaSearch(
         # 相似度判断
         similarity_threshold (float): idea 相似性的距离阈值，-1 表示仅完全一致为相似。
         similarity_distance_func (Optional[Callable[[str, str], float]]): idea 的相似度计算函数，默认实现为分数差的绝对值。
-        similarity_sys_info_thresholds (Optional[list[int]]): 有关相似度的系统提示（“重复情况说明”）的诸阈值，为 None 则不开启此系统提示。
-        similarity_sys_info_prompts (Optional[list[str]]): 与 thresholds 对应的系统提示内容。
+        similarity_sys_info_thresholds (Optional[list[int]]): 有关相似度的IdeaSearcher提示（“重复情况说明”）的诸阈值，为 None 则不开启此IdeaSearcher提示。
+        similarity_sys_info_prompts (Optional[list[str]]): 与 thresholds 对应的IdeaSearcher提示内容。
 
         # 初始化阶段清洗
         initialization_skip_evaluation (bool): 是否跳过初始化阶段的评估（尝试从 score_sheet.json 中迅捷加载）。
@@ -274,7 +275,7 @@ def IdeaSearch(
     with console_lock:
         append_to_file(
             file_path = diary_path,
-            content_str = f"【系统】 现在开始{program_name}的IdeaSearch！",
+            content_str = f"【IdeaSearcher】 现在开始{program_name}的IdeaSearch！",
         )
 
     island = Island(
@@ -359,7 +360,7 @@ def IdeaSearch(
             except Exception as e:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【系统】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                    content_str = f"【IdeaSearcher】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                 )
                 exit()
                 
@@ -368,7 +369,7 @@ def IdeaSearch(
     with console_lock:
         append_to_file(
             file_path = diary_path,
-            content_str = f"【系统】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
+            content_str = f"【IdeaSearcher】 已达到最大互动次数， {program_name} 的 IdeaSearch 结束！",
         )
             
        

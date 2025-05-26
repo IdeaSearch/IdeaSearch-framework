@@ -1,11 +1,6 @@
 from threading import Lock
 from math import isnan
-from typing import Tuple
-from typing import Callable
-from typing import Optional
 from os.path import basename
-from src.IdeaSearch.island import Island
-from src.IdeaSearch.ideasearcher import IdeaSearcher
 from src.utils import append_to_file
 
 
@@ -20,15 +15,15 @@ class Evaluator:
     
     def __init__(
         self, 
-        ideasearcher: IdeaSearcher,
+        ideasearcher,
         evaluator_id: int,
-        island : Island,
+        island,
         console_lock : Lock,
     ):
         
         self.id = evaluator_id
         self.island = island
-        self.ideasearcher: IdeaSearcher = ideasearcher
+        self.ideasearcher = ideasearcher
         self.console_lock = console_lock
         self.lock = Lock()
         self.status = "Vacant"

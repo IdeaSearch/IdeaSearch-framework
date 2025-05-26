@@ -18,10 +18,20 @@ def main():
     ideasearcher.load_models()
     
     ideasearcher.set_program_name("TemplateProgram")
+    ideasearcher.set_database_path("programs/TemplateProgram/database/")
     ideasearcher.set_evaluate_func(TemplateProgram_evaluate)
     ideasearcher.set_system_prompt(TemplateProgram_system_prompt)
     ideasearcher.set_prologue_section(TemplateProgram_prologue_section)
     ideasearcher.set_epilogue_section(TemplateProgram_epilogue_section)
+    
+    ideasearcher.set_generate_num(1)
+    
+    ideasearcher.set_models([
+        "Deepseek_V3",
+    ])
+    ideasearcher.set_model_temperatures([
+        1.0,
+    ])
     
     ideasearcher.set_mutation_func([
         None,
@@ -33,14 +43,16 @@ def main():
     ][0])
     ideasearcher.set_assess_func(TemplateProgram_assess)
     
-    for epoch in range(1, 11):
+    ideasearcher.add_island()
+    
+    for epoch in range(1, 2):
         
         ideasearcher.set_mutation_num(epoch)
         ideasearcher.set_crossover_num(epoch * 2)
         
         ideasearcher.run(10)
-    
-
+        
+    ideasearcher.shutdown_models()
 
 
 if __name__ == "__main__":
