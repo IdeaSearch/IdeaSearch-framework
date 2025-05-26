@@ -8,6 +8,8 @@ from src.API4LLMs.model_manager import get_local_model_instance
 
 __all__ = [
     "get_answer",
+    "get_answer_online",
+    "get_answer_local",
 ]
 
 

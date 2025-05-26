@@ -9,7 +9,8 @@ from concurrent.futures import as_completed
 from src.utils import append_to_file
 from src.API4LLMs.get_answer import get_answer
 from src.IdeaSearch.evaluator import Evaluator
-from IdeaSearch.island import Island
+from src.IdeaSearch.island import Island
+from src.IdeaSearch.ideasearcher import IdeaSearcher
 
 
 __all__ = [
@@ -20,13 +21,10 @@ __all__ = [
 class Sampler:
     def __init__(
         self, 
+        ideasearcher: IdeaSearcher,
         sampler_id: int, 
-        system_prompt: str,
-        prologue_section: str,
-        epilogue_section: str,
         island: Island,
         evaluators: List[Evaluator],
-        generate_num: int,
         console_lock: Lock,
         diary_path: str,
         record_prompt_in_diary: bool,
@@ -34,11 +32,8 @@ class Sampler:
     ):
         self.id = sampler_id
         self.island = island
+        self.ideasearcher = ideasearcher
         self.program_name = island.program_name
-        self.system_prompt = system_prompt
-        self.prologue_section = prologue_section
-        self.epilogue_section = epilogue_section
-        self.generate_num = generate_num
         self.evaluators = evaluators
         self.console_lock = console_lock
         self.diary_path = diary_path
@@ -46,6 +41,15 @@ class Sampler:
         self.filter_func = filter_func
 
     def run(self):
+        
+        system_prompt = self.ideasearcher.get_system_prompt()
+        prologue_section = self.ideasearcher.get_prologue_section()
+        epilogue_section = self.ideasearcher.get_epilogue_section()
+        generate_num = self.ideasearcher.get_generate_num()
+        
+        assert system_prompt is not None
+        assert prologue_section is not None
+        assert epilogue_section is not None
         
         with self.console_lock:
             append_to_file(
@@ -106,7 +110,7 @@ class Sampler:
                         f"{similarity_prompt}\n"
                     )
             
-            prompt = self.prologue_section + examples_section + self.epilogue_section
+            prompt = prologue_section + examples_section + epilogue_section
             
             with self.console_lock:
                 append_to_file(
@@ -132,7 +136,7 @@ class Sampler:
                         file_path = self.diary_path,
                         content_str = (
                             f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 system prompt 是：\n"
-                            f"{self.system_prompt}"
+                            f"{system_prompt}"
                         ),
                     )
                     append_to_file(
@@ -152,7 +156,7 @@ class Sampler:
                     ),
                 )
                 
-            generated_ideas = [""] * self.generate_num
+            generated_ideas = [""] * generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
@@ -160,10 +164,10 @@ class Sampler:
                         get_answer, 
                         model, 
                         model_temperature, 
-                        self.system_prompt, 
+                        system_prompt, 
                         prompt
                     ): i
-                    for i in range(self.generate_num)
+                    for i in range(generate_num)
                 }
 
                 for future in as_completed(future_to_index):
@@ -196,7 +200,7 @@ class Sampler:
                     file_path = self.diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 已收到来自 {model}(T={model_temperature:.2f}) "
-                        f"的 {self.generate_num} 个回答！"
+                        f"的 {generate_num} 个回答！"
                     ),
                 )
             

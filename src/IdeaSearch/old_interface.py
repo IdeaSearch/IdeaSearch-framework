@@ -11,7 +11,7 @@ from src.utils import append_to_file
 from src.API4LLMs.model_manager import init_model_manager
 from src.API4LLMs.model_manager import shutdown_model_manager
 # from src.IdeaSearch.island import Idea
-from IdeaSearch.island import Island
+from src.IdeaSearch.island import Island
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 
@@ -28,7 +28,7 @@ def IdeaSearch(
     database_path: str,
     models: list[str],
     model_temperatures: list[float],
-    max_interaction_num: int,
+    interaction_num: int,
     evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
     
     *,  # 选填参数分界线
@@ -113,7 +113,7 @@ def IdeaSearch(
         database_path (str): 岛屿路径，其下 ideas/ 路径用于存放诸 .idea 文件和 score_sheet.json。
         models (list[str]): 参与生成 idea 的模型名称列表。
         model_temperatures (list[float]): 各模型的采样温度，与 models 等长。
-        max_interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
+        interaction_num (int): 最大交互轮数，超过此值后系统自动终止。
         evaluate_func (Callable[[str], Tuple[float, str]]): 对单个 idea 进行评分的函数。
 
     Keyword Args:
@@ -189,7 +189,7 @@ def IdeaSearch(
         database_path,
         models,
         model_temperatures,
-        max_interaction_num,
+        interaction_num,
         evaluate_func,
         score_range,
         hand_over_threshold,
@@ -282,7 +282,7 @@ def IdeaSearch(
         database_path = database_path,
         models = models,
         model_temperatures = model_temperatures,
-        max_interaction_num = max_interaction_num,
+        interaction_num = interaction_num,
         evaluate_func = evaluate_func,
         score_range = score_range,
         hand_over_threshold = hand_over_threshold,
@@ -379,7 +379,7 @@ def IdeaSearch_entrance_check(
     database_path: str,
     models: list[str],
     model_temperatures: list[float],
-    max_interaction_num: int,
+    interaction_num: int,
     evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
     score_range: Tuple[float, float],
     hand_over_threshold: float,
@@ -455,7 +455,7 @@ def IdeaSearch_entrance_check(
         raise TypeError("【IdeaSearch参数类型错误】 `model_temperatures` 应为 float 类型的列表")
 
     int_params = {
-        "max_interaction_num": max_interaction_num,
+        "interaction_num": interaction_num,
         "samplers_num": samplers_num,
         "evaluators_num": evaluators_num,
         "examples_num": examples_num,

@@ -91,7 +91,7 @@ def IdeaSearch_interface()-> None:
     ][0]
     
     # Max interaction num
-    max_interaction_num = 80
+    interaction_num = 80
     
     # Paths
     database_path = f"programs/{program_name}/database/"
@@ -122,7 +122,7 @@ def IdeaSearch_interface()-> None:
         model_assess_result_pic_path = model_assess_result_pic_path,
         model_sample_temperature = model_sample_temperature,
         epilogue_section = epilogue_section,
-        max_interaction_num = max_interaction_num,
+        interaction_num = interaction_num,
         evaluate_func = evaluate_func,
         score_range = score_range,
         system_prompt = system_prompt, 

@@ -13,6 +13,7 @@ __all__ = [
     "get_online_model_instance",
     "get_local_model_instance",
     "shutdown_model_manager",
+    "ModelManager",
 ]
 
 

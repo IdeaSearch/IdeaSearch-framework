@@ -18,6 +18,7 @@ from typing import List
 from os.path import basename
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
+from src.IdeaSearch.ideasearcher import IdeaSearcher
 
 
 __all__ = [
@@ -55,72 +56,24 @@ class Island:
 
     def __init__(
         self,
-        program_name: str,
+        ideasearcher: IdeaSearcher,
         database_path: str,
-        models: list[str],
-        model_temperatures: list[float],
-        max_interaction_num: int,
-        evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
-        score_range: Tuple[float, float],
-        hand_over_threshold: float,
+        interaction_num: int,
         diary_path: Optional[str],
-        examples_num: int,
-        sample_temperature: float,
-        model_sample_temperature: float,
-        assess_func: Optional[Callable[[list[str], list[float], list[Optional[str]]], float]],
-        assess_interval: Optional[int],
-        assess_baseline: Optional[float],
-        assess_result_data_path: Optional[str],
-        assess_result_pic_path: Optional[str],
-        model_assess_window_size: int,
-        model_assess_initial_score: float,
-        model_assess_average_order: float,
-        model_assess_save_result: bool,
-        model_assess_result_data_path: Optional[str],
-        model_assess_result_pic_path: Optional[str],
-        mutation_func: Optional[Callable[[str], str]],
-        mutation_interval: Optional[int],
-        mutation_num: Optional[int],
-        mutation_temperature: Optional[float],
-        crossover_func: Optional[Callable[[str, str], str]],
-        crossover_interval: Optional[int],
-        crossover_num: Optional[int],
-        crossover_temperature: Optional[float],
-        similarity_threshold: float,
-        similarity_distance_func: Callable[[str, str], float],
         default_similarity_distance_func: Callable[[str, str], float],
-        similarity_sys_info_thresholds: Optional[list[int]],
-        similarity_sys_info_prompts: Optional[list[str]],
-        initialization_skip_evaluation: bool,
-        initialization_cleanse_threshold: float,
-        delete_when_initial_cleanse: bool,
-        idea_uid_length: int,
         console_lock: Lock,
     ) -> None:
 
-        self.program_name = program_name
+        self.ideasearcher = ideasearcher
         self.path = database_path + "ideas/"
-        self.models = models
-        self.model_temperatures = model_temperatures
-        self.max_interaction_num = max_interaction_num
-        self.evaluate_func = evaluate_func
-        self.score_range = score_range
-        self.handover_threshold = hand_over_threshold
+        self.interaction_num = interaction_num
         self.diary_path = diary_path
-        self.examples_num = examples_num
-        self.sample_temperature = sample_temperature
-        self.model_sample_temperature = model_sample_temperature
-        self.model_assess_average_order = model_assess_average_order
-        self.model_assess_save_result = model_assess_save_result
-        self.model_assess_result_data_path = model_assess_result_data_path
-        self.model_assess_result_pic_path = model_assess_result_pic_path
-        self.similarity_threshold = similarity_threshold
-        self.similarity_distance_func = similarity_distance_func
         self.default_similarity_distance_func = default_similarity_distance_func
-        self.idea_uid_length = idea_uid_length
         self.console_lock = console_lock
         
         score_sheet_backup: Optional[dict] = None
+        
+        initialization_skip_evaluation = self.ideasearcher.get_initialization_skip_evaluation()
         
         if initialization_skip_evaluation:
             try:
@@ -145,12 +98,13 @@ class Island:
         
         guarantee_path_exist(self.path + "score_sheet.json")
 
+        mutation_func = self.ideasearcher.get_mutation_func()
         if mutation_func is not None:
             self.mutation_on = True
             self.mutation_func = mutation_func
-            self.mutation_interval = mutation_interval
-            self.mutation_num = mutation_num
-            self.mutation_temperature = mutation_temperature
+            self.mutation_interval = self.ideasearcher.get_mutation_interval()
+            self.mutation_num = self.ideasearcher.get_mutation_num()
+            self.mutation_temperature = self.ideasearcher.get_mutation_temperature()
         else:
             self.mutation_on = False
         
@@ -288,12 +242,12 @@ class Island:
             self.assess_baseline = assess_baseline
             self.assess_result_data_path = assess_result_data_path
             self.assess_result_pic_path = assess_result_pic_path
-            self.assess_result_ndarray = np.zeros((1 + (max_interaction_num // assess_interval),))
+            self.assess_result_ndarray = np.zeros((1 + (interaction_num // assess_interval),))
             self.assess_result_ndarray_length = 1
             self.assess_result_ndarray_x_axis = np.linspace(
                 start = 0, 
-                stop = max_interaction_num, 
-                num = 1 + (max_interaction_num // assess_interval), 
+                stop = interaction_num, 
+                num = 1 + (interaction_num // assess_interval), 
                 endpoint = True
             )
             guarantee_path_exist(assess_result_data_path)
@@ -342,12 +296,12 @@ class Island:
             self.model_scores.append(model_assess_initial_score)
             
         if self.model_assess_save_result:
-            self.scores_of_models = np.zeros((1+self.max_interaction_num, len(self.models)))
+            self.scores_of_models = np.zeros((1+self.interaction_num, len(self.models)))
             self.scores_of_models_length = 0
             self.scores_of_models_x_axis = np.linspace(
                 start = 0, 
-                stop = max_interaction_num, 
-                num = 1 + max_interaction_num, 
+                stop = interaction_num, 
+                num = 1 + interaction_num, 
                 endpoint = True
             )
             self._sync_model_score_result()
@@ -381,7 +335,7 @@ class Island:
                         file_path = self.diary_path,
                         content_str = (
                             f"【岛屿】 已分发交互次数为： {self.interaction_count} ，"
-                            f"还剩 {self.max_interaction_num-self.interaction_count} 次！"
+                            f"还剩 {self.interaction_num-self.interaction_count} 次！"
                         ),
                     )
             
@@ -638,7 +592,7 @@ class Island:
     
     
     def _check_threshold(self):
-        if self.interaction_count >= self.max_interaction_num:
+        if self.interaction_count >= self.interaction_num:
             with self.console_lock:
                 append_to_file(
                     file_path = self.diary_path,
@@ -1116,7 +1070,7 @@ class Island:
         point_num = len(self.assess_result_ndarray_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
         
-        x_axis_range = (0, self.max_interaction_num)
+        x_axis_range = (0, self.interaction_num)
         x_axis_range_expand_ratio = 0.08
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
@@ -1190,7 +1144,7 @@ class Island:
         point_num = len(self.scores_of_models_x_axis)
         auto_markersize = self._get_auto_markersize(point_num)
         
-        x_axis_range = (0, self.max_interaction_num)
+        x_axis_range = (0, self.interaction_num)
         x_axis_range_expand_ratio = 0.08
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)

@@ -4,7 +4,8 @@ from typing import Tuple
 from typing import Callable
 from typing import Optional
 from os.path import basename
-from IdeaSearch.island import Island
+from src.IdeaSearch.island import Island
+from src.IdeaSearch.ideasearcher import IdeaSearcher
 from src.utils import append_to_file
 
 
@@ -19,23 +20,23 @@ class Evaluator:
     
     def __init__(
         self, 
+        ideasearcher: IdeaSearcher,
         evaluator_id: int,
         island : Island,
         evaluate_func: Callable[[str], Tuple[float, Optional[str]]],
-        hand_over_threshold: float,
         console_lock : Lock,
         diary_path: str,
     ):
         
         self.id = evaluator_id
         self.island = island
+        self.ideasearcher: IdeaSearcher = ideasearcher
         self.program_name = island.program_name
         self.evaluate_func = evaluate_func
         self.console_lock = console_lock
         self.lock = Lock()
         self.status = "Vacant"
         self.diary_path = diary_path
-        self.hand_over_threshold = hand_over_threshold
         
     # ----------------------------- 外部调用动作 ----------------------------- 
 
@@ -56,6 +57,8 @@ class Evaluator:
         example_idea_paths: list[str],
         example_idea_scores: list[float],
     )-> None:
+        
+        hand_over_threshold = self.ideasearcher.get_hand_over_threshold()
         
         accepted_ideas = []
         score_result = []
@@ -117,7 +120,7 @@ class Evaluator:
             
             score_result.append(score)
             
-            if score >= self.hand_over_threshold:
+            if score >= hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
         self.island.update_model_score(score_result, model, model_temperature)  
