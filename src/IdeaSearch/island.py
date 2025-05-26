@@ -57,19 +57,24 @@ class Island:
     def __init__(
         self,
         ideasearcher: IdeaSearcher,
-        database_path: str,
-        interaction_num: int,
-        diary_path: Optional[str],
         default_similarity_distance_func: Callable[[str, str], float],
         console_lock: Lock,
     ) -> None:
 
         self.ideasearcher = ideasearcher
-        self.path = database_path + "ideas/"
-        self.interaction_num = interaction_num
-        self.diary_path = diary_path
         self.default_similarity_distance_func = default_similarity_distance_func
         self.console_lock = console_lock
+        
+        
+    def initialize(self):
+        
+        database_path = self.ideasearcher.get_database_path()
+        assert database_path is not None
+        self.path = database_path + "ideas/"
+        self.diary_path = self.ideasearcher.get_diary_path()
+        interaction_num = self.ideasearcher.get_interaction_num()
+        assert interaction_num is not None
+        self.interaction_num = interaction_num
         
         score_sheet_backup: Optional[dict] = None
         
@@ -108,23 +113,28 @@ class Island:
         else:
             self.mutation_on = False
         
+        crossover_func = self.ideasearcher.get_crossover_func()
         if crossover_func is not None:
             self.crossover_on = True
             self.crossover_func = crossover_func
-            self.crossover_interval = crossover_interval
-            self.crossover_num = crossover_num
-            self.crossover_temperature = crossover_temperature
+            self.crossover_interval = self.ideasearcher.get_crossover_interval()
+            self.crossover_num = self.ideasearcher.get_crossover_num()
+            self.crossover_temperature = self.ideasearcher.get_crossover_temperature()
         else:
             self.crossover_on = False
         
+        similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
         if similarity_sys_info_thresholds is not None:
             self.similarity_sys_info_on = True
             self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
-            self.similarity_sys_info_prompts = similarity_sys_info_prompts
+            self.similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
         else:
             self.similarity_sys_info_on = False
         
         # 初始化ideas列表（疑似存在mac OS系统的兼容性问题）
+        evaluate_func = self.ideasearcher.get_evaluate_func()
+        initialization_cleanse_threshold = self.ideasearcher.get_initialization_cleanse_threshold()
+        delete_when_initial_cleanse = self.ideasearcher.get_delete_when_initial_cleanse()
         self.ideas: list[Idea] = []
         path_to_search = Path(self.path).resolve()
         source = "初始化时读入"
@@ -229,25 +239,30 @@ class Island:
             ideas.append(current_idea.content)
             scores.append(current_idea.score)
             infos.append(current_idea.info)
-                     
+            
+        assess_func = self.ideasearcher.get_assess_func()
         if assess_func is not None:
             
             self.assess_interaction_count = 0
             
+            assess_interval = self.ideasearcher.get_assess_interval()
             assert assess_interval is not None
+            
+            assess_result_data_path = self.ideasearcher.get_assess_result_data_path()
+            assess_result_pic_path = self.ideasearcher.get_assess_result_pic_path()
             
             self.assess_on = True
             self.assess_func = assess_func
             self.assess_interval = assess_interval
-            self.assess_baseline = assess_baseline
+            self.assess_baseline = self.ideasearcher.get_assess_baseline()
             self.assess_result_data_path = assess_result_data_path
             self.assess_result_pic_path = assess_result_pic_path
-            self.assess_result_ndarray = np.zeros((1 + (interaction_num // assess_interval),))
+            self.assess_result_ndarray = np.zeros((1 + (self.interaction_num // assess_interval),))
             self.assess_result_ndarray_length = 1
             self.assess_result_ndarray_x_axis = np.linspace(
                 start = 0, 
-                stop = interaction_num, 
-                num = 1 + (interaction_num // assess_interval), 
+                stop = self.interaction_num, 
+                num = 1 + (self.interaction_num // assess_interval), 
                 endpoint = True
             )
             guarantee_path_exist(assess_result_data_path)
@@ -289,19 +304,24 @@ class Island:
             
         self.model_recent_scores = []
         self.model_scores = []
+        models = self.ideasearcher.get_models()
+        model_assess_window_size = self.ideasearcher.get_model_assess_window_size()
+        model_assess_initial_score = self.ideasearcher.get_model_assess_initial_score()
+        model_assess_save_result = self.ideasearcher.get_model_assess_save_result()
+        assert models is not None
         for _ in range(len(models)):
             self.model_recent_scores.append(
                 np.full((model_assess_window_size,), model_assess_initial_score)
             )
             self.model_scores.append(model_assess_initial_score)
             
-        if self.model_assess_save_result:
-            self.scores_of_models = np.zeros((1+self.interaction_num, len(self.models)))
+        if model_assess_save_result:
+            self.scores_of_models = np.zeros((1+self.interaction_num, len(models)))
             self.scores_of_models_length = 0
             self.scores_of_models_x_axis = np.linspace(
                 start = 0, 
-                stop = interaction_num, 
-                num = 1 + interaction_num, 
+                stop = self.interaction_num, 
+                num = 1 + self.interaction_num, 
                 endpoint = True
             )
             self._sync_model_score_result()
@@ -364,7 +384,7 @@ class Island:
                 exit()
                 
             probabilities = np.array([idea.score for idea in self.ideas])
-            probabilities /= self.sample_temperature
+            probabilities /= self.ideasearcher.get_sample_temperature()
             max_value = np.max(probabilities)
             probabilities = np.exp(probabilities - max_value)
             probabilities /= np.array(self.idea_similar_nums)
@@ -372,7 +392,7 @@ class Island:
             
             selected_indices = self.random_generator.choice(
                 a = len(self.ideas),
-                size = min(len(self.ideas), self.examples_num),
+                size = min(len(self.ideas), self.ideasearcher.get_examples_num()),
                 replace = False, # 不允许重复选择同一个元素
                 p = probabilities,
             )
@@ -414,18 +434,23 @@ class Island:
             
             self._show_model_scores()
             
-            probabilities = np.array(self.model_scores) / self.model_sample_temperature
+            models = self.ideasearcher.get_models()
+            model_temperatures = self.ideasearcher.get_model_temperatures()
+            assert models is not None
+            assert model_temperatures is not None
+            
+            probabilities = np.array(self.model_scores) / self.ideasearcher.get_model_sample_temperature()
             max_value = np.max(probabilities)
             probabilities = np.exp(probabilities - max_value)
             probabilities /= np.sum(probabilities)
             
             selected_index = self.random_generator.choice(
-                a = len(self.models), 
+                a = len(models), 
                 p = probabilities,
             )
             
-            selected_model_name = self.models[selected_index]
-            selected_model_temperature = self.model_temperatures[selected_index]
+            selected_model_name = models[selected_index]
+            selected_model_temperature = model_temperatures[selected_index]
             
             return selected_model_name, selected_model_temperature
         
@@ -450,11 +475,18 @@ class Island:
             
             index = 0
             
-            while index < len(self.models):
+            models = self.ideasearcher.get_models()
+            model_temperatures = self.ideasearcher.get_model_temperatures()
+            p = self.ideasearcher.get_model_assess_average_order()
+            model_assess_save_result = self.ideasearcher.get_model_assess_save_result()
+            assert models is not None
+            assert model_temperatures is not None
+            
+            
+            while index < len(models):
                 
-                if self.models[index] == model and self.model_temperatures[index] == model_temperature:
+                if models[index] == model and model_temperatures[index] == model_temperature:
                     self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
-                    p = self.model_assess_average_order
                     scores_array = np.array(score_result)
                     if p != np.inf:
                         self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
@@ -470,7 +502,7 @@ class Island:
                                 f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
-                    if self.model_assess_save_result:
+                    if model_assess_save_result:
                         self._sync_model_score_result()
                     return
                 
@@ -517,6 +549,8 @@ class Island:
             
     def _sync_score_sheet(self):
         
+        program_name = self.ideasearcher.get_program_name()
+        
         start_time = perf_counter()
         
         score_sheet = {
@@ -537,7 +571,7 @@ class Island:
         with self.console_lock:   
             append_to_file(
                 file_path = self.diary_path,
-                content_str = f"【岛屿】  {self.program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
+                content_str = f"【岛屿】  {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
             )
             
     
@@ -545,15 +579,19 @@ class Island:
         
         start_time = perf_counter()
         
+        similarity_distance_func = self.ideasearcher.get_similarity_distance_func()
+        similarity_threshold = self.ideasearcher.get_similarity_threshold()
+        assert similarity_distance_func is not None
+        
         self.idea_similar_nums = []
         
-        if self.similarity_distance_func == self.default_similarity_distance_func:
+        if similarity_distance_func == self.default_similarity_distance_func:
 
             scores = np.array([idea.score for idea in self.ideas])
             diff_matrix = np.abs(scores[:, None] - scores[None, :])
 
             for i, idea_i in enumerate(self.ideas):
-                score_similar_indices = set(np.where(diff_matrix[i] <= self.similarity_threshold)[0])
+                score_similar_indices = set(np.where(diff_matrix[i] <= similarity_threshold)[0])
                 content_equal_indices = set(
                     j for j, idea_j in enumerate(self.ideas)
                     if idea_j.content == idea_i.content
@@ -576,8 +614,8 @@ class Island:
                     assert idea_i.content is not None
                     assert idea_j.content is not None
                         
-                    score_diff = self.similarity_distance_func(idea_i.content, idea_j.content) 
-                    if score_diff <= self.similarity_threshold: similar_count += 1
+                    score_diff = similarity_distance_func(idea_i.content, idea_j.content) 
+                    if score_diff <= similarity_threshold: similar_count += 1
                         
                 self.idea_similar_nums.append(similar_count)
             
@@ -670,7 +708,12 @@ class Island:
             )
             
         assert self.mutation_num is not None
-            
+        
+        program_name = self.ideasearcher.get_program_name()
+        evaluate_func = self.ideasearcher.get_evaluate_func()
+        handover_threshold = self.ideasearcher.get_hand_over_threshold()
+        assert evaluate_func is not None
+        
         for index in range(self.mutation_num):
             
             probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
@@ -693,7 +736,7 @@ class Island:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的单体突变函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的单体突变函数时发生错误："
                                 f"返回结果中的 mutated_idea 应为一字符串，不应为一个 {type(mutated_idea)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -711,14 +754,14 @@ class Island:
                 return
             
             try:
-                score, info = self.evaluate_func(mutated_idea)
+                score, info = evaluate_func(mutated_idea)
                 
                 if not isinstance(score, float):
                     with self.console_lock:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -730,7 +773,7 @@ class Island:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -743,7 +786,7 @@ class Island:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮单体突变意外终止！"
                                 ),
@@ -755,7 +798,7 @@ class Island:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            f"【岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮单体突变意外终止！"
                         ),
                     )  
@@ -763,7 +806,7 @@ class Island:
             
             source = f"由 {basename(selected_idea.path)}({selected_idea.score:.2f}) 突变而来"
             
-            if score >= self.handover_threshold:
+            if score >= handover_threshold:
             
                 path = self._store_idea(
                     idea = mutated_idea,
@@ -800,7 +843,7 @@ class Island:
                         file_path = self.diary_path,
                         content_str = (
                             f"【岛屿】 第 {index+1} 次单体突变结果未达到入库分数阈值"
-                            f"（{self.handover_threshold:.2f}分），已删除！"
+                            f"（{handover_threshold:.2f}分），已删除！"
                         ),
                     )
                 
@@ -820,6 +863,11 @@ class Island:
             )
             
         assert self.crossover_num is not None
+        
+        program_name = self.ideasearcher.get_program_name()
+        evaluate_func = self.ideasearcher.get_evaluate_func()
+        handover_threshold = self.ideasearcher.get_hand_over_threshold()
+        assert evaluate_func is not None
 
         for index in range(self.crossover_num):
             
@@ -846,7 +894,7 @@ class Island:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的交叉变异函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的交叉变异函数时发生错误："
                                 f"返回结果中的 crossover_idea 应为一字符串，不应为一个 {type(crossover_idea)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -864,14 +912,14 @@ class Island:
                 continue
             
             try:
-                score, info = self.evaluate_func(crossover_idea)
+                score, info = evaluate_func(crossover_idea)
                 
                 if not isinstance(score, float):
                     with self.console_lock:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -883,7 +931,7 @@ class Island:
                         append_to_file(
                             file_path = self.diary_path,
                             content_str = (
-                                f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -896,7 +944,7 @@ class Island:
                             append_to_file(
                                 file_path = self.diary_path,
                                 content_str = (
-                                    f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误："
+                                    f"【岛屿】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮交叉变异意外终止！"
                                 ),
@@ -908,7 +956,7 @@ class Island:
                     append_to_file(
                         file_path = self.diary_path,
                         content_str = (
-                            f"【岛屿】 调用 {self.program_name} 的评估函数时发生错误：\n{error}"
+                            f"【岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮交叉变异意外终止！"
                         ),
                     )  
@@ -916,7 +964,7 @@ class Island:
             
             source = f"由 {basename(parent_1.path)}({parent_1.score:.2f}) 和 {basename(parent_2.path)}({parent_2.score:.2f}) 交叉而来"
 
-            if score >= self.handover_threshold:
+            if score >= handover_threshold:
                 
                 path = self._store_idea(
                     idea = crossover_idea,
@@ -953,7 +1001,7 @@ class Island:
                         file_path = self.diary_path,
                         content_str = (
                             f"【岛屿】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
-                            f"（{self.handover_threshold:.2f}分），已删除！"
+                            f"（{handover_threshold:.2f}分），已删除！"
                         ),
                     )
 
@@ -968,14 +1016,19 @@ class Island:
         
         with self.console_lock:
             
+            models = self.ideasearcher.get_models()
+            model_temperatures = self.ideasearcher.get_model_temperatures()
+            assert models is not None
+            assert model_temperatures is not None
+            
             append_to_file(
                 file_path = self.diary_path,
                 content_str = "【岛屿】 各模型目前评分情况如下：",
             )
             
-            for index, model in enumerate(self.models):
+            for index, model in enumerate(models):
                 
-                model_temperature = self.model_temperatures[index]
+                model_temperature = model_temperatures[index]
                 
                 append_to_file(
                     file_path = self.diary_path,
@@ -1039,7 +1092,7 @@ class Island:
             
     def _get_new_idea_path(self)-> str:
         
-        def generate_random_string(length=self.idea_uid_length):
+        def generate_random_string(length=self.ideasearcher.get_idea_uid_length()):
             return ''.join(random.choices(string.ascii_lowercase, k=length))
         
         idea_uid = generate_random_string()
@@ -1060,6 +1113,8 @@ class Island:
         
         assert self.assess_result_data_path is not None
         assert self.assess_result_pic_path is not None
+        
+        score_range = self.ideasearcher.get_score_range()
         
         np.savez_compressed(
             file = self.assess_result_data_path, 
@@ -1095,7 +1150,7 @@ class Island:
         plt.xlabel("Interaction No.")
         plt.ylabel("Island Score")
         plt.xlim(x_axis_range)
-        plt.ylim(self.score_range)
+        plt.ylim(score_range)
         plt.grid(True)
         plt.legend()
         plt.savefig(self.assess_result_pic_path)
@@ -1123,8 +1178,16 @@ class Island:
                     
     def _sync_model_score_result(self):
         
-        assert self.model_assess_result_data_path is not None
-        assert self.model_assess_result_pic_path is not None
+        model_assess_result_data_path = self.ideasearcher.get_model_assess_result_data_path()
+        model_assess_result_pic_path = self.ideasearcher.get_model_assess_result_pic_path()
+        models = self.ideasearcher.get_models()
+        model_temperatures = self.ideasearcher.get_model_temperatures()
+        score_range = self.ideasearcher.get_score_range()
+        
+        assert model_assess_result_data_path is not None
+        assert model_assess_result_pic_path is not None
+        assert models is not None
+        assert model_temperatures is not None
         
         self.scores_of_models[self.scores_of_models_length] = self.model_scores
         self.scores_of_models_length += 1
@@ -1132,11 +1195,11 @@ class Island:
         scores_of_models = self.scores_of_models.T
         
         scores_of_models_dict = {}
-        for model_name, model_temperature, model_scores in zip(self.models, self.model_temperatures, scores_of_models):
+        for model_name, model_temperature, model_scores in zip(models, model_temperatures, scores_of_models):
             scores_of_models_dict[f"{model_name}(T={model_temperature:.2f})"] = model_scores
         
         np.savez_compressed(
-            file=self.model_assess_result_data_path,
+            file=model_assess_result_data_path,
             interaction_num=self.scores_of_models_x_axis,
             **scores_of_models_dict
         )
@@ -1162,10 +1225,10 @@ class Island:
         plt.xlabel("Interaction No.")
         plt.ylabel("Model Score")
         plt.xlim(x_axis_range)
-        plt.ylim(self.score_range)
+        plt.ylim(score_range)
         plt.grid(True)
         plt.legend()
-        plt.savefig(self.model_assess_result_pic_path)
+        plt.savefig(model_assess_result_pic_path)
         plt.close()
         
         with self.console_lock:
@@ -1173,7 +1236,7 @@ class Island:
                 file_path=self.diary_path,
                 content_str=(
                     f"【岛屿】 "
-                    f" {basename(self.model_assess_result_data_path)} 与 {basename(self.model_assess_result_pic_path)} 已更新！"
+                    f" {basename(model_assess_result_data_path)} 与 {basename(model_assess_result_pic_path)} 已更新！"
                 ),
             )
             

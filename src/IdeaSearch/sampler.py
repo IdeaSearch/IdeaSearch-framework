@@ -26,26 +26,23 @@ class Sampler:
         island: Island,
         evaluators: List[Evaluator],
         console_lock: Lock,
-        diary_path: str,
-        record_prompt_in_diary: bool,
-        filter_func: Optional[Callable[[str], str]],
     ):
+        
         self.id = sampler_id
         self.island = island
         self.ideasearcher = ideasearcher
-        self.program_name = island.program_name
         self.evaluators = evaluators
         self.console_lock = console_lock
-        self.diary_path = diary_path
-        self.record_prompt_in_diary = record_prompt_in_diary
-        self.filter_func = filter_func
 
     def run(self):
         
+        diary_path = self.ideasearcher.get_diary_path()
         system_prompt = self.ideasearcher.get_system_prompt()
         prologue_section = self.ideasearcher.get_prologue_section()
         epilogue_section = self.ideasearcher.get_epilogue_section()
         generate_num = self.ideasearcher.get_generate_num()
+        filter_func = self.ideasearcher.get_filter_func()
+        record_prompt_in_diary = self.ideasearcher.get_record_prompt_in_diary()
         
         assert system_prompt is not None
         assert prologue_section is not None
@@ -53,7 +50,7 @@ class Sampler:
         
         with self.console_lock:
             append_to_file(
-                file_path = self.diary_path,
+                file_path = diary_path,
                 content_str = f"【{self.id}号采样器】 已开始工作！",
             )
         
@@ -61,7 +58,7 @@ class Sampler:
             
             with self.console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
+                    file_path = diary_path,
                     content_str = f"【{self.id}号采样器】 已开始新一轮采样！",
                 )
             
@@ -69,14 +66,14 @@ class Sampler:
             if examples is None: 
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 工作结束。",
                     )
                 return
             else:
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 已从岛屿采样 {len(examples)} 个idea！",
                     )
             
@@ -86,13 +83,13 @@ class Sampler:
                 examples_section += f"[第 {index + 1} 个例子]\n"
                 examples_section += f"内容：\n"
                 
-                if self.filter_func is not None:
+                if filter_func is not None:
                     try:
-                        idea = self.filter_func(idea)
+                        idea = filter_func(idea)
                     except Exception as error:
                         with self.console_lock:
                             append_to_file(
-                                file_path = self.diary_path,
+                                file_path = diary_path,
                                 content_str = (
                                     f"【{self.id}号采样器】 "
                                     f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
@@ -114,7 +111,7 @@ class Sampler:
             
             with self.console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
+                    file_path = diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 正在询问岛屿使用何模型。。。"
                     ),
@@ -124,23 +121,23 @@ class Sampler:
             
             with self.console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
+                    file_path = diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了 {model}(T={model_temperature:.2f}) ！"
                     ),
                 )
                 
-            if self.record_prompt_in_diary:
+            if record_prompt_in_diary:
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
                             f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 system prompt 是：\n"
                             f"{system_prompt}"
                         ),
                     )
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
                             f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 prompt 是：\n"
                             f"{prompt}"
@@ -149,7 +146,7 @@ class Sampler:
             
             with self.console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
+                    file_path = diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 已向 {model}(T={model_temperature:.2f}) "
                         f"发送prompt，正在等待回答！"
@@ -177,7 +174,7 @@ class Sampler:
                     except Exception as e:
                         with self.console_lock:
                             append_to_file(
-                                file_path = self.diary_path,
+                                file_path = diary_path,
                                 content_str = (
                                     f"【{self.id}号采样器】 尝试获取 {model}(T={model_temperature:.2f}) 的回答时发生错误: \n{e}\n"
                                     "此轮采样失败。。。"
@@ -189,7 +186,7 @@ class Sampler:
                 
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。",
                     )
                     
@@ -197,7 +194,7 @@ class Sampler:
                             
             with self.console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
+                    file_path = diary_path,
                     content_str = (
                         f"【{self.id}号采样器】 已收到来自 {model}(T={model_temperature:.2f}) "
                         f"的 {generate_num} 个回答！"
@@ -220,20 +217,20 @@ class Sampler:
                 
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。",
                     )
                 evaluator.release()
             else:
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 没有找到空闲的评估器，此轮采样失败。。。",
                     )
         
         with self.console_lock:    
             append_to_file(
-                file_path = self.diary_path,
+                file_path = diary_path,
                 content_str = f"【{self.id}号采样器】 工作结束。",
             )
 
@@ -241,11 +238,14 @@ class Sampler:
     def _get_idle_evaluator(
         self
     )-> Optional[Evaluator]:
+        
+        diary_path = self.ideasearcher.get_diary_path()
+        
         for evaluator in self.evaluators:
             if evaluator.try_acquire():
                 with self.console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = f"【{self.id}号采样器】 已找到{evaluator.id}号评估器进行评估！",
                     )
                 return evaluator

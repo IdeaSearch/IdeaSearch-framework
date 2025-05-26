@@ -113,6 +113,7 @@ class IdeaSearcher:
         
             self._model_manager.shutdown()
     
+    
     def set_program_name(
         self,
         value: str,
