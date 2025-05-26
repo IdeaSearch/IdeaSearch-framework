@@ -81,8 +81,8 @@ class IdeaSearcher:
         self._initialization_skip_evaluation: bool = True
         self._initialization_cleanse_threshold: float = -1.0
         self._delete_when_initial_cleanse: bool = False
-        self._idea_uid_length: int = 4
-        self._record_prompt_in_diary: bool = True
+        self._idea_uid_length: int = 6
+        self._record_prompt_in_diary: bool = False
         self._filter_func: Optional[Callable[[str], str]] = None
 
 
@@ -127,6 +127,10 @@ class IdeaSearcher:
     )-> int:
         
         with self._lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 add_island 动作！")
         
             evaluators_num = self._evaluators_num
             samplers_num = self._samplers_num
@@ -178,30 +182,35 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法运行！")
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 run 动作！")
         
             max_workers_num = 0
             for island_id in self._islands:
                 island = self._islands[island_id]
                 island.fuel(additional_interaction_num)
                 max_workers_num += len(island.samplers)
+                
+            append_to_file(
+                file_path = self._diary_path,
+                content_str = f"【IdeaSearcher】 {self._program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
+            )
             
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers = max_workers_num
             ) as executor:
             
-                futures = {executor.submit(sampler.run): sampler 
+                futures = {executor.submit(sampler.run): (island_id, sampler.id)
                     for island_id in self._islands
                     for sampler in self._islands[island_id].samplers
                 }
                 for future in concurrent.futures.as_completed(futures):
-                    sampler = futures[future]
+                    island_id, sampler_id = futures[future]
                     try:
                         _ = future.result() 
                     except Exception as e:
                         append_to_file(
                             file_path = self._diary_path,
-                            content_str = f"【IdeaSearcher】 {sampler.id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                            content_str = f"【IdeaSearcher】 {island_id}号岛屿的{sampler_id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                         )
                         exit()
                 
@@ -1228,6 +1237,7 @@ class IdeaSearcher:
                 missing_param = "crossover_temperature"
                 
         if missing_param is not None: return missing_param
+        assert self._database_path is not None
         
         if self._similarity_distance_func is None:
             self._similarity_distance_func = self._default_similarity_distance_func
@@ -1240,9 +1250,9 @@ class IdeaSearcher:
             
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
-                self._assess_result_data_path = self._database_path + "data/island_assessment.npz"
+                self._assess_result_data_path = self._database_path + "data/database_assessment.npz"
             if self._assess_result_pic_path is None:
-                self._assess_result_pic_path = self._database_path + "pic/island_assessment.png"
+                self._assess_result_pic_path = self._database_path + "pic/database_assessment.png"
                 
         if self._model_assess_save_result:
             if self._model_assess_result_data_path is None:

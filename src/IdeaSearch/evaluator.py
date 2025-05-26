@@ -74,7 +74,7 @@ class Evaluator:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                             ),
                         )
@@ -85,7 +85,7 @@ class Evaluator:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                             ),
                         )
@@ -97,7 +97,7 @@ class Evaluator:
                             append_to_file(
                                 file_path = diary_path,
                                 content_str = (
-                                    f"【{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                    f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                 ),
                             )
@@ -108,7 +108,7 @@ class Evaluator:
                     append_to_file(
                         file_path = diary_path,
                         content_str = (
-                            f"【{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
+                            f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
                         ),
                     )  
                 return
@@ -124,7 +124,7 @@ class Evaluator:
             with self.console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
+                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
                 )
                 
             source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
@@ -134,7 +134,7 @@ class Evaluator:
             with self.console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
+                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
                 )
                     
     
@@ -146,7 +146,7 @@ class Evaluator:
             if self.status != "Busy":
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
+                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
                 )
                 exit()
 

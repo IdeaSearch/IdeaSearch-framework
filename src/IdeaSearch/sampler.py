@@ -43,7 +43,7 @@ class Sampler:
         with self.console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号采样器】 已开始工作！",
+                content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已开始工作！",
             )
         
         while self.island.get_status() == "Running":
@@ -51,7 +51,7 @@ class Sampler:
             with self.console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号采样器】 已开始新一轮采样！",
+                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已开始新一轮采样！",
                 )
             
             examples = self.island.get_examples()
@@ -59,14 +59,14 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 工作结束。",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 工作结束。",
                     )
                 return
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 已从岛屿采样 {len(examples)} 个idea！",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已从{self.island.island_id}号岛屿采样 {len(examples)} 个idea！",
                     )
             
             examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
@@ -83,7 +83,7 @@ class Sampler:
                             append_to_file(
                                 file_path = diary_path,
                                 content_str = (
-                                    f"【{self.id}号采样器】 "
+                                    f"【{self.island.island_id}号岛屿的{self.id}号采样器】 "
                                     f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
                                     f"{error}\n延用原来的 idea ！"
                                 ),
@@ -95,7 +95,7 @@ class Sampler:
                     examples_section += f"评语：{info}\n"
                 if similar_num is not None:
                     examples_section += (
-                        f"重复情况说明：目前岛屿里有{similar_num}个例子和这个例子相似\n"
+                        f"重复情况说明：{self.island.island_id}号岛屿里有{similar_num}个例子和这个例子相似\n"
                         f"{similarity_prompt}\n"
                     )
             
@@ -105,7 +105,7 @@ class Sampler:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 正在询问岛屿使用何模型。。。"
+                        f"【{self.island.island_id}号岛屿的{self.id}号采样器】 正在询问{self.island.island_id}号岛屿使用何模型。。。"
                     ),
                 )
             
@@ -115,7 +115,7 @@ class Sampler:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 根据各模型得分情况，依概率选择了 {model}(T={model_temperature:.2f}) ！"
+                        f"【{self.island.island_id}号岛屿的{self.id}号采样器】 根据各模型得分情况，依概率选择了 {model}(T={model_temperature:.2f}) ！"
                     ),
                 )
                 
@@ -124,14 +124,14 @@ class Sampler:
                     append_to_file(
                         file_path = diary_path,
                         content_str = (
-                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 system prompt 是：\n"
+                            f"【{self.island.island_id}号岛屿的{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 system prompt 是：\n"
                             f"{system_prompt}"
                         ),
                     )
                     append_to_file(
                         file_path = diary_path,
                         content_str = (
-                            f"【{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 prompt 是：\n"
+                            f"【{self.island.island_id}号岛屿的{self.id}号采样器】 向 {model}(T={model_temperature:.2f}) 发送的 prompt 是：\n"
                             f"{prompt}"
                         ),
                     )
@@ -140,7 +140,7 @@ class Sampler:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已向 {model}(T={model_temperature:.2f}) "
+                        f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已向 {model}(T={model_temperature:.2f}) "
                         f"发送prompt，正在等待回答！"
                     ),
                 )
@@ -168,7 +168,7 @@ class Sampler:
                             append_to_file(
                                 file_path = diary_path,
                                 content_str = (
-                                    f"【{self.id}号采样器】 尝试获取 {model}(T={model_temperature:.2f}) 的回答时发生错误: \n{e}\n"
+                                    f"【{self.island.island_id}号岛屿的{self.id}号采样器】 尝试获取 {model}(T={model_temperature:.2f}) 的回答时发生错误: \n{e}\n"
                                     "此轮采样失败。。。"
                                 ),
                             )
@@ -179,7 +179,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。",
                     )
                     
                 continue
@@ -188,7 +188,7 @@ class Sampler:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"【{self.id}号采样器】 已收到来自 {model}(T={model_temperature:.2f}) "
+                        f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已收到来自 {model}(T={model_temperature:.2f}) "
                         f"的 {generate_num} 个回答！"
                     ),
                 )
@@ -210,20 +210,20 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 已释放{evaluator.id}号评估器。",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已释放{evaluator.id}号评估器。",
                     )
                 evaluator.release()
             else:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 没有找到空闲的评估器，此轮采样失败。。。",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 没有找到空闲的评估器，此轮采样失败。。。",
                     )
         
         with self.console_lock:    
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号采样器】 工作结束。",
+                content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 工作结束。",
             )
 
 
@@ -238,7 +238,7 @@ class Sampler:
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【{self.id}号采样器】 已找到{evaluator.id}号评估器进行评估！",
+                        content_str = f"【{self.island.island_id}号岛屿的{self.id}号采样器】 已找到{evaluator.id}号评估器进行评估！",
                     )
                 return evaluator
         return None

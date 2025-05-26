@@ -1,5 +1,6 @@
 # pip install IdeaSearch; from IdeaSearch import IdeaSearcher (6/15)
 from src.IdeaSearch.ideasearcher import IdeaSearcher
+from src.utils import clear_file_content
 from programs.TemplateProgram.user_code.prompt import system_prompt as TemplateProgram_system_prompt
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
@@ -44,14 +45,19 @@ def main():
     ideasearcher.set_assess_func(TemplateProgram_assess)
     ideasearcher.set_assess_interval(1)
     
+    diary_path = "programs/TemplateProgram/database/log/diary.txt"
+    clear_file_content(diary_path)
+    ideasearcher.set_diary_path(diary_path)
+
+    ideasearcher.add_island()
     ideasearcher.add_island()
     
-    for epoch in range(1, 2):
+    for epoch in range(1, 4):
         
         ideasearcher.set_mutation_num(epoch)
         ideasearcher.set_crossover_num(epoch * 2)
         
-        ideasearcher.run(10)
+        ideasearcher.run(5)
         
     ideasearcher.shutdown_models()
 
