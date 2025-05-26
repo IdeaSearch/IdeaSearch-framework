@@ -79,15 +79,16 @@ class Island:
         self.samplers = samplers
         
         
-    def initialize(self):
+    def fuel(
+        self,
+        additional_interaction_num: int,
+    ):
         
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
         self.path = database_path + "ideas/"
         self.diary_path = self.ideasearcher.get_diary_path()
-        interaction_num = self.ideasearcher.get_interaction_num()
-        assert interaction_num is not None
-        self.interaction_num = interaction_num
+        self.interaction_num += additional_interaction_num
         
         score_sheet_backup: Optional[dict] = None
         

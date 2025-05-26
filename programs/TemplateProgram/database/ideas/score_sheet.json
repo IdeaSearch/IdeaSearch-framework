@@ -1,0 +1,117 @@
+{
+    "initial_idea.idea": {
+        "score": 29.44284171802266,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea10.idea": {
+        "score": 9.212168847477853,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea11.idea": {
+        "score": 23.83490682098989,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea12.idea": {
+        "score": 22.564532408788157,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea13.idea": {
+        "score": 25.951519263502398,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea2.idea": {
+        "score": 33.35893107084008,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea3.idea": {
+        "score": 8.397564922476633,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea4.idea": {
+        "score": 16.63687361987734,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea5.idea": {
+        "score": 32.68331454257103,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea6.idea": {
+        "score": 16.807278761623138,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea7.idea": {
+        "score": 9.831414906829846,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea8.idea": {
+        "score": 27.38042033530594,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "initial_idea9.idea": {
+        "score": 31.235524753093117,
+        "info": "一般般！",
+        "source": "初始化时读入"
+    },
+    "idea_fnde.idea": {
+        "score": 27.042240105348345,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea5.idea(32.68)，initial_idea11.idea(23.83)，initial_idea12.idea(22.56) 后生成"
+    },
+    "idea_fkik.idea": {
+        "score": 7.080087151305646,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea13.idea(25.95)，initial_idea4.idea(16.64)，initial_idea2.idea(33.36) 后生成"
+    },
+    "idea_didj.idea": {
+        "score": 28.725281771316812,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea2.idea(33.36)，initial_idea6.idea(16.81)，initial_idea7.idea(9.83) 后生成"
+    },
+    "idea_qjms.idea": {
+        "score": 19.306059740510495,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea13.idea(25.95)，initial_idea6.idea(16.81)，initial_idea8.idea(27.38) 后生成"
+    },
+    "idea_ugdr.idea": {
+        "score": 0.5725706748244335,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea.idea(29.44)，idea_fkik.idea(7.08)，initial_idea13.idea(25.95) 后生成"
+    },
+    "idea_nwno.idea": {
+        "score": 13.932168373144718,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea5.idea(32.68)，initial_idea3.idea(8.40)，initial_idea11.idea(23.83) 后生成"
+    },
+    "idea_cevi.idea": {
+        "score": 21.66134846821633,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea11.idea(23.83)，initial_idea12.idea(22.56)，initial_idea4.idea(16.64) 后生成"
+    },
+    "idea_iiuq.idea": {
+        "score": 12.343495955999288,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea12.idea(22.56)，initial_idea8.idea(27.38)，initial_idea5.idea(32.68) 后生成"
+    },
+    "idea_gacy.idea": {
+        "score": 4.519314862738087,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea10.idea(9.21)，idea_qjms.idea(19.31)，initial_idea9.idea(31.24) 后生成"
+    },
+    "idea_jncz.idea": {
+        "score": 8.827952353025962,
+        "info": "一般般！",
+        "source": "由 Deepseek_V3(T=1.00) 阅读 initial_idea.idea(29.44)，idea_cevi.idea(21.66)，initial_idea10.idea(9.21) 后生成"
+    }
+}

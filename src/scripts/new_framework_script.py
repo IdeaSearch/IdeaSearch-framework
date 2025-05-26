@@ -42,6 +42,7 @@ def main():
         TemplateProgram_crossover,
     ][0])
     ideasearcher.set_assess_func(TemplateProgram_assess)
+    ideasearcher.set_assess_interval(1)
     
     ideasearcher.add_island()
     

@@ -42,7 +42,6 @@ class IdeaSearcher:
         self._database_path: Optional[str] = None
         self._models: Optional[List[str]] = None
         self._model_temperatures: Optional[List[float]] = None
-        self._interaction_num: Optional[int] = None
         self._evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]] = None
         self._score_range: Tuple[float, float] = (0.0, 100.0)
         self._hand_over_threshold: float = 0.0
@@ -179,11 +178,13 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 必要参数`{missing_param}`未设置，无法运行！")
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法运行！")
         
             max_workers_num = 0
             for island_id in self._islands:
-                max_workers_num += len(self._islands[island_id].samplers)
+                island = self._islands[island_id]
+                island.fuel(additional_interaction_num)
+                max_workers_num += len(island.samplers)
             
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers = max_workers_num
@@ -284,18 +285,6 @@ class IdeaSearcher:
 
         with self._lock:
             self._model_temperatures = value
-
-
-    def set_interaction_num(
-        self,
-        value: int,
-    ) -> None:
-
-        if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`interaction_num`类型应为int，实为{str(type(value))}")
-
-        with self._lock:
-            self._interaction_num = value
 
 
     def set_evaluate_func(
@@ -844,13 +833,6 @@ class IdeaSearcher:
             return self._model_temperatures
 
 
-    def get_interaction_num(
-        self,
-    )-> Optional[int]:
-        
-            return self._interaction_num
-
-
     def get_evaluate_func(
         self,
     )-> Optional[Callable[[str], Tuple[float, Optional[str]]]]:
@@ -1206,31 +1188,49 @@ class IdeaSearcher:
         
         if self._program_name is None:
             missing_param = "program_name"
-            return missing_param
-        
+            
         if self._prologue_section is None:
             missing_param = "prologue_section"
-            return missing_param
-        
+            
         if self._epilogue_section is None:
             missing_param = "epilogue_section"
-            return missing_param
-        
+            
         if self._database_path is None:
             missing_param = "database_path"
-            return missing_param
-        
+            
         if self._models is None:
             missing_param = "models"
-            return missing_param
-        
+            
         if self._model_temperatures is None:
             missing_param = "model_temperatures"
-            return missing_param
-        
+            
         if self._evaluate_func is None:
             missing_param = "evaluate_func"
-            return missing_param
+               
+        if self._assess_func is not None:
+            if self._assess_interval is None:
+                missing_param = "assess_interval"
+        
+        if self._mutation_func is not None:
+            if self._mutation_interval is None:
+                missing_param = "mutation_interval"
+            if self._mutation_num is None:
+                missing_param = "mutation_num"
+            if self._mutation_temperature is None:
+                missing_param = "mutation_temperature"
+                
+        if self._crossover_func is not None:
+            if self._crossover_interval is None:
+                missing_param = "crossover_interval"
+            if self._crossover_num is None:
+                missing_param = "crossover_num"
+            if self._crossover_temperature is None:
+                missing_param = "crossover_temperature"
+                
+        if missing_param is not None: return missing_param
+        
+        if self._similarity_distance_func is None:
+            self._similarity_distance_func = self._default_similarity_distance_func
         
         if self._diary_path is None:
             self._diary_path = self._database_path + "log/diary.txt"
@@ -1250,4 +1250,4 @@ class IdeaSearcher:
             if self._model_assess_result_pic_path is None:
                 self._model_assess_result_pic_path = self._database_path + "pic/model_scores.png"
                 
-        return missing_param
+        return None
