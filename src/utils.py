@@ -1,4 +1,5 @@
 import os
+import bisect
 
 
 __all__ = [
@@ -6,6 +7,7 @@ __all__ = [
     "append_to_file",
     "clear_file_content",
     "get_auto_markersize",
+    "get_label",
 ]
 
 
@@ -84,3 +86,21 @@ def get_auto_markersize(
         auto_markersize = 2
         
     return auto_markersize
+
+
+def get_label(
+    x: int, 
+    thresholds: list[int], 
+    labels: list[str]
+) -> str:
+    if not thresholds:
+        raise ValueError("thresholds 列表不能为空")
+
+    if len(labels) != len(thresholds) + 1:
+        raise ValueError(
+            f"labels 列表长度应比 thresholds 长 1，"
+            f"但实际为 labels={len(labels)}, thresholds={len(thresholds)}"
+        )
+    
+    index = bisect.bisect_right(thresholds, x)
+    return labels[index]

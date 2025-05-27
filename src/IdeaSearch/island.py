@@ -1,12 +1,8 @@
 import os
 import json
 import random
-import bisect
 import string
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from time import perf_counter
 from math import isnan
 from threading import Lock
@@ -18,7 +14,7 @@ from os.path import basename
 from os.path import sep as seperator
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
-from src.utils import get_auto_markersize
+from src.utils import get_label
 
 
 __all__ = [
@@ -39,6 +35,7 @@ class Idea:
         info: Optional[str] = None,
         source: Optional[str] = None,
     ):
+        
         self.path = str(path)
         self.source = source
         self.level = level
@@ -251,62 +248,8 @@ class Island:
             self._sync_score_sheet()
             self._sync_best_score()
             self._sync_similar_num_list()
-
-        
-    
-          
-          
-    def expand_model_score_range(
-        self,
-    )-> None:
-        
-        pass
-    
-        
-        
-    def load_mutation_config(self):
-        
-        with self._lock:
-
-            mutation_func = self.ideasearcher.get_mutation_func()
-            if mutation_func is not None:
-                self.mutation_on = True
-                self.mutation_func = mutation_func
-                self.mutation_interval = self.ideasearcher.get_mutation_interval()
-                self.mutation_num = self.ideasearcher.get_mutation_num()
-                self.mutation_temperature = self.ideasearcher.get_mutation_temperature()
-            else:
-                self.mutation_on = False
             
             
-    def load_crossover_config(self):
-        
-        with self._lock:
-        
-            crossover_func = self.ideasearcher.get_crossover_func()
-            if crossover_func is not None:
-                self.crossover_on = True
-                self.crossover_func = crossover_func
-                self.crossover_interval = self.ideasearcher.get_crossover_interval()
-                self.crossover_num = self.ideasearcher.get_crossover_num()
-                self.crossover_temperature = self.ideasearcher.get_crossover_temperature()
-            else:
-                self.crossover_on = False
-            
-            
-    def load_similarity_info_config(self):
-        
-        with self._lock:
-        
-            similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
-            if similarity_sys_info_thresholds is not None:
-                self.similarity_sys_info_on = True
-                self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
-                self.similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
-            else:
-                self.similarity_sys_info_on = False
-        
-        
     def link_samplers(
         self,
         samplers
@@ -315,12 +258,12 @@ class Island:
         with self._lock:
         
             self.samplers = samplers
-        
+
         
     def fuel(
         self,
         additional_interaction_num: int,
-    ):
+    )-> None:
         
         with self._lock:
             
@@ -329,26 +272,35 @@ class Island:
             
             self.interaction_num += additional_interaction_num
             self.status = "Running"
-            
-            models = self.ideasearcher.get_models()
 
 
-    def get_status(self):
+    def get_status(
+        self,
+    )-> str:
+        
         with self._lock:
             return self.status
         
     
     def get_examples(
-        self
+        self,
     )-> Optional[list[Tuple]]:
         
         with self._lock:
             
-            diary_path = self.ideasearcher.get_diary_path()
-            
             if self.status == "Terminated":
                 return None
+            
+            diary_path = self.ideasearcher.get_diary_path()
+            mutation_func = self.ideasearcher.get_mutation_func()
+            mutation_interval = self.ideasearcher.get_mutation_interval()
+            crossover_func = self.ideasearcher.get_crossover_func()
+            crossover_interval = self.ideasearcher.get_crossover_interval()
+            similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
+            similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
+            
             self.interaction_count += 1
+            
             with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
@@ -358,18 +310,18 @@ class Island:
                         ),
                     )
             
-            if self.mutation_on:
+            if mutation_func is not None:
                 
-                assert self.mutation_interval is not None
+                assert mutation_interval is not None
                 
-                if self.interaction_count % self.mutation_interval == 0:
+                if self.interaction_count % mutation_interval == 0:
                     self._mutate()
             
-            if self.crossover_on:
+            if crossover_func is not None:
                 
-                assert self.crossover_interval is not None
+                assert crossover_interval is not None
                 
-                if self.interaction_count % self.crossover_interval == 0:
+                if self.interaction_count % crossover_interval == 0:
                     self._crossover()
             
             self._check_threshold()
@@ -402,15 +354,15 @@ class Island:
                 selected_index = int(i)
                 example_idea = self.ideas[selected_index]
                 
-                if self.similarity_sys_info_on:
+                if similarity_sys_info_thresholds is not None:
                     
-                    assert self.similarity_sys_info_prompts is not None
+                    assert similarity_sys_info_prompts is not None
                     
                     similar_num = self.idea_similar_nums[selected_index]
                     similarity_prompt = get_label(
                         x = similar_num,
-                        thresholds = self.similarity_sys_info_thresholds,
-                        labels = self.similarity_sys_info_prompts
+                        thresholds = similarity_sys_info_thresholds,
+                        labels = similarity_sys_info_prompts
                     )
                 else:
                     similar_num = None
@@ -593,23 +545,26 @@ class Island:
     def _mutate(self)-> None:
         
         diary_path = self.ideasearcher.get_diary_path()
+        program_name = self.ideasearcher.get_program_name()
+        evaluate_func = self.ideasearcher.get_evaluate_func()
+        handover_threshold = self.ideasearcher.get_hand_over_threshold()
+        mutation_num = self.ideasearcher.get_mutation_num()
+        mutation_temperature = self.ideasearcher.get_mutation_temperature()
+        mutation_func = self.ideasearcher.get_mutation_func()
+        assert evaluate_func is not None
+        assert mutation_num is not None
+        assert mutation_temperature is not None
+        assert mutation_func is not None
         
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = "【{self.id}号岛屿】 现在开始进行单体突变！",
+                content_str = f"【{self.id}号岛屿】 现在开始进行单体突变！",
             )
-            
-        assert self.mutation_num is not None
         
-        program_name = self.ideasearcher.get_program_name()
-        evaluate_func = self.ideasearcher.get_evaluate_func()
-        handover_threshold = self.ideasearcher.get_hand_over_threshold()
-        assert evaluate_func is not None
-        
-        for index in range(self.mutation_num):
+        for index in range(mutation_num):
             
-            probabilities = np.array([idea.score for idea in self.ideas]) / self.mutation_temperature
+            probabilities = np.array([idea.score for idea in self.ideas]) / mutation_temperature
             max_value = np.max(probabilities)
             probabilities = np.exp(probabilities - max_value)
             probabilities /= np.array(self.idea_similar_nums)
@@ -623,7 +578,7 @@ class Island:
             
             try:
                 assert selected_idea.content is not None
-                mutated_idea = self.mutation_func(selected_idea.content)
+                mutated_idea = mutation_func(selected_idea.content)
                 if not isinstance(mutated_idea, str):
                     with self._console_lock:
                         append_to_file(
@@ -750,24 +705,29 @@ class Island:
     
     
     def _crossover(self) -> None:
+        
+        diary_path = self.ideasearcher.get_diary_path()
+        program_name = self.ideasearcher.get_program_name()
+        evaluate_func = self.ideasearcher.get_evaluate_func()
+        handover_threshold = self.ideasearcher.get_hand_over_threshold()
+        crossover_num = self.ideasearcher.get_crossover_num()
+        crossover_temperature = self.ideasearcher.get_crossover_temperature()
+        crossover_func = self.ideasearcher.get_crossover_func()
+        assert evaluate_func is not None
+        assert crossover_num is not None
+        assert crossover_temperature is not None
+        assert crossover_func is not None
     
         with self._console_lock:
             diary_path = self.ideasearcher.get_diary_path()
             append_to_file(
                 file_path = diary_path,
-                content_str = "【{self.id}号岛屿】 现在开始进行交叉变异！",
+                content_str = f"【{self.id}号岛屿】 现在开始进行交叉变异！",
             )
-            
-        assert self.crossover_num is not None
-        
-        program_name = self.ideasearcher.get_program_name()
-        evaluate_func = self.ideasearcher.get_evaluate_func()
-        handover_threshold = self.ideasearcher.get_hand_over_threshold()
-        assert evaluate_func is not None
 
-        for index in range(self.crossover_num):
+        for index in range(crossover_num):
             
-            probabilities = np.array([idea.score for idea in self.ideas]) / self.crossover_temperature
+            probabilities = np.array([idea.score for idea in self.ideas]) / crossover_temperature
             max_value = np.max(probabilities)
             probabilities = np.exp(probabilities - max_value)
             probabilities /= np.sum(probabilities)
@@ -782,7 +742,7 @@ class Island:
             parent_2 = self.ideas[parent_indices[1]]
 
             try:
-                crossover_idea = self.crossover_func(
+                crossover_idea = crossover_func(
                     parent_1.content, parent_2.content
                 )
                 if not isinstance(crossover_idea, str):
@@ -977,22 +937,4 @@ class Island:
             path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
             
         return path
-
-
-def get_label(
-    x: int, 
-    thresholds: list[int], 
-    labels: list[str]
-) -> str:
-    if not thresholds:
-        raise ValueError("thresholds 列表不能为空")
-
-    if len(labels) != len(thresholds) + 1:
-        raise ValueError(
-            f"labels 列表长度应比 thresholds 长 1，"
-            f"但实际为 labels={len(labels)}, thresholds={len(thresholds)}"
-        )
-    
-    index = bisect.bisect_right(thresholds, x)
-    return labels[index]
             
