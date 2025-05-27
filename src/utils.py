@@ -5,6 +5,7 @@ __all__ = [
     "guarantee_path_exist",
     "append_to_file",
     "clear_file_content",
+    "get_auto_markersize",
 ]
 
 
@@ -67,3 +68,19 @@ def clear_file_content(
     # 以写入模式打开文件并立即关闭，清空原内容
     with open(file_path, "w", encoding=encoding):
         pass
+    
+    
+def get_auto_markersize(
+    point_num: int
+)-> int:
+        
+    if point_num <= 20:
+        auto_markersize = 8
+    elif point_num <= 50:
+        auto_markersize = 6
+    elif point_num <= 100:
+        auto_markersize = 4
+    else:
+        auto_markersize = 2
+        
+    return auto_markersize

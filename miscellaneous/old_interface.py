@@ -86,7 +86,7 @@ def IdeaSearch(
     similarity_sys_info_prompts: Optional[list[str]] = None,
 
     # 初始化阶段清洗
-    initialization_skip_evaluation: bool = True,
+    load_idea_skip_evaluation: bool = True,
     initialization_cleanse_threshold: float = -1.0,
     delete_when_initial_cleanse: bool = False,
 
@@ -170,7 +170,7 @@ def IdeaSearch(
         similarity_sys_info_prompts (Optional[list[str]]): 与 thresholds 对应的IdeaSearcher提示内容。
 
         # 初始化阶段清洗
-        initialization_skip_evaluation (bool): 是否跳过初始化阶段的评估（尝试从 score_sheet.json 中迅捷加载）。
+        load_idea_skip_evaluation (bool): 是否跳过初始化阶段的评估（尝试从 score_sheet.json 中迅捷加载）。
         initialization_cleanse_threshold (float): 初始清洗的最低评分阈值。
         delete_when_initial_cleanse (bool): 清洗时是否直接删除低分 idea。
 
@@ -227,7 +227,7 @@ def IdeaSearch(
         similarity_distance_func,
         similarity_sys_info_thresholds,
         similarity_sys_info_prompts,
-        initialization_skip_evaluation,
+        load_idea_skip_evaluation,
         initialization_cleanse_threshold,
         delete_when_initial_cleanse,
         idea_uid_length,
@@ -315,7 +315,7 @@ def IdeaSearch(
         default_similarity_distance_func = default_similarity_distance_func,
         similarity_sys_info_thresholds = similarity_sys_info_thresholds,
         similarity_sys_info_prompts = similarity_sys_info_prompts,
-        initialization_skip_evaluation = initialization_skip_evaluation,
+        load_idea_skip_evaluation = load_idea_skip_evaluation,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         idea_uid_length = idea_uid_length,
@@ -417,7 +417,7 @@ def IdeaSearch_entrance_check(
     similarity_distance_func: Optional[Callable[[str, str], float]],
     similarity_sys_info_thresholds: Optional[list[int]],
     similarity_sys_info_prompts: Optional[list[str]],
-    initialization_skip_evaluation: bool,
+    load_idea_skip_evaluation: bool,
     initialization_cleanse_threshold: float,
     delete_when_initial_cleanse: bool,
     idea_uid_length: int,
@@ -483,8 +483,8 @@ def IdeaSearch_entrance_check(
 
     if not isinstance(delete_when_initial_cleanse, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `delete_when_initial_cleanse` 应为 bool 类型")
-    if not isinstance(initialization_skip_evaluation, bool):
-        raise TypeError("【IdeaSearch参数类型错误】 `initialization_skip_evaluation` 应为 bool 类型")
+    if not isinstance(load_idea_skip_evaluation, bool):
+        raise TypeError("【IdeaSearch参数类型错误】 `load_idea_skip_evaluation` 应为 bool 类型")
     if not isinstance(record_prompt_in_diary, bool):
         raise TypeError("【IdeaSearch参数类型错误】 `record_prompt_in_diary` 应为 bool 类型")
     if not isinstance(model_assess_save_result, bool):

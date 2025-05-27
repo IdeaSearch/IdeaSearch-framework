@@ -8,3 +8,4 @@ document/**
 __pycache__
 *.out
 nohup*
+meta/

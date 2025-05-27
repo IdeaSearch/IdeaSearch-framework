@@ -15,8 +15,10 @@ from typing import Tuple
 from typing import Callable
 from typing import Optional
 from os.path import basename
+from os.path import sep as seperator
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
+from src.utils import get_auto_markersize
 
 
 __all__ = [
@@ -61,281 +63,248 @@ class Island:
         default_similarity_distance_func: Callable[[str, str], float],
         console_lock: Lock,
     )-> None:
-
-        self.ideasearcher = ideasearcher
-        self.default_similarity_distance_func = default_similarity_distance_func
-        self.console_lock = console_lock
-        self.island_id = island_id
-        self.interaction_count = 0
-        self.interaction_num = 0
-        self.lock = Lock()
-        self.status = "Running"
-        self.random_generator = np.random.default_rng()
-        self._best_score = -114514.0
-        self._best_idea = None
         
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
-        self.path = database_path + f"ideas/island{self.island_id}/"
+        
+        self.path = database_path + f"ideas{seperator}island{self.id}{seperator}"
         guarantee_path_exist(self.path)
-        self.diary_path = self.ideasearcher.get_diary_path()
-        
-        initial_idea_path = database_path + f"ideas/initial_ideas/"
-        
-        
-        score_sheet_backup: Optional[dict] = None
-        
-        initialization_skip_evaluation = self.ideasearcher.get_initialization_skip_evaluation()
-        
-        if initialization_skip_evaluation:
-            try:
-                with open(initial_idea_path + "score_sheet.json", "r", encoding="UTF-8") as file:
-                    score_sheet_backup = json.load(file)
-                with self.console_lock:
-                    append_to_file(
-                        file_path=self.diary_path,
-                        content_str=f"【{self.island_id}号岛屿】 已从 {initial_idea_path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件！",
-                    )
-            except Exception as error:
-                score_sheet_backup = {}
-                with self.console_lock:
-                    append_to_file(
-                        file_path = self.diary_path,
-                        content_str = (
-                            f"【{self.island_id}号岛屿】 未从 {initial_idea_path + 'score_sheet.json'} 成功读取用于迅捷加载的 score_sheet.json 文件，报错：\n"
-                            f"{error}\n"
-                            "请检查该行为是否符合预期！"
-                        ),
-                    )
 
-        mutation_func = self.ideasearcher.get_mutation_func()
-        if mutation_func is not None:
-            self.mutation_on = True
-            self.mutation_func = mutation_func
-            self.mutation_interval = self.ideasearcher.get_mutation_interval()
-            self.mutation_num = self.ideasearcher.get_mutation_num()
-            self.mutation_temperature = self.ideasearcher.get_mutation_temperature()
-        else:
-            self.mutation_on = False
+        self.id = island_id
+        self.ideasearcher = ideasearcher
+        self.ideas = []
+        self.idea_similar_nums = []
         
-        crossover_func = self.ideasearcher.get_crossover_func()
-        if crossover_func is not None:
-            self.crossover_on = True
-            self.crossover_func = crossover_func
-            self.crossover_interval = self.ideasearcher.get_crossover_interval()
-            self.crossover_num = self.ideasearcher.get_crossover_num()
-            self.crossover_temperature = self.ideasearcher.get_crossover_temperature()
-        else:
-            self.crossover_on = False
+        self.interaction_count = 0
+        self.interaction_num = 0
         
-        similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
-        if similarity_sys_info_thresholds is not None:
-            self.similarity_sys_info_on = True
-            self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
-            self.similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
-        else:
-            self.similarity_sys_info_on = False
+        self._lock = Lock()
+        self._console_lock = console_lock
         
-        # 初始化ideas列表（疑似存在mac OSIdeaSearcher的兼容性问题）
-        evaluate_func = self.ideasearcher.get_evaluate_func()
-        initialization_cleanse_threshold = self.ideasearcher.get_initialization_cleanse_threshold()
-        delete_when_initial_cleanse = self.ideasearcher.get_delete_when_initial_cleanse()
-        self.ideas: list[Idea] = []
-        path_to_search = Path(initial_idea_path).resolve()
-        source = "初始化时读入"
-        for path in path_to_search.rglob('*.idea'):
+        self.default_similarity_distance_func = default_similarity_distance_func
+        self.random_generator = np.random.default_rng()
+        
+        self._best_score = -np.inf
+        self._best_idea = None
+        
+        self._reset_ideas()
+        self.status = "Running"
+    
+    # ----------------------------- 外部调用动作 ----------------------------- 
+        
+    def load_ideas_from(
+        self,
+        folder_name: str,
+    ):
+        
+        with self._lock:
+        
+            database_path = self.ideasearcher.get_database_path()
+            diary_path = self.ideasearcher.get_diary_path()
+            load_idea_skip_evaluation = self.ideasearcher.get_load_idea_skip_evaluation()
+            initialization_cleanse_threshold = self.ideasearcher.get_initialization_cleanse_threshold()
+            delete_when_initial_cleanse = self.ideasearcher.get_delete_when_initial_cleanse()
+            evaluate_func = self.ideasearcher.get_evaluate_func()
+            assert database_path is not None
             
-            if os.path.isfile(path):
+            idea_source_path = database_path + f"ideas{seperator}{folder_name}"
+            score_sheet_backup_path = idea_source_path + f"{seperator}score_sheet_{folder_name}.json"
+            score_sheet_backup: Optional[dict] = None
+            
+            if load_idea_skip_evaluation:
                 
-                idea: Optional[Idea] = None
-                
-                if initialization_skip_evaluation:
-                    
-                    assert score_sheet_backup is not None
-                    
-                    if basename(path) in score_sheet_backup:
+                try:
+                    with open(
+                        file = score_sheet_backup_path, 
+                        mode = "r", 
+                        encoding = "UTF-8"
+                    ) as file:
+                        score_sheet_backup = json.load(file)
                         
-                        with open(path, 'r', encoding = "UTF-8") as file:
-                            content = file.read()
-                            
-                        score = score_sheet_backup[basename(path)]["score"]
-                            
-                        info = score_sheet_backup[basename(path)]["info"]
-                        if info == "": info = None
-                            
-                        idea = Idea(
-                            path = str(path),
-                            level = 0,
-                            evaluate_func = None,
-                            content = content,
-                            score = score,
-                            info = info,
-                            source = source, 
+                    with self._console_lock:
+                        append_to_file(
+                            file_path=diary_path,
+                            content_str=f"【{self.id}号岛屿】 已从 {score_sheet_backup_path} 成功读取用于迅捷加载的 score sheet 文件！",
                         )
                         
-                        if info is not None:
-                            with self.console_lock:
-                                append_to_file(
-                                    file_path=self.diary_path,
-                                    content_str=f"【{self.island_id}号岛屿】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分与评语！",
-                                )
-                        else:
-                            with self.console_lock:
-                                append_to_file(
-                                    file_path=self.diary_path,
-                                    content_str=f"【{self.island_id}号岛屿】 已从 score_sheet.json 中迅捷加载初始文件 {basename(path)} 的评分！",
-                                )
+                except Exception as error:
+                    
+                    score_sheet_backup = {}
+                    
+                    with self._console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = (
+                                f"【{self.id}号岛屿】 未从 {score_sheet_backup_path} 成功读取用于迅捷加载的 score sheet 文件，报错：\n"
+                                f"{error}\n"
+                                "请检查该行为是否符合预期！"
+                            ),
+                        )
                         
-                    else:
-                        with self.console_lock:
-                            append_to_file(
-                                file_path=self.diary_path,
-                                content_str=f"【{self.island_id}号岛屿】 没有在 score_sheet.json 中找到初始文件 {basename(path)} ，迅捷加载失败！",
+            
+            self._reset_ideas()
+            
+            # 此部分疑似存在 mac OS 系统的兼容性问题
+            initial_source = "初始化时读入"
+            path_to_search = Path(idea_source_path).resolve()
+            
+            for path in path_to_search.rglob('*.idea'):
+                
+                if os.path.isfile(path):
+                    
+                    idea: Optional[Idea] = None
+                    
+                    if load_idea_skip_evaluation:
+                        
+                        assert score_sheet_backup is not None
+                        
+                        if basename(path) in score_sheet_backup:
+                            
+                            with open(
+                                file = path, 
+                                mode = "r", 
+                                encoding = "UTF-8"
+                            ) as file:
+                                content = file.read()
+                                
+                            recorded_item = score_sheet_backup[basename(path)]
+                                
+                            score = recorded_item["score"]
+                            info = recorded_item["info"]
+                            source = recorded_item["source"]
+                            level = recorded_item["level"]
+                            
+                            if info == "": info = None
+                                
+                            idea = Idea(
+                                path = str(path),
+                                level = level,
+                                evaluate_func = None,
+                                content = content,
+                                score = score,
+                                info = info,
+                                source = source, 
                             )
                             
+                            if info is not None:
+                                with self._console_lock:
+                                    append_to_file(
+                                        file_path=diary_path,
+                                        content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分与评语！",
+                                    )
+                            else:
+                                with self._console_lock:
+                                    append_to_file(
+                                        file_path=diary_path,
+                                        content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分！",
+                                    )
+                            
+                        else:
+                            with self._console_lock:
+                                append_to_file(
+                                    file_path=diary_path,
+                                    content_str=f"【{self.id}号岛屿】 没有在 score sheet 文件中找到文件 {basename(path)} ，迅捷加载失败！",
+                                )
+                            
+                            idea = Idea(
+                                level = 0,
+                                path = str(path),
+                                evaluate_func = evaluate_func,
+                                source = initial_source,
+                            )
+                        
+                    else:
                         idea = Idea(
                             level = 0,
                             path = str(path),
                             evaluate_func = evaluate_func,
-                            source = source,
+                            source = initial_source,
                         )
                     
-                else:
-                    idea = Idea(
-                        level = 0,
-                        path = str(path),
-                        evaluate_func = evaluate_func,
-                        source = source,
-                    )
-                
-                assert idea.score is not None
-                
-                if idea.score < initialization_cleanse_threshold:
+                    assert idea.score is not None
                     
-                    if delete_when_initial_cleanse:
-                        path.unlink()
-                        with self.console_lock:
-                            append_to_file(
-                                file_path=self.diary_path,
-                                content_str=f"【{self.island_id}号岛屿】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
-                            )
-                            
+                    if idea.score < initialization_cleanse_threshold:
+                        
+                        if delete_when_initial_cleanse:
+                            path.unlink()
+                            with self._console_lock:
+                                append_to_file(
+                                    file_path=diary_path,
+                                    content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
+                                )
+                                
+                        else:
+                            with self._console_lock:
+                                append_to_file(
+                                    file_path=diary_path,
+                                    content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                                )
+                                
                     else:
-                        with self.console_lock:
+                        self.ideas.append(idea)
+                        with self._console_lock:
                             append_to_file(
-                                file_path=self.diary_path,
-                                content_str=f"【{self.island_id}号岛屿】 初始文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                                file_path=diary_path,
+                                content_str=f"【{self.id}号岛屿】 初始文件 {basename(path)} 已评分并加入{self.id}号岛屿。",
                             )
                             
-                else:
-                    self.ideas.append(idea)
-                    with self.console_lock:
-                        append_to_file(
-                            file_path=self.diary_path,
-                            content_str=f"【{self.island_id}号岛屿】 初始文件 {basename(path)} 已评分并加入{self.island_id}号岛屿。",
-                        )
-                        
-        ideas: list[str] = []
-        scores: list[float] = []
-        infos: list[Optional[str]] = []
-                        
-        for current_idea in self.ideas:
-            
-            assert current_idea.content is not None
-            assert current_idea.score is not None
-            
-            ideas.append(current_idea.content)
-            scores.append(current_idea.score)
-            infos.append(current_idea.info)
-            
-        assess_func = self.ideasearcher.get_assess_func()
-        if assess_func is not None:
-            
-            self.assess_interaction_count = 0
-            
-            assess_interval = self.ideasearcher.get_assess_interval()
-            assert assess_interval is not None
-            
-            assess_result_data_path = self.ideasearcher.get_assess_result_data_path()
-            assess_result_pic_path = self.ideasearcher.get_assess_result_pic_path()
-            
-            self.assess_on = True
-            self.assess_func = assess_func
-            self.assess_interval = assess_interval
-            self.assess_baseline = self.ideasearcher.get_assess_baseline()
-            self.assess_result_data_path = assess_result_data_path
-            self.assess_result_pic_path = assess_result_pic_path
-            self.assess_result_ndarray = np.zeros((1 + (self.interaction_num // assess_interval),))
-            self.assess_result_ndarray_length = 1
-            self.assess_result_ndarray_x_axis = np.linspace(
-                start = 0, 
-                stop = self.interaction_num, 
-                num = 1 + (self.interaction_num // assess_interval), 
-                endpoint = True
-            )
-            guarantee_path_exist(assess_result_data_path)
-            guarantee_path_exist(assess_result_pic_path)
-            
-            get_database_initial_score_success = False
-            try:
-                database_initial_score = self.assess_func(
-                    ideas,
-                    scores,
-                    infos,
-                )
-                get_database_initial_score_success = True
-                with self.console_lock:
-                    append_to_file(
-                        file_path = self.diary_path,
-                        content_str = f"【{self.island_id}号岛屿】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
-                    )
-                    
-            except Exception as error:
-                database_initial_score = 0
-                with self.console_lock:
-                    append_to_file(
-                        file_path = self.diary_path,
-                        content_str = (
-                            f"【{self.island_id}号岛屿】 评估库中初始 ideas 的整体质量时遇到错误：\n"
-                            f"{error}"
-                        ),
-                    )
-                    
-            self.assess_result_ndarray[0] = database_initial_score
-            self._sync_database_assess_result(
-                is_initialization = True,
-                get_database_score_success = get_database_initial_score_success,
-            )
-            
-        else:
-            self.assess_on = False
-            
-        self.model_recent_scores = []
-        self.model_scores = []
-        models = self.ideasearcher.get_models()
-        model_assess_window_size = self.ideasearcher.get_model_assess_window_size()
-        model_assess_initial_score = self.ideasearcher.get_model_assess_initial_score()
-        model_assess_save_result = self.ideasearcher.get_model_assess_save_result()
-        assert models is not None
-        for _ in range(len(models)):
-            self.model_recent_scores.append(
-                np.full((model_assess_window_size,), model_assess_initial_score)
-            )
-            self.model_scores.append(model_assess_initial_score)
-            
-        if model_assess_save_result:
-            self.scores_of_models = np.zeros((1+self.interaction_num, len(models)))
-            self.scores_of_models_length = 0
-            self.scores_of_models_x_axis = np.linspace(
-                start = 0, 
-                stop = self.interaction_num, 
-                num = 1 + self.interaction_num, 
-                endpoint = True
-            )
-            self._sync_model_score_result()
+            self._sync_score_sheet()
+            self._sync_best_score()
+            self._sync_similar_num_list()
+
+        
+    
           
-        self._sync_score_sheet()
-        self._sync_similar_num_list()
+          
+    def expand_model_score_range(
+        self,
+    )-> None:
+        
+        pass
+    
+        
+        
+    def load_mutation_config(self):
+        
+        with self._lock:
+
+            mutation_func = self.ideasearcher.get_mutation_func()
+            if mutation_func is not None:
+                self.mutation_on = True
+                self.mutation_func = mutation_func
+                self.mutation_interval = self.ideasearcher.get_mutation_interval()
+                self.mutation_num = self.ideasearcher.get_mutation_num()
+                self.mutation_temperature = self.ideasearcher.get_mutation_temperature()
+            else:
+                self.mutation_on = False
+            
+            
+    def load_crossover_config(self):
+        
+        with self._lock:
+        
+            crossover_func = self.ideasearcher.get_crossover_func()
+            if crossover_func is not None:
+                self.crossover_on = True
+                self.crossover_func = crossover_func
+                self.crossover_interval = self.ideasearcher.get_crossover_interval()
+                self.crossover_num = self.ideasearcher.get_crossover_num()
+                self.crossover_temperature = self.ideasearcher.get_crossover_temperature()
+            else:
+                self.crossover_on = False
+            
+            
+    def load_similarity_info_config(self):
+        
+        with self._lock:
+        
+            similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
+            if similarity_sys_info_thresholds is not None:
+                self.similarity_sys_info_on = True
+                self.similarity_sys_info_thresholds = similarity_sys_info_thresholds
+                self.similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
+            else:
+                self.similarity_sys_info_on = False
         
         
     def link_samplers(
@@ -343,7 +312,9 @@ class Island:
         samplers
     )-> None:
         
-        self.samplers = samplers
+        with self._lock:
+        
+            self.samplers = samplers
         
         
     def fuel(
@@ -351,54 +322,19 @@ class Island:
         additional_interaction_num: int,
     ):
         
-        with self.lock:
+        with self._lock:
             
             if additional_interaction_num <= 0:
-                raise RuntimeError(f"【{self.island_id}号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为{additional_interaction_num}！")
+                raise RuntimeError(f"【{self.id}号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为{additional_interaction_num}！")
             
+            self.interaction_num += additional_interaction_num
             self.status = "Running"
             
             models = self.ideasearcher.get_models()
 
-            self.interaction_num += additional_interaction_num
-            
-            if self.assess_on:
-                
-                assess_interval = self.ideasearcher.get_assess_interval()
-                
-                new_assess_result_ndarray = np.zeros((1 + (self.interaction_num // assess_interval),))
-                new_assess_result_ndarray[:len(self.assess_result_ndarray)] = self.assess_result_ndarray
-                self.assess_result_ndarray = new_assess_result_ndarray
-                self.assess_result_ndarray_x_axis = np.linspace(
-                    start = 0, 
-                    stop = self.interaction_num, 
-                    num = 1 + (self.interaction_num // assess_interval), 
-                    endpoint = True
-                )
-                self._sync_database_assess_result(
-                    is_initialization = False,
-                    get_database_score_success = True,
-                )
-                
-            model_assess_save_result = self.ideasearcher.get_model_assess_save_result()
-            
-            if model_assess_save_result:
-                new_scores_of_models = np.zeros((1+self.interaction_num, len(models)))
-                new_scores_of_models[:len(self.scores_of_models)] = self.scores_of_models
-                self.scores_of_models = new_scores_of_models
-                self.scores_of_models_length = 0
-                self.scores_of_models_x_axis = np.linspace(
-                    start = 0, 
-                    stop = self.interaction_num, 
-                    num = 1 + self.interaction_num, 
-                    endpoint = True
-                )
-                self._sync_model_score_result()     
-    
-    # ----------------------------- 外部调用动作 ----------------------------- 
-    
+
     def get_status(self):
-        with self.lock:
+        with self._lock:
             return self.status
         
     
@@ -406,16 +342,18 @@ class Island:
         self
     )-> Optional[list[Tuple]]:
         
-        with self.lock:
+        with self._lock:
+            
+            diary_path = self.ideasearcher.get_diary_path()
             
             if self.status == "Terminated":
                 return None
             self.interaction_count += 1
-            with self.console_lock:
+            with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 已分发交互次数为： {self.interaction_count} ，"
+                            f"【{self.id}号岛屿】 已分发交互次数为： {self.interaction_count} ，"
                             f"还剩 {self.interaction_num-self.interaction_count} 次！"
                         ),
                     )
@@ -437,10 +375,10 @@ class Island:
             self._check_threshold()
             
             if len(self.ideas) == 0:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
-                        content_str = "【{self.island_id}号岛屿】 发生异常： ideas 列表为空！",
+                        file_path = diary_path,
+                        content_str = "【{self.id}号岛屿】 发生异常： ideas 列表为空！",
                     )
                 exit()
                 
@@ -491,95 +429,6 @@ class Island:
             return selected_examples
         
         
-    def get_model(self) -> Tuple[str, float]:
-        
-        with self.lock:
-            
-            self._show_model_scores()
-            
-            models = self.ideasearcher.get_models()
-            model_temperatures = self.ideasearcher.get_model_temperatures()
-            assert models is not None
-            assert model_temperatures is not None
-            
-            probabilities = np.array(self.model_scores) / self.ideasearcher.get_model_sample_temperature()
-            max_value = np.max(probabilities)
-            probabilities = np.exp(probabilities - max_value)
-            probabilities /= np.sum(probabilities)
-            
-            selected_index = self.random_generator.choice(
-                a = len(models), 
-                p = probabilities,
-            )
-            
-            selected_model_name = models[selected_index]
-            selected_model_temperature = model_temperatures[selected_index]
-            
-            return selected_model_name, selected_model_temperature
-        
-        
-    def update_model_score(
-        self,
-        score_result: list[float], 
-        model: str,
-        model_temperature: float,
-    )-> None:
-        
-        with self.lock:
-            
-            if self.assess_on:
-                
-                self.assess_interaction_count += 1
-                
-                assert self.assess_interval is not None
-                
-                if self.assess_interaction_count % self.assess_interval == 0:
-                    self._assess_database()
-            
-            index = 0
-            
-            models = self.ideasearcher.get_models()
-            model_temperatures = self.ideasearcher.get_model_temperatures()
-            p = self.ideasearcher.get_model_assess_average_order()
-            model_assess_save_result = self.ideasearcher.get_model_assess_save_result()
-            assert models is not None
-            assert model_temperatures is not None
-            
-            
-            while index < len(models):
-                
-                if models[index] == model and model_temperatures[index] == model_temperature:
-                    self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
-                    scores_array = np.array(score_result)
-                    if p != np.inf:
-                        self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
-                        self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
-                    else:
-                        self.model_recent_scores[index][-1] = np.max(scores_array)
-                        self.model_scores[index] = np.max(self.model_recent_scores[index])
-                    with self.console_lock:    
-                        append_to_file(
-                            file_path = self.diary_path,
-                            content_str = (
-                                f"【{self.island_id}号岛屿】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
-                                f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
-                            ),
-                        )
-                    if model_assess_save_result:
-                        self._sync_model_score_result()
-                    return
-                
-                index += 1
-                
-            with self.console_lock:    
-                append_to_file(
-                    file_path = self.diary_path,
-                    content_str = f"【{self.island_id}号岛屿】 出现错误！未知的模型名称及温度： {model}(T={model_temperature:.2f}) ！",
-                )
-                
-            exit()  
-        
-        
     def receive_result(
         self, 
         result: list[Tuple[str, float, str]], 
@@ -588,7 +437,9 @@ class Island:
         level: int,
     )-> None:
         
-        with self.lock:
+        with self._lock:
+            
+            diary_path = self.ideasearcher.get_diary_path()
     
             for idea_content, score, info in result:
                 
@@ -600,21 +451,33 @@ class Island:
                     source = source,
                 )
                 
-            with self.console_lock:    
+            with self._console_lock:    
                 append_to_file(
-                    file_path = self.diary_path,
-                    content_str = f"【{self.island_id}号岛屿】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入{self.island_id}号岛屿。",
+                    file_path = diary_path,
+                    content_str = f"【{self.id}号岛屿】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入{self.id}号岛屿。",
                 )
             
             self._sync_score_sheet()
+            self._sync_best_score()
             self._sync_similar_num_list()
             
             
-    # ----------------------------- 内部调用动作 -----------------------------           
+    # ----------------------------- 内部调用动作 -----------------------------     
+    
+    def _reset_ideas(
+        self
+    )-> None:
+        
+        self.ideas = []
+        self.idea_similar_nums = []      
+            
             
     def _sync_score_sheet(self):
         
+        diary_path = self.ideasearcher.get_diary_path()
         program_name = self.ideasearcher.get_program_name()
+        
+        score_sheet_path = self.path + f"score_sheet_island{self.id}.json"
         
         start_time = perf_counter()
         
@@ -622,14 +485,35 @@ class Island:
             basename(idea.path): {
                 "score": idea.score,
                 "info": idea.info if idea.info is not None else "",
-                "source": idea.source if idea.source is not None else "未知",
+                "source": idea.source,
                 "level": idea.level,
             }
             for idea in self.ideas
         }
 
-        with open(self.path + f"score_sheet_island{self.island_id}.json", 'w', encoding='utf-8') as json_file:
-            json.dump(score_sheet, json_file, ensure_ascii=False, indent=4)
+        with open(
+            file = score_sheet_path, 
+            mode = "w", 
+            encoding = "UTF-8",
+        ) as file:
+            
+            json.dump(
+                obj = score_sheet, 
+                fp = file, 
+                ensure_ascii = False,
+                indent = 4
+            )
+            
+        end_time = perf_counter()
+        total_time = end_time - start_time
+        
+        with self._console_lock:
+            append_to_file(
+                file_path = diary_path,
+                content_str = f"【{self.id}号岛屿】 {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
+            )
+            
+    def _sync_best_score(self):
             
         for idea in self.ideas:
             assert idea.score is not None
@@ -637,23 +521,17 @@ class Island:
                 self._best_score = idea.score
                 self._best_idea = idea
             
-        end_time = perf_counter()
-        total_time = end_time - start_time
-        
-        with self.console_lock:   
-            append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.island_id}号岛屿】 {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
-            )
             
-    
     def _sync_similar_num_list(self):
         
-        start_time = perf_counter()
-        
+        diary_path = self.ideasearcher.get_diary_path()
         similarity_distance_func = self.ideasearcher.get_similarity_distance_func()
         similarity_threshold = self.ideasearcher.get_similarity_threshold()
         assert similarity_distance_func is not None
+        
+        
+        start_time = perf_counter()
+        
         
         self.idea_similar_nums = []
         
@@ -694,89 +572,32 @@ class Island:
         end_time = perf_counter()
         total_time = end_time - start_time
             
-        with self.console_lock:
+        with self._console_lock:
             append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.island_id}号岛屿】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
+                file_path = diary_path,
+                content_str = f"【{self.id}号岛屿】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
             )
     
     
     def _check_threshold(self):
+        diary_path = self.ideasearcher.get_diary_path()
         if self.interaction_count >= self.interaction_num:
-            with self.console_lock:
+            with self._console_lock:
                 append_to_file(
-                    file_path = self.diary_path,
-                    content_str = f"【{self.island_id}号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
+                    file_path = diary_path,
+                    content_str = f"【{self.id}号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
                 )
             self.status = "Terminated"
-    
-    
-    def _assess_database(self)-> None:
-        
-        start_time = perf_counter()
-        
-        with self.console_lock:
-            append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.island_id}号岛屿】 现在开始评估岛内 ideas 的整体质量！",
-            )
-            
-        ideas: list[str] = []
-        scores: list[float] = []
-        infos: list[Optional[str]] = []
-        for idea in self.ideas:
-            
-            assert idea.content is not None
-            assert idea.score is not None
-            
-            ideas.append(idea.content)
-            scores.append(idea.score)
-            infos.append(idea.info)
-            
-        get_database_score_success = False
-        try:
-            database_score = self.assess_func(
-                ideas,
-                scores,
-                infos,
-            )
-            get_database_score_success = True
-            
-            end_time = perf_counter()
-            total_time = end_time - start_time
-            
-            with self.console_lock:
-                append_to_file(
-                    file_path = self.diary_path,
-                    content_str = f"【{self.island_id}号岛屿】 当前岛屿 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
-                )
-                
-        except Exception as error:
-            database_score = 0
-            with self.console_lock:
-                append_to_file(
-                    file_path = self.diary_path,
-                    content_str = (
-                        f"【{self.island_id}号岛屿】 评估岛内 ideas 的整体质量时遇到错误：\n"
-                        f"{error}"
-                    ),
-                )
-                
-        self.assess_result_ndarray[self.assess_result_ndarray_length] = database_score
-        self.assess_result_ndarray_length += 1
-        
-        self._sync_database_assess_result(
-            is_initialization = False,
-            get_database_score_success = get_database_score_success,
-        )
 
     
     def _mutate(self)-> None:
         
-        with self.console_lock:
+        diary_path = self.ideasearcher.get_diary_path()
+        
+        with self._console_lock:
             append_to_file(
-                file_path = self.diary_path,
-                content_str = "【{self.island_id}号岛屿】 现在开始进行单体突变！",
+                file_path = diary_path,
+                content_str = "【{self.id}号岛屿】 现在开始进行单体突变！",
             )
             
         assert self.mutation_num is not None
@@ -804,22 +625,22 @@ class Island:
                 assert selected_idea.content is not None
                 mutated_idea = self.mutation_func(selected_idea.content)
                 if not isinstance(mutated_idea, str):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的单体突变函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的单体突变函数时发生错误："
                                 f"返回结果中的 mutated_idea 应为一字符串，不应为一个 {type(mutated_idea)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
                         )
                     return
             except Exception as error:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
+                            f"【{self.id}号岛屿】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
                             f"{error}\n此轮单体突变意外终止！"
                         ),
                     )
@@ -829,11 +650,11 @@ class Island:
                 score, info = evaluate_func(mutated_idea)
                 
                 if not isinstance(score, float):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -841,11 +662,11 @@ class Island:
                     return
                 
                 if isnan(score):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮单体突变意外终止！"
                             ),
@@ -854,11 +675,11 @@ class Island:
                 
                 if info is not None:
                     if not isinstance(info, str):
-                        with self.console_lock:
+                        with self._console_lock:
                             append_to_file(
-                                file_path = self.diary_path,
+                                file_path = diary_path,
                                 content_str = (
-                                    f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                    f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮单体突变意外终止！"
                                 ),
@@ -866,11 +687,11 @@ class Island:
                         return
                 
             except Exception as error:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
+                            f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮单体突变意外终止！"
                         ),
                     )  
@@ -889,50 +710,52 @@ class Island:
                 )
                 
                 if path is not None:
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 第 {index+1} 次单体突变："
+                                f"【{self.id}号岛屿】 第 {index+1} 次单体突变："
                                 f" {basename(selected_idea.path)} 突变为 {basename(path)} "
                             ),
                         )
                     self._sync_score_sheet()
+                    self._sync_best_score()
                     self._sync_similar_num_list()
                 else:
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 第 {index+1} 次单体突变发生了错误：\n"
+                                f"【{self.id}号岛屿】 第 {index+1} 次单体突变发生了错误：\n"
                                 f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
                             ),
                         )
                     return
                 
             else:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 第 {index+1} 次单体突变结果未达到入库分数阈值"
+                            f"【{self.id}号岛屿】 第 {index+1} 次单体突变结果未达到入库分数阈值"
                             f"（{handover_threshold:.2f}分），已删除！"
                         ),
                     )
                 
-        with self.console_lock:
+        with self._console_lock:
             append_to_file(
-                file_path = self.diary_path,
-                content_str = "【{self.island_id}号岛屿】 此轮单体突变已结束。",
+                file_path = diary_path,
+                content_str = "【{self.id}号岛屿】 此轮单体突变已结束。",
             )
     
     
     def _crossover(self) -> None:
     
-        with self.console_lock:
+        with self._console_lock:
+            diary_path = self.ideasearcher.get_diary_path()
             append_to_file(
-                file_path = self.diary_path,
-                content_str = "【{self.island_id}号岛屿】 现在开始进行交叉变异！",
+                file_path = diary_path,
+                content_str = "【{self.id}号岛屿】 现在开始进行交叉变异！",
             )
             
         assert self.crossover_num is not None
@@ -963,22 +786,22 @@ class Island:
                     parent_1.content, parent_2.content
                 )
                 if not isinstance(crossover_idea, str):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的交叉变异函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的交叉变异函数时发生错误："
                                 f"返回结果中的 crossover_idea 应为一字符串，不应为一个 {type(crossover_idea)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
                         )
                     return
             except Exception as error:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
+                            f"【{self.id}号岛屿】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
                             f"{error}"
                         ),
                     )
@@ -988,11 +811,11 @@ class Island:
                 score, info = evaluate_func(crossover_idea)
                 
                 if not isinstance(score, float):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -1000,11 +823,11 @@ class Island:
                     return
                 
                 if isnan(score):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                                 "\n此轮交叉变异意外终止！"
                             ),
@@ -1013,11 +836,11 @@ class Island:
                 
                 if info is not None:
                     if not isinstance(info, str):
-                        with self.console_lock:
+                        with self._console_lock:
                             append_to_file(
-                                file_path = self.diary_path,
+                                file_path = diary_path,
                                 content_str = (
-                                    f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
+                                    f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                     "\n此轮交叉变异意外终止！"
                                 ),
@@ -1025,11 +848,11 @@ class Island:
                         return
                 
             except Exception as error:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
+                            f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
                             "\n此轮交叉变异意外终止！"
                         ),
                     )  
@@ -1048,68 +871,43 @@ class Island:
                 )
 
                 if path is not None:
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 第 {index+1} 次交叉变异："
+                                f"【{self.id}号岛屿】 第 {index+1} 次交叉变异："
                                 f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
                             ),
                         )
                     self._sync_score_sheet()
+                    self._sync_best_score()
                     self._sync_similar_num_list()
                 else:
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
-                            file_path = self.diary_path,
+                            file_path = diary_path,
                             content_str = (
-                                f"【{self.island_id}号岛屿】 第 {index+1} 次交叉变异发生了错误：\n"
+                                f"【{self.id}号岛屿】 第 {index+1} 次交叉变异发生了错误：\n"
                                 f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
                             ),
                         )
                     return
                 
             else:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
+                            f"【{self.id}号岛屿】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
                             f"（{handover_threshold:.2f}分），已删除！"
                         ),
                     )
 
-        with self.console_lock:
+        with self._console_lock:
             append_to_file(
-                file_path = self.diary_path,
-                content_str = "【{self.island_id}号岛屿】 此轮交叉变异已结束。",
+                file_path = diary_path,
+                content_str = "【{self.id}号岛屿】 此轮交叉变异已结束。",
             )
-        
-        
-    def _show_model_scores(self)-> None:
-        
-        with self.console_lock:
-            
-            models = self.ideasearcher.get_models()
-            model_temperatures = self.ideasearcher.get_model_temperatures()
-            assert models is not None
-            assert model_temperatures is not None
-            
-            append_to_file(
-                file_path = self.diary_path,
-                content_str = f"【{self.island_id}号岛屿】 各模型目前评分情况如下：",
-            )
-            
-            for index, model in enumerate(models):
-                
-                model_temperature = model_temperatures[index]
-                
-                append_to_file(
-                    file_path = self.diary_path,
-                    content_str = (
-                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]:.2f}"
-                    ),
-                )
     
     
     def _store_idea(
@@ -1187,6 +985,8 @@ class Island:
         get_database_score_success: bool,
     )-> None:
         
+        diary_path = self.ideasearcher.get_diary_path()
+        
         if self.interaction_num == 0: return
         
         assert self.assess_result_data_path is not None
@@ -1201,7 +1001,7 @@ class Island:
         )
         
         point_num = len(self.assess_result_ndarray_x_axis)
-        auto_markersize = self._get_auto_markersize(point_num)
+        auto_markersize = get_auto_markersize(point_num)
         
         x_axis_range = (0, self.interaction_num)
         x_axis_range_expand_ratio = 0.08
@@ -1237,105 +1037,21 @@ class Island:
         if get_database_score_success:
             if is_initialization:
                 append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 初始质量评估结束，"
+                            f"【{self.id}号岛屿】 初始质量评估结束，"
                             f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
                         ),
                     )
             else:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
-                        file_path = self.diary_path,
+                        file_path = diary_path,
                         content_str = (
-                            f"【{self.island_id}号岛屿】 此轮质量评估结束，"
+                            f"【{self.id}号岛屿】 此轮质量评估结束，"
                             f" {basename(self.assess_result_data_path)} 与 {basename(self.assess_result_pic_path)} 已更新！"
                         ),
                     )
-                    
-                    
-    def _sync_model_score_result(self):
-        
-        if self.interaction_num == 0: return
-        
-        model_assess_result_data_path = self.ideasearcher.get_model_assess_result_data_path()
-        model_assess_result_pic_path = self.ideasearcher.get_model_assess_result_pic_path()
-        models = self.ideasearcher.get_models()
-        model_temperatures = self.ideasearcher.get_model_temperatures()
-        score_range = self.ideasearcher.get_score_range()
-        
-        assert model_assess_result_data_path is not None
-        assert model_assess_result_pic_path is not None
-        assert models is not None
-        assert model_temperatures is not None
-        
-        self.scores_of_models[self.scores_of_models_length] = self.model_scores
-        self.scores_of_models_length += 1
-        
-        scores_of_models = self.scores_of_models.T
-        
-        scores_of_models_dict = {}
-        for model_name, model_temperature, model_scores in zip(models, model_temperatures, scores_of_models):
-            scores_of_models_dict[f"{model_name}(T={model_temperature:.2f})"] = model_scores
-        
-        np.savez_compressed(
-            file=model_assess_result_data_path,
-            interaction_num=self.scores_of_models_x_axis,
-            **scores_of_models_dict
-        )
-        
-        point_num = len(self.scores_of_models_x_axis)
-        auto_markersize = self._get_auto_markersize(point_num)
-        
-        x_axis_range = (0, self.interaction_num)
-        x_axis_range_expand_ratio = 0.08
-        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
-        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
-
-        plt.figure(figsize=(10, 6))
-        for model_label, model_scores in scores_of_models_dict.items():
-            plt.plot(
-                self.scores_of_models_x_axis[:self.scores_of_models_length],
-                model_scores[:self.scores_of_models_length],
-                label=model_label,
-                marker='o',
-                markersize = auto_markersize,
-            )
-        plt.title("Model Scores")
-        plt.xlabel("Interaction No.")
-        plt.ylabel("Model Score")
-        plt.xlim(x_axis_range)
-        plt.ylim(score_range)
-        plt.grid(True)
-        plt.legend()
-        plt.savefig(model_assess_result_pic_path)
-        plt.close()
-        
-        with self.console_lock:
-            append_to_file(
-                file_path=self.diary_path,
-                content_str=(
-                    f"【{self.island_id}号岛屿】 "
-                    f" {basename(model_assess_result_data_path)} 与 {basename(model_assess_result_pic_path)} 已更新！"
-                ),
-            )
-            
-            
-    def _get_auto_markersize(
-        self, 
-        point_num: int
-    )-> int:
-        
-        if point_num <= 20:
-            auto_markersize = 8
-        elif point_num <= 50:
-            auto_markersize = 6
-        elif point_num <= 100:
-            auto_markersize = 4
-        else:
-            auto_markersize = 2
-            
-        return auto_markersize
 
 
 def get_label(

@@ -85,7 +85,7 @@ def IdeaSearch_interface()-> None:
         "太多了！请你之后回答时换一个和这个例子截然不同的思路吧！"
     ]
     system_prompt = TemplateProgram_system_prompt
-    initialization_skip_evaluation = [
+    load_idea_skip_evaluation = [
         False,
         True,
     ][0]
@@ -143,7 +143,7 @@ def IdeaSearch_interface()-> None:
         api_keys_path = api_keys_path,
         local_models_path = local_models_path,
         initialization_cleanse_threshold = initialization_cleanse_threshold,
-        initialization_skip_evaluation = initialization_skip_evaluation,
+        load_idea_skip_evaluation = load_idea_skip_evaluation,
         delete_when_initial_cleanse = delete_when_initial_cleanse,
         hand_over_threshold = hand_over_threshold,
         similarity_threshold = similarity_threshold,

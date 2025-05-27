@@ -20,6 +20,7 @@ from typing import Dict
 from os.path import basename
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
+from src.utils import get_auto_markersize
 from src.API4LLMs.model_manager import ModelManager
 from src.API4LLMs.get_answer import get_answer_online
 from src.API4LLMs.get_answer import get_answer_local
@@ -31,7 +32,7 @@ from src.IdeaSearch.island import Island
 class IdeaSearcher:
     
     # ----------------------------- IdeaSearhcer 初始化 ----------------------------- 
-    
+
     def __init__(
         self
     ) -> None:
@@ -78,7 +79,7 @@ class IdeaSearcher:
         self._similarity_distance_func: Optional[Callable[[str, str], float]] = None
         self._similarity_sys_info_thresholds: Optional[List[int]] = None
         self._similarity_sys_info_prompts: Optional[List[str]] = None
-        self._initialization_skip_evaluation: bool = True
+        self._load_idea_skip_evaluation: bool = True
         self._initialization_cleanse_threshold: float = -1.0
         self._delete_when_initial_cleanse: bool = False
         self._idea_uid_length: int = 6
@@ -86,21 +87,30 @@ class IdeaSearcher:
         self._filter_func: Optional[Callable[[str], str]] = None
         self._generation_bonus: float = 0.0
 
+        self._lock: Lock = Lock()
+        self._console_lock: Lock = Lock()
 
-        def evaluate_func(
+        def evaluate_func_example(
             idea: str,
         )-> Tuple[float, Optional[str]]:
             return 0.0, None
     
+        # This will not be really executed, just its address used. 
         def default_similarity_distance_func(idea1, idea2):
-            return abs(evaluate_func(idea1)[0] - evaluate_func(idea2)[0])
-    
-        self._lock: Lock = Lock()
-        self._console_lock: Lock = Lock()
-        self._model_manager: ModelManager = ModelManager()
-        self._islands: Dict[int, Island] = {}
-        self._next_island_id: int = 1
+            return abs(evaluate_func_example(idea1)[0] - evaluate_func_example(idea2)[0])
+            
         self._default_similarity_distance_func = default_similarity_distance_func
+
+        self._random_generator = np.random.default_rng()
+        self._model_manager: ModelManager = ModelManager()
+        
+        self._next_island_id: int = 1
+        self._islands: Dict[int, Island] = {}
+        
+        self._database_assessment_config_loaded = False
+        self._model_score_config_loaded = False
+        
+        self._total_interaction_num = 0
 
     # ----------------------------- 外部调用动作 ----------------------------- 
     
@@ -121,7 +131,7 @@ class IdeaSearcher:
                 
             if self._local_models_path is not None:
                 self._model_manager.load_local_models(self._local_models_path)
-                
+          
                 
     def add_island(
         self,
@@ -131,7 +141,7 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 add_island 动作！")
+                raise RuntimeError(f"【IdeaSearcher】 参数`{{missing_param}}`未传入，在当前设置下无法进行 add_island 动作！")
         
             evaluators_num = self._evaluators_num
             samplers_num = self._samplers_num
@@ -167,13 +177,87 @@ class IdeaSearcher:
                 for i in range(samplers_num)
             ]
             
+            island.load_ideas_from("initial_ideas")
             island.link_samplers(samplers)
+            island.load_mutation_config()
+            island.load_crossover_config()
+            island.load_similarity_info_config()
             
             self._islands[island_id] = island
             
             return island_id
+
             
+    def delete_island(
+        self,
+        island_id: int,
+    )-> int:
     
+        with self._lock:
+            
+            if island_id in self._islands:
+                del self._islands[island_id]
+                return 1
+                
+            else:
+                return 0
+
+      
+    def update_model_score(
+        self,
+        score_result: list[float], 
+        model: str,
+        model_temperature: float,
+    )-> None:
+        
+        with self._lock:
+            
+            diary_path = self._diary_path
+            
+            index = 0
+            
+            models = self._models
+            model_temperatures = self._model_temperatures
+            p = self._model_assess_average_order
+            model_assess_save_result = self._model_assess_save_result
+            assert models is not None
+            assert model_temperatures is not None
+            
+            
+            while index < len(models):
+                
+                if models[index] == model and model_temperatures[index] == model_temperature:
+                    self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
+                    scores_array = np.array(score_result)
+                    if p != np.inf:
+                        self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
+                        self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
+                    else:
+                        self.model_recent_scores[index][-1] = np.max(scores_array)
+                        self.model_scores[index] = np.max(self.model_recent_scores[index])
+                    with self._console_lock:    
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = (
+                                f"【IdeaSearcher】 模型 {{model}}(T={{model_temperature:.2f}}) 此轮评分为 {{self.model_recent_scores[index][-1]:.2f}} ，"
+                                f"其总评分已被更新为 {{self.model_scores[index]:.2f}} ！"
+                            ),
+                        )
+                    if model_assess_save_result:
+                        self._sync_model_score_result()
+                    return
+                
+                index += 1
+                
+            with self._console_lock:    
+                append_to_file(
+                    file_path = diary_path,
+                    content_str = f"【IdeaSearcher】 出现错误！未知的模型名称及温度： {{model}}(T={{model_temperature:.2f}}) ！",
+                )
+                
+            exit()
+
+            
     def run(
         self,
         additional_interaction_num: int,
@@ -184,17 +268,22 @@ class IdeaSearcher:
             missing_param = self._check_runnability()
             if missing_param is not None:
                 raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 run 动作！")
+                
+            append_to_file(
+                file_path = self._diary_path,
+                content_str = f"【IdeaSearcher】 {self._program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
+            )
+                
+            self._load_database_assessment_config()
+            self._load_models_score_config()
+                
+            self._total_interaction_num += len(self._islands) * additional_interaction_num
         
             max_workers_num = 0
             for island_id in self._islands:
                 island = self._islands[island_id]
                 island.fuel(additional_interaction_num)
                 max_workers_num += len(island.samplers)
-                
-            append_to_file(
-                file_path = self._diary_path,
-                content_str = f"【IdeaSearcher】 {self._program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
-            )
             
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers = max_workers_num
@@ -214,7 +303,36 @@ class IdeaSearcher:
                             content_str = f"【IdeaSearcher】 {island_id}号岛屿的{sampler_id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                         )
                         exit()
+
                         
+    def get_model(
+        self
+    )-> Tuple[str, float]:
+        
+        with self._lock:
+            
+            self._show_model_scores()
+            
+            models = self._models
+            model_temperatures = self._model_temperatures
+            assert models is not None
+            assert model_temperatures is not None
+            
+            probabilities = np.array(self.model_scores) / self._model_sample_temperature
+            max_value = np.max(probabilities)
+            probabilities = np.exp(probabilities - max_value)
+            probabilities /= np.sum(probabilities)
+            
+            selected_index = self._random_generator.choice(
+                a = len(models), 
+                p = probabilities,
+            )
+            
+            selected_model_name = models[selected_index]
+            selected_model_temperature = model_temperatures[selected_index]
+            
+            return selected_model_name, selected_model_temperature
+
                         
     def repopulate_islands(
         self,
@@ -242,6 +360,7 @@ class IdeaSearcher:
             for index in range(M):
             
                 island_to_colonize = self._islands[island_ids[index]]
+                assert island_to_colonize._best_idea is not None
                 
                 self._islands[island_ids[-index]].ideas = [
                     island_to_colonize._best_idea
@@ -253,7 +372,7 @@ class IdeaSearcher:
                     file_path = self._diary_path,
                     content_str = f"【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
                 )
-                
+
                 
     def shutdown_models(
         self,
@@ -262,8 +381,8 @@ class IdeaSearcher:
         with self._lock:
         
             self._model_manager.shutdown()
-    
-    
+
+
     def set_program_name(
         self,
         value: str,
@@ -768,16 +887,16 @@ class IdeaSearcher:
             self._similarity_sys_info_prompts = value
 
 
-    def set_initialization_skip_evaluation(
+    def set_load_idea_skip_evaluation(
         self,
         value: bool,
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`initialization_skip_evaluation`类型应为bool，实为{str(type(value))}")
+            raise TypeError(f"【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为{str(type(value))}")
 
         with self._lock:
-            self._initialization_skip_evaluation = value
+            self._load_idea_skip_evaluation = value
 
 
     def set_initialization_cleanse_threshold(
@@ -1146,11 +1265,11 @@ class IdeaSearcher:
             return self._similarity_sys_info_prompts
 
 
-    def get_initialization_skip_evaluation(
+    def get_load_idea_skip_evaluation(
         self,
     )-> bool:
         
-            return self._initialization_skip_evaluation
+            return self._load_idea_skip_evaluation
 
 
     def get_initialization_cleanse_threshold(
@@ -1202,6 +1321,7 @@ class IdeaSearcher:
     )-> bool:
     
         return self._model_manager.is_online_model(model_name)
+
         
     def _get_online_model_instance(
         self,
@@ -1216,7 +1336,7 @@ class IdeaSearcher:
     )-> int:
         return self._model_manager.get_local_model_instance(model_name)
 
-    
+
     def _get_answer(
         self,
         model_name : str, 
@@ -1246,7 +1366,7 @@ class IdeaSearcher:
                 system_prompt = system_prompt,
                 prompt = prompt,
             )
-            
+
             
     def _check_runnability(
         self,
@@ -1320,3 +1440,298 @@ class IdeaSearcher:
                 self._model_assess_result_pic_path = self._database_path + "pic/model_scores.png"
                 
         return None
+
+        
+    def _load_models_score_config(
+        self,
+    )-> None:
+        
+        models = self._models
+        model_assess_window_size = self._model_assess_window_size
+        model_assess_initial_score = self._model_assess_initial_score
+        model_assess_save_result = self._model_assess_save_result
+        assert models is not None
+    
+        self.model_recent_scores = []
+        self.model_scores = []
+        
+        for _ in range(len(models)):
+            self.model_recent_scores.append(
+                np.full((model_assess_window_size,), model_assess_initial_score)
+            )
+            self.model_scores.append(model_assess_initial_score)
+            
+        if model_assess_save_result:
+            self.scores_of_models = np.zeros((1+self._total_interaction_num, len(models)))
+            self.scores_of_models_length = 0
+            self.scores_of_models_x_axis = np.linspace(
+                start = 0, 
+                stop = self._total_interaction_num, 
+                num = 1 + self._total_interaction_num, 
+                endpoint = True
+            )
+            self._sync_model_score_result()
+
+        
+    def _show_model_scores(
+        self
+    )-> None:
+        
+        diary_path = self._diary_path
+        models = self._models
+        model_temperatures = self._model_temperatures
+        assert models is not None
+        assert model_temperatures is not None
+            
+        with self._console_lock:
+            
+            append_to_file(
+                file_path = diary_path,
+                content_str = f"【IdeaSearcher】 各模型目前评分情况如下：",
+            )
+            for index, model in enumerate(models):
+                
+                model_temperature = model_temperatures[index]
+                
+                append_to_file(
+                    file_path = diary_path,
+                    content_str = (
+                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]:.2f}"
+                    ),
+                )
+
+                
+    def _sync_database_assessment_result(
+        self,
+        is_initialization: bool,
+        get_database_score_success: bool,
+    )-> None:
+    
+        if self._total_interaction_num == 0: return
+        
+        diary_path = self._diary_path
+        score_range = self._score_range
+        assess_result_data_path = self._assess_result_data_path
+        assess_result_pic_path = self._assess_result_pic_path
+        assess_baseline = self._assess_baseline
+        
+        assert assess_result_data_path is not None
+        assert assess_result_pic_path is not None
+        
+        np.savez_compressed(
+            file = assess_result_data_path, 
+            interaction_num = self._assess_result_ndarray_x_axis,
+            database_scores = self._assess_result_ndarray,
+        )
+        
+        point_num = len(self._assess_result_ndarray_x_axis)
+        auto_markersize = get_auto_markersize(point_num)
+        
+        x_axis_range = (0, self._total_interaction_num)
+        x_axis_range_expand_ratio = 0.08
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(
+            self._assess_result_ndarray_x_axis[:self._assess_result_ndarray_length], 
+            self._assess_result_ndarray[:self._assess_result_ndarray_length], 
+            label='Database Score', 
+            color='dodgerblue', 
+            marker='o',
+            markersize = auto_markersize,
+        )
+        if assess_baseline is not None:
+            plt.axhline(
+                y = assess_baseline,
+                color = "red",
+                linestyle = "--",
+                label = "Baseline",
+            )
+        plt.title("Database Assessment")
+        plt.xlabel("Total Interaction No.")
+        plt.ylabel("Database Score")
+        plt.xlim(x_axis_range)
+        plt.ylim(score_range)
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(assess_result_pic_path)
+        plt.close()
+        
+        if get_database_score_success:
+            if is_initialization:
+                append_to_file(
+                        file_path = diary_path,
+                        content_str = (
+                            f"【IdeaSearcher】 初始质量评估结束，"
+                            f" {basename(assess_result_data_path)} 与 {basename(assess_result_pic_path)} 已更新！"
+                        ),
+                    )
+            else:
+                with self._console_lock:
+                    append_to_file(
+                        file_path = diary_path,
+                        content_str = (
+                            f"【IdeaSearcher】 此轮质量评估结束，"
+                            f" {basename(assess_result_data_path)} 与 {basename(assess_result_pic_path)} 已更新！"
+                        ),
+                    )
+
+             
+    def _sync_model_score_result(self):
+    
+        if self._total_interaction_num == 0: return
+        
+        diary_path = self._diary_path
+        model_assess_result_data_path = self._model_assess_result_data_path
+        model_assess_result_pic_path = self._model_assess_result_pic_path
+        models = self._models
+        model_temperatures = self._model_temperatures
+        score_range = self._score_range
+        
+        assert model_assess_result_data_path is not None
+        assert model_assess_result_pic_path is not None
+        assert models is not None
+        assert model_temperatures is not None
+        
+        self.scores_of_models[self.scores_of_models_length] = self.model_scores
+        self.scores_of_models_length += 1
+        
+        scores_of_models = self.scores_of_models.T
+        
+        scores_of_models_dict = {}
+        for model_name, model_temperature, model_scores in zip(models, model_temperatures, scores_of_models):
+            scores_of_models_dict[f"{model_name}(T={model_temperature:.2f})"] = model_scores
+        
+        np.savez_compressed(
+            file=model_assess_result_data_path,
+            interaction_num=self.scores_of_models_x_axis,
+            **scores_of_models_dict
+        )
+        
+        point_num = len(self.scores_of_models_x_axis)
+        auto_markersize = get_auto_markersize(point_num)
+        
+        x_axis_range = (0, self._total_interaction_num)
+        x_axis_range_expand_ratio = 0.08
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+
+        plt.figure(figsize=(10, 6))
+        for model_label, model_scores in scores_of_models_dict.items():
+            plt.plot(
+                self.scores_of_models_x_axis[:self.scores_of_models_length],
+                model_scores[:self.scores_of_models_length],
+                label=model_label,
+                marker='o',
+                markersize = auto_markersize,
+            )
+        plt.title("Model Scores")
+        plt.xlabel("Interaction No.")
+        plt.ylabel("Model Score")
+        plt.xlim(x_axis_range)
+        plt.ylim(score_range)
+        plt.grid(True)
+        plt.legend()
+        plt.savefig(model_assess_result_pic_path)
+        plt.close()
+        
+        with self._console_lock:
+            append_to_file(
+                file_path=diary_path,
+                content_str=(
+                    f"【IdeaSearcher】 "
+                    f" {basename(model_assess_result_data_path)} 与 {basename(model_assess_result_pic_path)} 已更新！"
+                ),
+            )
+
+            
+    def _load_database_assessment_config(
+        self,
+    )-> None:
+    
+        diary_path = self._diary_path
+        assess_func = self._assess_func
+        assess_interval = self._assess_interval
+        assess_result_data_path = self._assess_result_data_path
+        assess_result_pic_path = self._assess_result_pic_path
+        assert diary_path is not None
+        
+        if assess_func is not None:
+        
+            assert assess_interval is not None
+
+            self._assess_on = True
+            self._assess_interaction_count = 0
+            
+            self._assess_result_ndarray = np.zeros((1 + (self._total_interaction_num // assess_interval),))
+            self._assess_result_ndarray_length = 1
+            self._assess_result_ndarray_x_axis = np.linspace(
+                start = 0, 
+                stop = self._total_interaction_num, 
+                num = 1 + (self._total_interaction_num // assess_interval), 
+                endpoint = True
+            )
+            
+            guarantee_path_exist(assess_result_data_path)
+            guarantee_path_exist(assess_result_pic_path)
+            
+            ideas: list[str] = []
+            scores: list[float] = []
+            infos: list[Optional[str]] = []
+                            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for current_idea in island.ideas:
+                    
+                    assert current_idea.content is not None
+                    assert current_idea.score is not None
+                    
+                    ideas.append(current_idea.content)
+                    scores.append(current_idea.score)
+                    infos.append(current_idea.info)
+                    
+            get_database_initial_score_success = False
+            
+            try:
+                database_initial_score = assess_func(
+                    ideas,
+                    scores,
+                    infos,
+                )
+                get_database_initial_score_success = True
+                with self._console_lock:
+                    append_to_file(
+                        file_path = diary_path,
+                        content_str = f"【IdeaSearcher】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
+                    )
+                    
+            except Exception as error:
+                database_initial_score = 0.0
+                with self._console_lock:
+                    append_to_file(
+                        file_path = diary_path,
+                        content_str = (
+                            f"【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\n"
+                            f"{error}"
+                        ),
+                    )
+                    
+            self._assess_result_ndarray[0] = database_initial_score
+            self._sync_database_assessment_result(
+                is_initialization = True,
+                get_database_score_success = get_database_initial_score_success,
+            )
+            
+        else:
+            self._assess_on = False
+
+            
+    def _expand_database_assessment_range(
+        self,
+    )-> None:
+    
+        pass
+
+        
+        
