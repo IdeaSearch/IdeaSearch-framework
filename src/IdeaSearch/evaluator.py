@@ -24,19 +24,19 @@ class Evaluator:
         self.id = evaluator_id
         self.island = island
         self.ideasearcher = ideasearcher
-        self.console_lock = console_lock
-        self.lock = Lock()
+        self._console_lock = console_lock
+        self._lock = Lock()
         self.status = "Vacant"
         
     # ----------------------------- 外部调用动作 ----------------------------- 
 
     def try_acquire(self):
-        acquired = self.lock.acquire(blocking=False)
+        acquired = self._lock.acquire(blocking=False)
         if acquired:
             if self.status == "Vacant":
                 self.status = "Busy"
                 return True
-            self.lock.release()
+            self._lock.release()
         return False
 
     def evaluate(
@@ -71,22 +71,22 @@ class Evaluator:
                 score, info = evaluate_func(idea)
                 
                 if not isinstance(score, float):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
                             ),
                         )
                     return
                 
                 if isnan(score):
-                    with self.console_lock:
+                    with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                 f"返回结果中的 score 不应为 NaN ！"
                             ),
                         )
@@ -94,22 +94,22 @@ class Evaluator:
                 
                 if info is not None:
                     if not isinstance(info, str):
-                        with self.console_lock:
+                        with self._console_lock:
                             append_to_file(
                                 file_path = diary_path,
                                 content_str = (
-                                    f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
+                                    f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
                                     f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
                                 ),
                             )
                         return
                 
             except Exception as e:
-                with self.console_lock:
+                with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
                         content_str = (
-                            f"【{self.island.island_id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
+                            f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
                         ),
                     )  
                 return
@@ -119,23 +119,23 @@ class Evaluator:
             if score >= hand_over_threshold:
                 accepted_ideas.append((idea, score, info))
                 
-        self.island.update_model_score(score_result, model, model_temperature)  
+        self.ideasearcher.update_model_score(score_result, model, model_temperature)  
         
         if accepted_ideas:
-            with self.console_lock:
+            with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
+                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
                 )
                 
             source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
             self.island.receive_result(accepted_ideas, self.id, source, level)
             
         else:
-            with self.console_lock:
+            with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
+                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
                 )
                     
     
@@ -143,13 +143,13 @@ class Evaluator:
         
         diary_path = self.ideasearcher.get_diary_path()
         
-        with self.console_lock:
+        with self._console_lock:
             if self.status != "Busy":
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.island_id}号岛屿的{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
+                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
                 )
                 exit()
 
         self.status = "Vacant"
-        self.lock.release()
+        self._lock.release()

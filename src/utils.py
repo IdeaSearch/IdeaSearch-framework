@@ -1,5 +1,8 @@
 import os
 import bisect
+import numpy as np
+from typing import List
+from typing import Optional
 
 
 __all__ = [
@@ -8,6 +11,7 @@ __all__ = [
     "clear_file_content",
     "get_auto_markersize",
     "get_label",
+    "default_assess_func",
 ]
 
 
@@ -104,3 +108,13 @@ def get_label(
     
     index = bisect.bisect_right(thresholds, x)
     return labels[index]
+
+
+def default_assess_func(
+    ideas: List[str],
+    scores: List[float],
+    info: List[Optional[str]]
+) -> float:
+    
+    database_score = np.max(np.array(scores))
+    return database_score

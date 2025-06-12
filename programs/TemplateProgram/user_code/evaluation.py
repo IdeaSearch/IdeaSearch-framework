@@ -1,6 +1,7 @@
+import numpy as np
 from typing import Optional
 from typing import Tuple
-import numpy as np
+from threading import Lock
 
 
 __all__ = [
@@ -9,7 +10,8 @@ __all__ = [
 
 
 evaluate_random_generator = np.random.default_rng()
-evaluate_upper_bound = 30.0
+evaluate_upper_bound = 5.0
+evaluate_lock = Lock()
 
 def evaluate(
     idea: str,
@@ -27,13 +29,18 @@ def evaluate(
             - str: 对回答的简要评语或解释信息（可为 None）。
     """
     
-    global evaluate_upper_bound
-    global evaluate_random_generator
+    with evaluate_lock:
     
-    score = evaluate_random_generator.uniform(0.0, evaluate_upper_bound)
-    evaluate_upper_bound = min(
-        evaluate_upper_bound + evaluate_random_generator.uniform(-2.0, 4.0),
-        100.0
-    )
-    info = "非常好！" if score >= 80.0 else "一般般！"
-    return score, info
+        global evaluate_upper_bound
+        global evaluate_random_generator
+        
+        score = evaluate_random_generator.uniform(0.0, evaluate_upper_bound)
+        evaluate_upper_bound = min(
+            max(
+                0,
+                evaluate_upper_bound + evaluate_random_generator.uniform(-1.0, 4.0),
+            ),
+            100.0
+        )
+        info = "非常好！" if score >= 80.0 else "一般般！"
+        return score, info

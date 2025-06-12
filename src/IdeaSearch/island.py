@@ -1,7 +1,6 @@
 import os
 import json
-import random
-import string
+import shutil
 import numpy as np
 from time import perf_counter
 from math import isnan
@@ -10,6 +9,7 @@ from pathlib import Path
 from typing import Tuple
 from typing import Callable
 from typing import Optional
+from typing import List
 from os.path import basename
 from os.path import sep as seperator
 from src.utils import append_to_file
@@ -61,17 +61,17 @@ class Island:
         console_lock: Lock,
     )-> None:
         
+        self.ideasearcher = ideasearcher
+        self.id = island_id
+        self.ideas = []
+        self.idea_similar_nums = []
+        
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
         
         self.path = database_path + f"ideas{seperator}island{self.id}{seperator}"
         guarantee_path_exist(self.path)
 
-        self.id = island_id
-        self.ideasearcher = ideasearcher
-        self.ideas = []
-        self.idea_similar_nums = []
-        
         self.interaction_count = 0
         self.interaction_num = 0
         
@@ -105,34 +105,35 @@ class Island:
             assert database_path is not None
             
             idea_source_path = database_path + f"ideas{seperator}{folder_name}"
-            score_sheet_backup_path = idea_source_path + f"{seperator}score_sheet_{folder_name}.json"
-            score_sheet_backup: Optional[dict] = None
+            idea_source_path_ideas = []
+            idea_source_score_sheet_path = idea_source_path + f"{seperator}score_sheet_{folder_name}.json"
+            idea_source_score_sheet: Optional[dict] = None
             
             if load_idea_skip_evaluation:
                 
                 try:
                     with open(
-                        file = score_sheet_backup_path, 
+                        file = idea_source_score_sheet_path, 
                         mode = "r", 
                         encoding = "UTF-8"
                     ) as file:
-                        score_sheet_backup = json.load(file)
+                        idea_source_score_sheet = json.load(file)
                         
                     with self._console_lock:
                         append_to_file(
                             file_path=diary_path,
-                            content_str=f"【{self.id}号岛屿】 已从 {score_sheet_backup_path} 成功读取用于迅捷加载的 score sheet 文件！",
+                            content_str=f"【{self.id}号岛屿】 已从 {idea_source_score_sheet_path} 成功读取用于迅捷加载的 score sheet 文件！",
                         )
                         
                 except Exception as error:
                     
-                    score_sheet_backup = {}
+                    idea_source_score_sheet = {}
                     
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【{self.id}号岛屿】 未从 {score_sheet_backup_path} 成功读取用于迅捷加载的 score sheet 文件，报错：\n"
+                                f"【{self.id}号岛屿】 未从 {idea_source_score_sheet_path} 成功读取用于迅捷加载的 score sheet 文件，报错：\n"
                                 f"{error}\n"
                                 "请检查该行为是否符合预期！"
                             ),
@@ -147,70 +148,62 @@ class Island:
             
             for path in path_to_search.rglob('*.idea'):
                 
-                if os.path.isfile(path):
+                if not os.path.isfile(path): continue
                     
-                    idea: Optional[Idea] = None
+                idea: Optional[Idea] = None
+                
+                if load_idea_skip_evaluation:
                     
-                    if load_idea_skip_evaluation:
+                    assert idea_source_score_sheet is not None
+                    
+                    if basename(path) in idea_source_score_sheet:
                         
-                        assert score_sheet_backup is not None
+                        with open(
+                            file = path, 
+                            mode = "r", 
+                            encoding = "UTF-8"
+                        ) as file:
+                            content = file.read()
+                            
+                        recorded_item = idea_source_score_sheet[basename(path)]
+                            
+                        score = recorded_item["score"]
+                        info = recorded_item["info"]
+                        source = recorded_item["source"]
+                        level = recorded_item["level"]
                         
-                        if basename(path) in score_sheet_backup:
+                        if info == "": info = None
                             
-                            with open(
-                                file = path, 
-                                mode = "r", 
-                                encoding = "UTF-8"
-                            ) as file:
-                                content = file.read()
-                                
-                            recorded_item = score_sheet_backup[basename(path)]
-                                
-                            score = recorded_item["score"]
-                            info = recorded_item["info"]
-                            source = recorded_item["source"]
-                            level = recorded_item["level"]
-                            
-                            if info == "": info = None
-                                
-                            idea = Idea(
-                                path = str(path),
-                                level = level,
-                                evaluate_func = None,
-                                content = content,
-                                score = score,
-                                info = info,
-                                source = source, 
-                            )
-                            
-                            if info is not None:
-                                with self._console_lock:
-                                    append_to_file(
-                                        file_path=diary_path,
-                                        content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分与评语！",
-                                    )
-                            else:
-                                with self._console_lock:
-                                    append_to_file(
-                                        file_path=diary_path,
-                                        content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分！",
-                                    )
-                            
+                        idea = Idea(
+                            path = str(path),
+                            level = level,
+                            evaluate_func = None,
+                            content = content,
+                            score = score,
+                            info = info,
+                            source = source, 
+                        )
+                        
+                        if info is not None:
+                            with self._console_lock:
+                                append_to_file(
+                                    file_path=diary_path,
+                                    content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分与评语！",
+                                )
                         else:
                             with self._console_lock:
                                 append_to_file(
                                     file_path=diary_path,
-                                    content_str=f"【{self.id}号岛屿】 没有在 score sheet 文件中找到文件 {basename(path)} ，迅捷加载失败！",
+                                    content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分！",
                                 )
-                            
-                            idea = Idea(
-                                level = 0,
-                                path = str(path),
-                                evaluate_func = evaluate_func,
-                                source = initial_source,
-                            )
                         
                     else:
+                        with self._console_lock:
+                            append_to_file(
+                                file_path=diary_path,
+                                content_str=f"【{self.id}号岛屿】 没有在 score sheet 文件中找到文件 {basename(path)} ，迅捷加载失败！",
+                            )
+                        
                         idea = Idea(
                             level = 0,
                             path = str(path),
@@ -218,33 +211,69 @@ class Island:
                             source = initial_source,
                         )
                     
-                    assert idea.score is not None
+                else:
+                    idea = Idea(
+                        level = 0,
+                        path = str(path),
+                        evaluate_func = evaluate_func,
+                        source = initial_source,
+                    )
+                
+                assert idea.score is not None
+                
+                if idea.score < initialization_cleanse_threshold:
                     
-                    if idea.score < initialization_cleanse_threshold:
-                        
-                        if delete_when_initial_cleanse:
-                            path.unlink()
-                            with self._console_lock:
-                                append_to_file(
-                                    file_path=diary_path,
-                                    content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
-                                )
-                                
-                        else:
-                            with self._console_lock:
-                                append_to_file(
-                                    file_path=diary_path,
-                                    content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
-                                )
-                                
-                    else:
-                        self.ideas.append(idea)
+                    if delete_when_initial_cleanse:
+                        path.unlink()
                         with self._console_lock:
                             append_to_file(
                                 file_path=diary_path,
-                                content_str=f"【{self.id}号岛屿】 初始文件 {basename(path)} 已评分并加入{self.id}号岛屿。",
+                                content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
                             )
                             
+                    else:
+                        idea_source_path_ideas.append(idea)
+                        with self._console_lock:
+                            append_to_file(
+                                file_path=diary_path,
+                                content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                            )
+                            
+                else:
+                    idea_source_path_ideas.append(idea)
+                    self.ideas.append(idea)
+                    with self._console_lock:
+                        append_to_file(
+                            file_path=diary_path,
+                            content_str=f"【{self.id}号岛屿】 初始文件 {basename(path)} 已评分并加入{self.id}号岛屿。",
+                        )
+                    shutil.copy2(
+                        src = f"{idea_source_path}{seperator}{basename(path)}",
+                        dst = f"{self.path}{seperator}{basename(path)}",
+                    ) 
+                
+            new_score_sheet = {
+                basename(idea.path): {
+                    "score": idea.score,
+                    "info": idea.info if idea.info is not None else "",
+                    "source": idea.source,
+                    "level": idea.level,
+                }
+                for idea in idea_source_path_ideas
+            }
+
+            with open(
+                file = idea_source_score_sheet_path, 
+                mode = "w", 
+                encoding = "UTF-8",
+            ) as file:
+                
+                json.dump(
+                    obj = new_score_sheet, 
+                    fp = file, 
+                    ensure_ascii = False,
+                    indent = 4
+                )         
             self._sync_score_sheet()
             self._sync_best_score()
             self._sync_similar_num_list()
@@ -413,6 +442,32 @@ class Island:
             self._sync_best_score()
             self._sync_similar_num_list()
             
+            self.ideasearcher.assess_database()
+            
+            
+    def accept_colonization(
+        self,
+        foreign_ideas: List[Idea],
+    )-> None:
+        
+        with self._lock:
+            
+            self._reset_ideas()
+            self.ideas = foreign_ideas
+            
+            for idea in foreign_ideas:
+                assert idea.content is not None
+                with open(
+                    file = f"{self.path}{seperator}{basename(idea.path)}",
+                    mode = "w",
+                    encoding = "UTF-8",
+                ) as file:
+                    file.write(idea.content)
+                    
+            self._sync_best_score()
+            self._sync_score_sheet()
+            self._sync_similar_num_list()
+            
             
     # ----------------------------- 内部调用动作 -----------------------------     
     
@@ -421,7 +476,10 @@ class Island:
     )-> None:
         
         self.ideas = []
-        self.idea_similar_nums = []      
+        self.idea_similar_nums = []  
+        
+        shutil.rmtree(self.path)
+        guarantee_path_exist(self.path)    
             
             
     def _sync_score_sheet(self):
@@ -924,17 +982,11 @@ class Island:
             return None
             
             
-    def _get_new_idea_path(self)-> str:
+    def _get_new_idea_path(
+        self,
+    )-> str:
         
-        def generate_random_string(length=self.ideasearcher.get_idea_uid_length()):
-            return ''.join(random.choices(string.ascii_lowercase, k=length))
-        
-        idea_uid = generate_random_string()
+        idea_uid = self.ideasearcher.get_idea_uid()
         path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
-        current_idea_paths = [idea.path for idea in self.ideas]
-        while path in current_idea_paths:
-            idea_uid = generate_random_string()
-            path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
-            
         return path
             

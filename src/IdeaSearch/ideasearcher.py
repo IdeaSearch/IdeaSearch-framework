@@ -1,15 +1,13 @@
 import concurrent.futures
 import os
-import json
 import random
-import bisect
+import shutil
 import string
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from time import perf_counter
-from math import isnan
 from threading import Lock
 from pathlib import Path
 from typing import Tuple
@@ -18,9 +16,12 @@ from typing import Optional
 from typing import List
 from typing import Dict
 from os.path import basename
+from os.path import sep as seperator
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
 from src.utils import get_auto_markersize
+from src.utils import clear_file_content
+from src.utils import default_assess_func
 from src.API4LLMs.model_manager import ModelManager
 from src.API4LLMs.get_answer import get_answer_online
 from src.API4LLMs.get_answer import get_answer_local
@@ -53,12 +54,12 @@ class IdeaSearcher:
         self._samplers_num: int = 3
         self._evaluators_num: int = 3
         self._examples_num: int = 3
-        self._generate_num: int = 3
+        self._generate_num: int = 1
         self._sample_temperature: float = 50.0
         self._model_sample_temperature: float = 50.0
-        self._assess_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]] = None
-        self._assess_interval: Optional[int] = None
-        self._assess_baseline: Optional[float] = None
+        self._assess_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]] = default_assess_func
+        self._assess_interval: Optional[int] = 1
+        self._assess_baseline: Optional[float] = 60.0
         self._assess_result_data_path: Optional[str] = None
         self._assess_result_pic_path: Optional[str] = None
         self._model_assess_window_size: int = 20
@@ -88,6 +89,7 @@ class IdeaSearcher:
         self._generation_bonus: float = 0.0
 
         self._lock: Lock = Lock()
+        self._user_lock: Lock = Lock()
         self._console_lock: Lock = Lock()
 
         def evaluate_func_example(
@@ -111,6 +113,9 @@ class IdeaSearcher:
         self._model_score_config_loaded = False
         
         self._total_interaction_num = 0
+        self._first_time_run = True
+        self._first_time_add_island = True
+        self._assigned_idea_uids = set()
 
     # ----------------------------- 核心功能 ----------------------------- 
     
@@ -120,30 +125,43 @@ class IdeaSearcher:
         additional_interaction_num: int,
     )-> None:
 
-        with self._lock:
+        with self._user_lock:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
                 raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 run 动作！")
                 
+            diary_path = self._diary_path
+            database_path = self._database_path
+            program_name = self._program_name
+            assert diary_path is not None
+            assert database_path is not None
+            assert program_name is not None
+                
             append_to_file(
-                file_path = self._diary_path,
-                content_str = f"【IdeaSearcher】 {self._program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
+                file_path = diary_path,
+                content_str = f"【IdeaSearcher】 {program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
             )
                 
             self._total_interaction_num += len(self._islands) * additional_interaction_num
             
-            self._load_database_assessment_config()
-            self._load_models_score_config()
-            
-            for
-                
-            
-        
-            max_workers_num = 0
             for island_id in self._islands:
                 island = self._islands[island_id]
                 island.fuel(additional_interaction_num)
+                
+            if self._first_time_run:
+                self._load_database_assessment_config()
+                self._load_model_score_config()        
+                self._first_time_run = False
+            else:
+                if self._assess_on:
+                    self._expand_database_assessment_range()
+                if self._model_assess_save_result:
+                    self._expand_model_score_range()
+                
+            max_workers_num = 0
+            for island_id in self._islands:
+                island = self._islands[island_id]
                 max_workers_num += len(island.samplers)
             
             with concurrent.futures.ThreadPoolExecutor(
@@ -160,10 +178,61 @@ class IdeaSearcher:
                         _ = future.result() 
                     except Exception as e:
                         append_to_file(
-                            file_path = self._diary_path,
+                            file_path = diary_path,
                             content_str = f"【IdeaSearcher】 {island_id}号岛屿的{sampler_id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
                         )
                         exit()
+
+
+    # ⭐️ Important
+    def get_best_score(
+        self,
+    )-> float:
+    
+        with self._user_lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_score 动作！")
+            
+            scores: list[float] = []
+            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for idea in island.ideas:
+                    assert idea.score is not None
+                    scores.append(idea.score)
+                    
+            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！")
+                
+            return max(scores)
+
+
+    # ⭐️ Important
+    def get_best_idea(
+        self,
+    )-> str:
+    
+        with self._user_lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_idea 动作！")
+        
+            scores: list[float] = []
+            ideas: list[str] = []
+            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for idea in island.ideas:
+                    assert idea.score is not None
+                    assert idea.content is not None
+                    scores.append(idea.score)
+                    ideas.append(idea.content)
+                    
+            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！")
+                
+            return ideas[scores.index(max(scores))]
 
 
     def _check_runnability(
@@ -186,9 +255,6 @@ class IdeaSearcher:
             
         if self._models is None:
             missing_param = "models"
-            
-        if self._model_temperatures is None:
-            missing_param = "model_temperatures"
             
         if self._evaluate_func is None:
             missing_param = "evaluate_func"
@@ -214,28 +280,33 @@ class IdeaSearcher:
                 missing_param = "crossover_temperature"
                 
         if missing_param is not None: return missing_param
+        
         assert self._database_path is not None
+        assert self._models is not None
+        
+        if self._model_temperatures is None:
+            self._model_temperatures = [1.0] * len(self._models)
         
         if self._similarity_distance_func is None:
             self._similarity_distance_func = self._default_similarity_distance_func
         
         if self._diary_path is None:
-            self._diary_path = self._database_path + "log/diary.txt"
+            self._diary_path = self._database_path + f"log{seperator}diary.txt"
             
         if self._system_prompt is None:
             self._system_prompt = "You're a helpful assistant."
             
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
-                self._assess_result_data_path = self._database_path + "data/database_assessment.npz"
+                self._assess_result_data_path = self._database_path + f"data{seperator}database_assessment.npz"
             if self._assess_result_pic_path is None:
-                self._assess_result_pic_path = self._database_path + "pic/database_assessment.png"
+                self._assess_result_pic_path = self._database_path + f"pic{seperator}database_assessment.png"
                 
         if self._model_assess_save_result:
             if self._model_assess_result_data_path is None:
-                self._model_assess_result_data_path = self._database_path + "data/model_scores.npz"
+                self._model_assess_result_data_path = self._database_path + f"data{seperator}model_scores.npz"
             if self._model_assess_result_pic_path is None:
-                self._model_assess_result_pic_path = self._database_path + "pic/model_scores.png"
+                self._model_assess_result_pic_path = self._database_path + f"pic{seperator}model_scores.png"
                 
         return None
 
@@ -334,7 +405,20 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{{missing_param}}`未传入，在当前设置下无法进行 add_island 动作！")
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 add_island 动作！")
+                
+            diary_path = self._diary_path
+            database_path = self._database_path
+            assert diary_path is not None
+            assert database_path is not None
+                
+            if self._first_time_add_island:
+                clear_file_content(diary_path)
+                for item in os.listdir(f"{database_path}{seperator}ideas"):
+                    full_path = os.path.join(f"{database_path}{seperator}ideas", item)
+                    if os.path.isdir(full_path) and item.startswith('island'):
+                        shutil.rmtree(full_path)
+                self._first_time_add_island = False
         
             evaluators_num = self._evaluators_num
             samplers_num = self._samplers_num
@@ -399,7 +483,7 @@ class IdeaSearcher:
         self,
     )-> None:
     
-        with self._lock:
+        with self._user_lock:
         
             with self._console_lock:
                 append_to_file(
@@ -423,10 +507,9 @@ class IdeaSearcher:
                 island_to_colonize = self._islands[island_ids[index]]
                 assert island_to_colonize._best_idea is not None
                 
-                self._islands[island_ids[-index]].ideas = [
-                    island_to_colonize._best_idea
-                ]
-                self._islands[island_ids[-index]].idea_similar_nums = [1]
+                self._islands[island_ids[-index]].accept_colonization(
+                    [island_to_colonize._best_idea]
+                )
                 
             with self._console_lock:
                 append_to_file(
@@ -434,9 +517,33 @@ class IdeaSearcher:
                     content_str = f"【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
                 )
 
+
+    def get_idea_uid(
+        self,
+    )-> str:
+    
+        with self._lock:
+        
+            idea_uid_length = self._idea_uid_length
+            
+            idea_uid = ''.join(random.choices(
+                population = string.ascii_lowercase, 
+                k = idea_uid_length,
+            ))
+            
+            while idea_uid in self._assigned_idea_uids:
+                idea_uid = ''.join(random.choices(
+                    population = string.ascii_lowercase, 
+                    k = idea_uid_length,
+                ))
+                
+            self._assigned_idea_uids.add(idea_uid)
+            
+            return idea_uid
+
     # ----------------------------- Model Score 相关 ----------------------------- 
     
-    def _load_models_score_config(
+    def _load_model_score_config(
         self,
     )-> None:
         
@@ -522,8 +629,8 @@ class IdeaSearcher:
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【IdeaSearcher】 模型 {{model}}(T={{model_temperature:.2f}}) 此轮评分为 {{self.model_recent_scores[index][-1]:.2f}} ，"
-                                f"其总评分已被更新为 {{self.model_scores[index]:.2f}} ！"
+                                f"【IdeaSearcher】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
+                                f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
                             ),
                         )
                     if model_assess_save_result:
@@ -575,10 +682,12 @@ class IdeaSearcher:
         point_num = len(self._scores_of_models_x_axis)
         auto_markersize = get_auto_markersize(point_num)
         
+        range_expand_ratio = 0.08
         x_axis_range = (0, self._total_interaction_num)
-        x_axis_range_expand_ratio = 0.08
-        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        score_range_delta = (score_range[1] - score_range[0]) * range_expand_ratio
+        score_range = (score_range[0] - score_range_delta, score_range[1] + score_range_delta)
 
         plt.figure(figsize=(10, 6))
         for model_label, model_scores in scores_of_models_dict.items():
@@ -767,73 +876,82 @@ class IdeaSearcher:
         )  
 
 
-    def _assess_database(
+    def assess_database(
         self,
     )-> None:
         
-        diary_path = self._diary_path
-        assess_func = self._assess_func
-        assert assess_func is not None
+        with self._lock:
         
-        start_time = perf_counter()
+            if not self._assess_on: return
         
-        with self._console_lock:
-            append_to_file(
-                file_path = diary_path,
-                content_str = f"【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！",
-            )
-            
-        ideas: list[str] = []
-        scores: list[float] = []
-        infos: list[Optional[str]] = []
+            diary_path = self._diary_path
+            assess_func = self._assess_func
+            assess_interval = self._assess_interval
+            assert assess_func is not None
+            assert assess_interval is not None
         
-        for island_id in self._islands:
-            island = self._islands[island_id]
-            for idea in island.ideas:
-                
-                assert idea.content is not None
-                assert idea.score is not None
-                
-                ideas.append(idea.content)
-                scores.append(idea.score)
-                infos.append(idea.info)
-            
-        get_database_score_success = False
-        try:
-            database_score = assess_func(
-                ideas,
-                scores,
-                infos,
-            )
-            get_database_score_success = True
-            
-            end_time = perf_counter()
-            total_time = end_time - start_time
+            self._assess_interaction_count += 1
+            if self._assess_interaction_count % assess_interval != 0: return
+
+            start_time = perf_counter()
             
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【IdeaSearcher】 数据库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
+                    content_str = f"【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！",
                 )
                 
-        except Exception as error:
-            database_score = 0
-            with self._console_lock:
-                append_to_file(
-                    file_path = diary_path,
-                    content_str = (
-                        f"【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n"
-                        f"{error}"
-                    ),
-                )
+            ideas: list[str] = []
+            scores: list[float] = []
+            infos: list[Optional[str]] = []
+            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for idea in island.ideas:
+                    
+                    assert idea.content is not None
+                    assert idea.score is not None
+                    
+                    ideas.append(idea.content)
+                    scores.append(idea.score)
+                    infos.append(idea.info)
                 
-        self._assess_result_ndarray[self._assess_result_ndarray_length] = database_score
-        self._assess_result_ndarray_length += 1
-        
-        self._sync_database_assessment_result(
-            is_initialization = False,
-            get_database_score_success = get_database_score_success,
-        )
+            get_database_score_success = False
+            try:
+                database_score = assess_func(
+                    ideas,
+                    scores,
+                    infos,
+                )
+                get_database_score_success = True
+                
+                end_time = perf_counter()
+                total_time = end_time - start_time
+                
+                with self._console_lock:
+                    append_to_file(
+                        file_path = diary_path,
+                        content_str = f"【IdeaSearcher】 数据库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
+                    )
+                    
+            except Exception as error:
+                database_score = 0
+                with self._console_lock:
+                    append_to_file(
+                        file_path = diary_path,
+                        content_str = (
+                            f"【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n"
+                            f"{error}"
+                        ),
+                    )
+                    
+            self._assess_result_ndarray[self._assess_result_ndarray_length] = database_score
+            self._assess_result_ndarray_length += 1
+            
+            self._sync_database_assessment_result(
+                is_initialization = False,
+                get_database_score_success = get_database_score_success,
+            )
 
 
     def _sync_database_assessment_result(
@@ -862,10 +980,12 @@ class IdeaSearcher:
         point_num = len(self._assess_result_ndarray_x_axis)
         auto_markersize = get_auto_markersize(point_num)
         
+        range_expand_ratio = 0.08
         x_axis_range = (0, self._total_interaction_num)
-        x_axis_range_expand_ratio = 0.08
-        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * x_axis_range_expand_ratio
+        x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * range_expand_ratio
         x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        score_range_delta = (score_range[1] - score_range[0]) * range_expand_ratio
+        score_range = (score_range[0] - score_range_delta, score_range[1] + score_range_delta)
         
         plt.figure(figsize=(10, 6))
         plt.plot(
@@ -923,7 +1043,7 @@ class IdeaSearcher:
         if not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`program_name`类型应为str，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._program_name = value
 
 
@@ -936,7 +1056,7 @@ class IdeaSearcher:
         if not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`prologue_section`类型应为str，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._prologue_section = value
 
 
@@ -949,7 +1069,7 @@ class IdeaSearcher:
         if not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`epilogue_section`类型应为str，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._epilogue_section = value
 
 
@@ -962,7 +1082,7 @@ class IdeaSearcher:
         if not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`database_path`类型应为str，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._database_path = value
 
 
@@ -975,7 +1095,7 @@ class IdeaSearcher:
         if not hasattr(value, "__iter__") and not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`models`类型应为List[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._models = value
 
 
@@ -988,7 +1108,7 @@ class IdeaSearcher:
         if not hasattr(value, "__iter__") and not isinstance(value, str):
             raise TypeError(f"【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_temperatures = value
 
 
@@ -1001,7 +1121,7 @@ class IdeaSearcher:
         if not callable(value):
             raise TypeError(f"【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, Optional[str]]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._evaluate_func = value
 
 
@@ -1013,7 +1133,7 @@ class IdeaSearcher:
         if not isinstance(value, tuple):
             raise TypeError(f"【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._score_range = value
 
 
@@ -1025,7 +1145,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._hand_over_threshold = value
 
 
@@ -1037,7 +1157,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._system_prompt = value
 
 
@@ -1049,7 +1169,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._diary_path = value
 
 
@@ -1061,7 +1181,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._api_keys_path = value
 
 
@@ -1073,7 +1193,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`local_models_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._local_models_path = value
 
 
@@ -1085,7 +1205,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`samplers_num`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._samplers_num = value
 
 
@@ -1097,7 +1217,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`evaluators_num`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._evaluators_num = value
 
 
@@ -1109,7 +1229,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`examples_num`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._examples_num = value
 
 
@@ -1121,7 +1241,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`generate_num`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._generate_num = value
 
 
@@ -1133,7 +1253,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`sample_temperature`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._sample_temperature = value
 
 
@@ -1145,7 +1265,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_sample_temperature = value
 
 
@@ -1157,7 +1277,7 @@ class IdeaSearcher:
         if not (value is None or callable(value)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._assess_func = value
 
 
@@ -1169,7 +1289,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._assess_interval = value
 
 
@@ -1181,7 +1301,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._assess_baseline = value
 
 
@@ -1193,7 +1313,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._assess_result_data_path = value
 
 
@@ -1205,7 +1325,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._assess_result_pic_path = value
 
 
@@ -1217,7 +1337,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_window_size = value
 
 
@@ -1229,7 +1349,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_initial_score = value
 
 
@@ -1241,7 +1361,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_average_order = value
 
 
@@ -1253,7 +1373,7 @@ class IdeaSearcher:
         if not isinstance(value, bool):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_save_result = value
 
 
@@ -1265,7 +1385,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_result_data_path = value
 
 
@@ -1277,7 +1397,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, str)):
             raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._model_assess_result_pic_path = value
 
 
@@ -1289,7 +1409,7 @@ class IdeaSearcher:
         if not (value is None or callable(value)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._mutation_func = value
 
 
@@ -1301,7 +1421,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._mutation_interval = value
 
 
@@ -1313,7 +1433,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._mutation_num = value
 
 
@@ -1325,7 +1445,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._mutation_temperature = value
 
 
@@ -1337,7 +1457,7 @@ class IdeaSearcher:
         if not (value is None or callable(value)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], str]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._crossover_func = value
 
 
@@ -1349,7 +1469,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._crossover_interval = value
 
 
@@ -1361,7 +1481,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, int)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._crossover_num = value
 
 
@@ -1373,7 +1493,7 @@ class IdeaSearcher:
         if not (value is None or isinstance(value, float)):
             raise TypeError(f"【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._crossover_temperature = value
 
 
@@ -1385,7 +1505,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._similarity_threshold = value
 
 
@@ -1397,7 +1517,7 @@ class IdeaSearcher:
         if not (value is None or callable(value)):
             raise TypeError(f"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._similarity_distance_func = value
 
 
@@ -1409,7 +1529,7 @@ class IdeaSearcher:
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
             raise TypeError(f"【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._similarity_sys_info_thresholds = value
 
 
@@ -1421,7 +1541,7 @@ class IdeaSearcher:
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
             raise TypeError(f"【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._similarity_sys_info_prompts = value
 
 
@@ -1433,7 +1553,7 @@ class IdeaSearcher:
         if not isinstance(value, bool):
             raise TypeError(f"【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._load_idea_skip_evaluation = value
 
 
@@ -1445,7 +1565,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._initialization_cleanse_threshold = value
 
 
@@ -1457,7 +1577,7 @@ class IdeaSearcher:
         if not isinstance(value, bool):
             raise TypeError(f"【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._delete_when_initial_cleanse = value
 
 
@@ -1469,7 +1589,7 @@ class IdeaSearcher:
         if not isinstance(value, int):
             raise TypeError(f"【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._idea_uid_length = value
 
 
@@ -1481,7 +1601,7 @@ class IdeaSearcher:
         if not isinstance(value, bool):
             raise TypeError(f"【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._record_prompt_in_diary = value
 
 
@@ -1493,7 +1613,7 @@ class IdeaSearcher:
         if not (value is None or callable(value)):
             raise TypeError(f"【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._filter_func = value
 
 
@@ -1505,7 +1625,7 @@ class IdeaSearcher:
         if not isinstance(value, float):
             raise TypeError(f"【IdeaSearcher】 参数`generation_bonus`类型应为float，实为{str(type(value))}")
 
-        with self._lock:
+        with self._user_lock:
             self._generation_bonus = value
 
 

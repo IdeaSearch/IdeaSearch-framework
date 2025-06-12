@@ -1,12 +1,7 @@
 from src.IdeaSearch.ideasearcher import IdeaSearcher
-from src.utils import clear_file_content
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
 from programs.TemplateProgram.user_code.evaluation import evaluate as TemplateProgram_evaluate
-
-
-diary_path = "programs/TemplateProgram/database/log/diary.txt"
-clear_file_content(diary_path)
 
 
 def main():
@@ -27,6 +22,9 @@ def main():
     ideasearcher.set_models([
         "Deepseek_V3",
     ])
+    
+    # set optional parameters
+    # ideasearcher.set_assess_func(None)
 
     # add two islands
     ideasearcher.add_island()
@@ -36,6 +34,13 @@ def main():
     for _ in range(3):
         ideasearcher.run(10)
         ideasearcher.repopulate_islands()
+        
+    best_idea = ideasearcher.get_best_idea()
+    best_score = ideasearcher.get_best_score()
+    print(
+        f"目前最高得分{best_score:.2f}，这个idea是：\n"
+        f"{best_idea}"
+    )
         
     # shutdown models (not necessary in this script, since no local models are used)
     ideasearcher.shutdown_models()
