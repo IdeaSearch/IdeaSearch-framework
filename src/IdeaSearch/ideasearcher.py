@@ -131,10 +131,14 @@ class IdeaSearcher:
                 content_str = f"【IdeaSearcher】 {self._program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
             )
                 
+            self._total_interaction_num += len(self._islands) * additional_interaction_num
+            
             self._load_database_assessment_config()
             self._load_models_score_config()
+            
+            for
                 
-            self._total_interaction_num += len(self._islands) * additional_interaction_num
+            
         
             max_workers_num = 0
             for island_id in self._islands:
@@ -368,9 +372,6 @@ class IdeaSearcher:
             
             island.load_ideas_from("initial_ideas")
             island.link_samplers(samplers)
-            island.load_mutation_config()
-            island.load_crossover_config()
-            island.load_similarity_info_config()
             
             self._islands[island_id] = island
             
