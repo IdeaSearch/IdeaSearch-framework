@@ -1,5 +1,7 @@
 import concurrent.futures
 import os
+import json
+import math
 import random
 import shutil
 import string
@@ -87,6 +89,8 @@ class IdeaSearcher:
         self._record_prompt_in_diary: bool = False
         self._filter_func: Optional[Callable[[str], str]] = None
         self._generation_bonus: float = 0.0
+        self._backup_path: Optional[str] = None
+        self._backup_on: bool = True
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -116,6 +120,8 @@ class IdeaSearcher:
         self._first_time_run = True
         self._first_time_add_island = True
         self._assigned_idea_uids = set()
+        self._recorded_ideas = []
+        self._recorded_idea_names = set()
 
     # ----------------------------- 核心功能 ----------------------------- 
     
@@ -184,57 +190,6 @@ class IdeaSearcher:
                         exit()
 
 
-    # ⭐️ Important
-    def get_best_score(
-        self,
-    )-> float:
-    
-        with self._user_lock:
-        
-            missing_param = self._check_runnability()
-            if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_score 动作！")
-            
-            scores: list[float] = []
-            
-            for island_id in self._islands:
-                island = self._islands[island_id]
-                for idea in island.ideas:
-                    assert idea.score is not None
-                    scores.append(idea.score)
-                    
-            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！")
-                
-            return max(scores)
-
-
-    # ⭐️ Important
-    def get_best_idea(
-        self,
-    )-> str:
-    
-        with self._user_lock:
-        
-            missing_param = self._check_runnability()
-            if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_idea 动作！")
-        
-            scores: list[float] = []
-            ideas: list[str] = []
-            
-            for island_id in self._islands:
-                island = self._islands[island_id]
-                for idea in island.ideas:
-                    assert idea.score is not None
-                    assert idea.content is not None
-                    scores.append(idea.score)
-                    ideas.append(idea.content)
-                    
-            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！")
-                
-            return ideas[scores.index(max(scores))]
-
-
     def _check_runnability(
         self,
     )-> Optional[str]:
@@ -281,32 +236,37 @@ class IdeaSearcher:
                 
         if missing_param is not None: return missing_param
         
-        assert self._database_path is not None
-        assert self._models is not None
+        database_path = self._database_path
+        models = self._models
+        assert database_path is not None
+        assert models is not None
         
         if self._model_temperatures is None:
-            self._model_temperatures = [1.0] * len(self._models)
+            self._model_temperatures = [1.0] * len(models)
         
         if self._similarity_distance_func is None:
             self._similarity_distance_func = self._default_similarity_distance_func
         
         if self._diary_path is None:
-            self._diary_path = self._database_path + f"log{seperator}diary.txt"
+            self._diary_path = f"{database_path}{seperator}log{seperator}diary.txt"
             
         if self._system_prompt is None:
             self._system_prompt = "You're a helpful assistant."
             
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
-                self._assess_result_data_path = self._database_path + f"data{seperator}database_assessment.npz"
+                self._assess_result_data_path = f"{database_path}{seperator}data{seperator}database_assessment.npz"
             if self._assess_result_pic_path is None:
-                self._assess_result_pic_path = self._database_path + f"pic{seperator}database_assessment.png"
+                self._assess_result_pic_path = f"{database_path}{seperator}pic{seperator}database_assessment.png"
                 
         if self._model_assess_save_result:
             if self._model_assess_result_data_path is None:
-                self._model_assess_result_data_path = self._database_path + f"data{seperator}model_scores.npz"
+                self._model_assess_result_data_path = f"{database_path}{seperator}data{seperator}model_scores.npz"
             if self._model_assess_result_pic_path is None:
-                self._model_assess_result_pic_path = self._database_path + f"pic{seperator}model_scores.png"
+                self._model_assess_result_pic_path = f"{database_path}{seperator}pic{seperator}model_scores.png"
+                
+        if self._backup_path is None:
+            self._backup_path = f"{database_path}{seperator}ideas{seperator}backup"
                 
         return None
 
@@ -317,7 +277,7 @@ class IdeaSearcher:
         self
     )-> None:
     
-        with self._lock:
+        with self._user_lock:
     
             if self._api_keys_path is None and self._local_models_path is None:
                 raise ValueError(
@@ -337,7 +297,7 @@ class IdeaSearcher:
         self,
     )-> None:
 
-        with self._lock:
+        with self._user_lock:
         
             self._model_manager.shutdown()
    
@@ -393,7 +353,139 @@ class IdeaSearcher:
                 system_prompt = system_prompt,
                 prompt = prompt,
             )
-  
+
+    # ----------------------------- Ideas 管理相关 ----------------------------- 
+    
+    # ⭐️ Important
+    def get_best_score(
+        self,
+    )-> float:
+    
+        with self._user_lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_score 动作！")
+            
+            scores: list[float] = []
+            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for idea in island.ideas:
+                    assert idea.score is not None
+                    scores.append(idea.score)
+                    
+            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！")
+                
+            return max(scores)
+
+
+    # ⭐️ Important
+    def get_best_idea(
+        self,
+    )-> str:
+    
+        with self._user_lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_idea 动作！")
+        
+            scores: list[float] = []
+            ideas: list[str] = []
+            
+            for island_id in self._islands:
+                island = self._islands[island_id]
+                for idea in island.ideas:
+                    assert idea.score is not None
+                    assert idea.content is not None
+                    scores.append(idea.score)
+                    ideas.append(idea.content)
+                    
+            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！")
+                
+            return ideas[scores.index(max(scores))]
+
+    
+    def get_idea_uid(
+        self,
+    )-> str:
+    
+        with self._lock:
+        
+            idea_uid_length = self._idea_uid_length
+            
+            idea_uid = ''.join(random.choices(
+                population = string.ascii_lowercase, 
+                k = idea_uid_length,
+            ))
+            
+            while idea_uid in self._assigned_idea_uids:
+                idea_uid = ''.join(random.choices(
+                    population = string.ascii_lowercase, 
+                    k = idea_uid_length,
+                ))
+                
+            self._assigned_idea_uids.add(idea_uid)
+            
+            return idea_uid
+
+
+    def record_ideas_in_backup(
+        self,
+        ideas_to_record,
+    ):
+    
+        with self._lock:
+        
+            database_path = self._database_path
+            backup_path = self._backup_path
+            backup_on = self._backup_on
+            assert database_path is not None
+            assert backup_path is not None
+            
+            if not backup_on: return
+            
+            guarantee_path_exist(f"{backup_path}{seperator}score_sheet_backup.json")
+        
+            for idea in ideas_to_record:
+                
+                if basename(idea.path) not in self._recorded_idea_names:
+                    
+                    self._recorded_ideas.append(idea)
+                    self._recorded_idea_names.add(basename(idea.path))
+                
+                    with open(
+                        file = f"{backup_path}{seperator}{basename(idea.path)}",
+                        mode = "w",
+                        encoding = "UTF-8",
+                    ) as file:
+
+                        file.write(idea.content)
+                        
+            score_sheet = {
+                basename(idea.path): {
+                    "score": idea.score,
+                    "info": idea.info if idea.info is not None else "",
+                    "source": idea.source,
+                    "level": idea.level,
+                }
+                for idea in self._recorded_ideas
+            }
+
+            with open(
+                file = f"{backup_path}{seperator}score_sheet_backup.json", 
+                mode = "w", 
+                encoding = "UTF-8",
+            ) as file:
+                
+                json.dump(
+                    obj = score_sheet, 
+                    fp = file, 
+                    ensure_ascii = False,
+                    indent = 4
+                )
+
     # ----------------------------- 岛屿相关 ----------------------------- 
 
     # ⭐️ Important
@@ -401,7 +493,7 @@ class IdeaSearcher:
         self,
     )-> int:
         
-        with self._lock:
+        with self._user_lock:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
@@ -409,11 +501,21 @@ class IdeaSearcher:
                 
             diary_path = self._diary_path
             database_path = self._database_path
+            backup_path = self._backup_path
+            backup_on = self._backup_on
             assert diary_path is not None
             assert database_path is not None
+            assert backup_path is not None
                 
             if self._first_time_add_island:
+            
                 clear_file_content(diary_path)
+                
+                if backup_on:
+                    guarantee_path_exist(f"{backup_path}{seperator}score_sheet_backup.json")
+                    shutil.rmtree(f"{backup_path}")
+                    guarantee_path_exist(f"{backup_path}{seperator}score_sheet_backup.json")
+                    
                 for item in os.listdir(f"{database_path}{seperator}ideas"):
                     full_path = os.path.join(f"{database_path}{seperator}ideas", item)
                     if os.path.isdir(full_path) and item.startswith('island'):
@@ -468,7 +570,7 @@ class IdeaSearcher:
         island_id: int,
     )-> int:
     
-        with self._lock:
+        with self._user_lock:
             
             if island_id in self._islands:
                 del self._islands[island_id]
@@ -516,30 +618,6 @@ class IdeaSearcher:
                     file_path = self._diary_path,
                     content_str = f"【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
                 )
-
-
-    def get_idea_uid(
-        self,
-    )-> str:
-    
-        with self._lock:
-        
-            idea_uid_length = self._idea_uid_length
-            
-            idea_uid = ''.join(random.choices(
-                population = string.ascii_lowercase, 
-                k = idea_uid_length,
-            ))
-            
-            while idea_uid in self._assigned_idea_uids:
-                idea_uid = ''.join(random.choices(
-                    population = string.ascii_lowercase, 
-                    k = idea_uid_length,
-                ))
-                
-            self._assigned_idea_uids.add(idea_uid)
-            
-            return idea_uid
 
     # ----------------------------- Model Score 相关 ----------------------------- 
     
@@ -685,7 +763,10 @@ class IdeaSearcher:
         range_expand_ratio = 0.08
         x_axis_range = (0, self._total_interaction_num)
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * range_expand_ratio
-        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        x_axis_range = (
+            int(math.floor(x_axis_range[0] - x_axis_range_delta)), 
+            int(math.ceil(x_axis_range[1] + x_axis_range_delta))
+        )
         score_range_delta = (score_range[1] - score_range[0]) * range_expand_ratio
         score_range = (score_range[0] - score_range_delta, score_range[1] + score_range_delta)
 
@@ -983,7 +1064,10 @@ class IdeaSearcher:
         range_expand_ratio = 0.08
         x_axis_range = (0, self._total_interaction_num)
         x_axis_range_delta = (x_axis_range[1] - x_axis_range[0]) * range_expand_ratio
-        x_axis_range = (x_axis_range[0] - x_axis_range_delta, x_axis_range[1] + x_axis_range_delta)
+        x_axis_range = (
+            int(math.floor(x_axis_range[0] - x_axis_range_delta)), 
+            int(math.ceil(x_axis_range[1] + x_axis_range_delta))
+        )
         score_range_delta = (score_range[1] - score_range[0]) * range_expand_ratio
         score_range = (score_range[0] - score_range_delta, score_range[1] + score_range_delta)
         
@@ -1629,6 +1713,30 @@ class IdeaSearcher:
             self._generation_bonus = value
 
 
+    def set_backup_path(
+        self,
+        value: Optional[str],
+    ) -> None:
+
+        if not (value is None or isinstance(value, str)):
+            raise TypeError(f"【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为{str(type(value))}")
+
+        with self._user_lock:
+            self._backup_path = value
+
+
+    def set_backup_on(
+        self,
+        value: bool,
+    ) -> None:
+
+        if not isinstance(value, bool):
+            raise TypeError(f"【IdeaSearcher】 参数`backup_on`类型应为bool，实为{str(type(value))}")
+
+        with self._user_lock:
+            self._backup_on = value
+
+
     def get_program_name(
         self,
     )-> Optional[str]:
@@ -1970,4 +2078,18 @@ class IdeaSearcher:
     )-> float:
         
             return self._generation_bonus
+
+
+    def get_backup_path(
+        self,
+    )-> Optional[str]:
+        
+            return self._backup_path
+
+
+    def get_backup_on(
+        self,
+    )-> bool:
+        
+            return self._backup_on
 

@@ -69,7 +69,7 @@ class Island:
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
         
-        self.path = database_path + f"ideas{seperator}island{self.id}{seperator}"
+        self.path = f"{database_path}{seperator}ideas{seperator}island{self.id}{seperator}"
         guarantee_path_exist(self.path)
 
         self.interaction_count = 0
@@ -104,9 +104,9 @@ class Island:
             evaluate_func = self.ideasearcher.get_evaluate_func()
             assert database_path is not None
             
-            idea_source_path = database_path + f"ideas{seperator}{folder_name}"
+            idea_source_path = f"{database_path}{seperator}ideas{seperator}{folder_name}"
             idea_source_path_ideas = []
-            idea_source_score_sheet_path = idea_source_path + f"{seperator}score_sheet_{folder_name}.json"
+            idea_source_score_sheet_path = f"{idea_source_path}{seperator}score_sheet_{folder_name}.json"
             idea_source_score_sheet: Optional[dict] = None
             
             if load_idea_skip_evaluation:
@@ -233,6 +233,7 @@ class Island:
                             
                     else:
                         idea_source_path_ideas.append(idea)
+                        self.ideasearcher.record_ideas_in_backup([idea])
                         with self._console_lock:
                             append_to_file(
                                 file_path=diary_path,
@@ -241,6 +242,7 @@ class Island:
                             
                 else:
                     idea_source_path_ideas.append(idea)
+                    self.ideasearcher.record_ideas_in_backup([idea])
                     self.ideas.append(idea)
                     with self._console_lock:
                         append_to_file(
@@ -250,7 +252,7 @@ class Island:
                     shutil.copy2(
                         src = f"{idea_source_path}{seperator}{basename(path)}",
                         dst = f"{self.path}{seperator}{basename(path)}",
-                    ) 
+                    )
                 
             new_score_sheet = {
                 basename(idea.path): {
@@ -965,7 +967,7 @@ class Island:
             with open(path, 'w', encoding='utf-8') as file:
                 file.write(idea)
                 
-            self.ideas.append(Idea(
+            new_idea = Idea(
                 path = path,
                 level = level,
                 evaluate_func = evaluate_func,
@@ -973,7 +975,10 @@ class Island:
                 score = score,
                 info = info,
                 source = source,
-            ))
+            )
+                
+            self.ideas.append(new_idea)
+            self.ideasearcher.record_ideas_in_backup([new_idea])
                 
             return path
         

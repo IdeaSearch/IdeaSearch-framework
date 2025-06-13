@@ -15,7 +15,7 @@ def main():
     
     # set minimum required parameters
     ideasearcher.set_program_name("TemplateProgram")
-    ideasearcher.set_database_path("programs/TemplateProgram/database/")
+    ideasearcher.set_database_path("programs/TemplateProgram/database")
     ideasearcher.set_evaluate_func(TemplateProgram_evaluate)
     ideasearcher.set_prologue_section(TemplateProgram_prologue_section)
     ideasearcher.set_epilogue_section(TemplateProgram_epilogue_section)
@@ -25,6 +25,7 @@ def main():
     
     # set optional parameters
     # ideasearcher.set_assess_func(None)
+    ideasearcher.set_backup_on(True)
 
     # add two islands
     ideasearcher.add_island()
@@ -32,7 +33,7 @@ def main():
     
     # Evolve for three cycles, 10 epochs on each island per cycle with ideas repopulated at the end
     for _ in range(3):
-        ideasearcher.run(10)
+        ideasearcher.run(3)
         ideasearcher.repopulate_islands()
         
     best_idea = ideasearcher.get_best_idea()
