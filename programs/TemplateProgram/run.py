@@ -1,4 +1,3 @@
-import numpy as np
 from src.IdeaSearch.ideasearcher import IdeaSearcher
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
@@ -23,37 +22,26 @@ def main():
     ideasearcher.set_models([
         "Deepseek_V3",
     ])
-    
-    # set optional parameters
-    # ideasearcher.set_assess_func(None)
-    ideasearcher.set_backup_on(True)
-    # ideasearcher.set_model_sample_temperature(0.0)
-    # ideasearcher.set_sample_temperature(0.0)
-    def my_generate_prompt_func(
-        ideas, 
-        scores,
-        infos
-    ):
-        return "阿巴阿巴阿巴"
-    ideasearcher.set_generate_prompt_func(my_generate_prompt_func)
 
     # add two islands
     ideasearcher.add_island()
     ideasearcher.add_island()
     
     # Evolve for three cycles, 10 epochs on each island per cycle with ideas repopulated at the end
-    for _ in range(3):
-        ideasearcher.run(3)
+    for cycle in range(1, 4):
+        
+        ideasearcher.run(10)
         ideasearcher.repopulate_islands()
         
-    best_idea = ideasearcher.get_best_idea()
-    best_score = ideasearcher.get_best_score()
-    print(
-        f"目前最高得分{best_score:.2f}，这个idea是：\n"
-        f"{best_idea}"
-    )
+        best_idea = ideasearcher.get_best_idea()
+        best_score = ideasearcher.get_best_score()
+        print(
+            f"【第{cycle}轮】"
+            f"目前最高得分{best_score:.2f}，这个idea是：\n"
+            f"{best_idea}\n"
+        )
         
-    # shutdown models (not necessary in this script, since no local models are used)
+    # shutdown models
     ideasearcher.shutdown_models()
 
 

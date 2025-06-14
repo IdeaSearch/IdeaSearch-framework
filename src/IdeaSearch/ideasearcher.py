@@ -24,12 +24,11 @@ from src.IdeaSearch.utils import get_auto_markersize
 from src.IdeaSearch.utils import clear_file_content
 from src.IdeaSearch.utils import default_assess_func
 from src.IdeaSearch.utils import make_boltzmann_choice
-from src.API4LLMs.model_manager import ModelManager
-from src.API4LLMs.get_answer import get_answer_online
-from src.API4LLMs.get_answer import get_answer_local
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 from src.IdeaSearch.island import Island
+from src.IdeaSearch.API4LLMs.model_manager import ModelManager
+from src.IdeaSearch.API4LLMs.get_answer import get_answer_online
 
 
 class IdeaSearcher:
@@ -52,7 +51,6 @@ class IdeaSearcher:
         self._system_prompt: Optional[str] = None
         self._diary_path: Optional[str] = None
         self._api_keys_path: Optional[str] = None
-        self._local_models_path: Optional[str] = None
         self._samplers_num: int = 3
         self._evaluators_num: int = 3
         self._examples_num: int = 3
@@ -280,17 +278,13 @@ class IdeaSearcher:
     
         with self._user_lock:
     
-            if self._api_keys_path is None and self._local_models_path is None:
+            if self._api_keys_path is None:
                 raise ValueError(
                     "【IdeaSearcher】 加载模型时发生错误："
-                    " api keys path 和 local models path 中至少应有一个不为 None ！"
+                    " api keys path 不应为 None ！"
                 )
                 
-            if self._api_keys_path is not None:
-                self._model_manager.load_api_keys(self._api_keys_path)
-                
-            if self._local_models_path is not None:
-                self._model_manager.load_local_models(self._local_models_path)
+            self._model_manager.load_api_keys(self._api_keys_path)
  
 
     # ⭐️ Important
@@ -318,13 +312,6 @@ class IdeaSearcher:
         return self._model_manager.get_online_model_instance(model_name)
 
 
-    def _get_local_model_instance(
-        self,
-        model_name: str,
-    )-> int:
-        return self._model_manager.get_local_model_instance(model_name)
-
-
     def _get_answer(
         self,
         model_name : str, 
@@ -346,14 +333,7 @@ class IdeaSearcher:
             )
         
         else:
-            port = self._get_local_model_instance(model_name)
-            
-            return get_answer_local(
-                port = port,
-                temperature = model_temperature,
-                system_prompt = system_prompt,
-                prompt = prompt,
-            )
+            raise RuntimeError(f"【IdeaSearcher】 get answer 过程报错：模型 {model_name} 未被记录！")
 
     # ----------------------------- Ideas 管理相关 ----------------------------- 
     
@@ -1269,18 +1249,6 @@ class IdeaSearcher:
             self._api_keys_path = value
 
 
-    def set_local_models_path(
-        self,
-        value: Optional[str],
-    ) -> None:
-
-        if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`local_models_path`类型应为Optional[str]，实为{str(type(value))}")
-
-        with self._user_lock:
-            self._local_models_path = value
-
-
     def set_samplers_num(
         self,
         value: int,
@@ -1831,13 +1799,6 @@ class IdeaSearcher:
     )-> Optional[str]:
         
             return self._api_keys_path
-
-
-    def get_local_models_path(
-        self,
-    )-> Optional[str]:
-        
-            return self._local_models_path
 
 
     def get_samplers_num(
