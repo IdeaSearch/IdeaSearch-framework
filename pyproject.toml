@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "IdeaSearch"
+version = "0.0.1"
+description = "IdeaSearch Framework - An AI-powered research idea generation and optimization system"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "parkcai", email = "sun_retailer@163.com" },
+]
+keywords = [
+    "artificial-intelligence",
+    "research",
+    "idea-generation",
+    "optimization",
+    "llm",
+    "evolutionary-algorithm"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.21.0",
+    "matplotlib>=3.5.0",
+    "pandas>=1.3.0",
+    "openpyxl>=3.0.0",
+    "scipy>=1.7.0",
+    "requests>=2.25.0",
+    "aiohttp>=3.8.0",
+    "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/IdeaSearch/IdeaSearch-framework"
+Documentation = "https://ideasearch-framework.readthedocs.io"
+Repository = "https://github.com/ideasearch/ideasearch-framework"
+"Bug Tracker" = "https://github.com/ideasearch/ideasearch-framework/issues"
+Changelog = "https://github.com/ideasearch/ideasearch-framework/blob/main/CHANGELOG.md"
+
+[project.scripts]
+ideasearch = "src.scripts.new_framework_script:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/IdeaSearch"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/programs",
+    "/README.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.uv]
+dev-dependencies = []
