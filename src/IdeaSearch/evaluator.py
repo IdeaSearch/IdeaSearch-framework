@@ -139,7 +139,7 @@ class Evaluator:
                 self.island.receive_result(accepted_ideas, self.id, source, level)
             
             else:
-                source = f"由 {model}(T={model_temperature:.2f}) 生成；由于使用自定义的generate prompt函数，框架无法自动推演level，认为是0）"
+                source = f"由 {model}(T={model_temperature:.2f}) 生成；由于使用自定义的generate prompt函数，框架无法自动推演level，认为是0"
                 self.island.receive_result(accepted_ideas, self.id, source, 0)
         
         else:

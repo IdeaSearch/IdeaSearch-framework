@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 import numpy as np
+from datetime import datetime
 from time import perf_counter
 from math import isnan
 from threading import Lock
@@ -36,11 +37,18 @@ class Idea:
         score: Optional[float] = None, 
         info: Optional[str] = None,
         source: Optional[str] = None,
+        created_at: Optional[str] = None,
     ):
         
         self.path = str(path)
         self.source = source
         self.level = level
+        
+        if created_at is not None:
+            self.created_at = created_at
+        else:        
+            self.created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         if evaluate_func is not None:
             with open(path, 'r', encoding = "UTF-8") as file:
                 self.content = file.read()
@@ -173,6 +181,7 @@ class Island:
                         info = recorded_item["info"]
                         source = recorded_item["source"]
                         level = recorded_item["level"]
+                        created_at = recorded_item["created_at"]
                         
                         if info == "": info = None
                             
@@ -184,6 +193,7 @@ class Island:
                             score = score,
                             info = info,
                             source = source, 
+                            created_at = created_at,
                         )
                         
                         if info is not None:
@@ -262,6 +272,7 @@ class Island:
                     "info": idea.info if idea.info is not None else "",
                     "source": idea.source,
                     "level": idea.level,
+                    "created_at": idea.created_at,
                 }
                 for idea in idea_source_path_ideas
             }
@@ -522,6 +533,7 @@ class Island:
                 "info": idea.info if idea.info is not None else "",
                 "source": idea.source,
                 "level": idea.level,
+                "created_at": idea.created_at,
             }
             for idea in self.ideas
         }

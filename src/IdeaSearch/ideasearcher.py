@@ -470,6 +470,7 @@ class IdeaSearcher:
                     "info": idea.info if idea.info is not None else "",
                     "source": idea.source,
                     "level": idea.level,
+                    "created_at": idea.created_at,
                 }
                 for idea in self._recorded_ideas
             }
