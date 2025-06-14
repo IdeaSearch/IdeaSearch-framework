@@ -18,19 +18,19 @@ from typing import List
 from typing import Dict
 from os.path import basename
 from os.path import sep as seperator
-from src.IdeaSearch.utils import append_to_file
-from src.IdeaSearch.utils import guarantee_path_exist
-from src.IdeaSearch.utils import get_auto_markersize
-from src.IdeaSearch.utils import clear_file_content
-from src.IdeaSearch.utils import default_assess_func
-from src.IdeaSearch.utils import make_boltzmann_choice
+from IdeaSearch.utils import append_to_file
+from IdeaSearch.utils import guarantee_path_exist
+from IdeaSearch.utils import get_auto_markersize
+from IdeaSearch.utils import clear_file_content
+from IdeaSearch.utils import default_assess_func
+from IdeaSearch.utils import make_boltzmann_choice
 import gettext
 from pathlib import Path
-from src.IdeaSearch.sampler import Sampler
-from src.IdeaSearch.evaluator import Evaluator
-from src.IdeaSearch.island import Island
-from src.IdeaSearch.API4LLMs.model_manager import ModelManager
-from src.IdeaSearch.API4LLMs.get_answer import get_answer_online
+from IdeaSearch.sampler import Sampler
+from IdeaSearch.evaluator import Evaluator
+from IdeaSearch.island import Island
+from IdeaSearch.API4LLMs.model_manager import ModelManager
+from IdeaSearch.API4LLMs.get_answer import get_answer_online
 
 # 国际化设置
 _LOCALE_DIR = Path(__file__).parent / "locales"
@@ -48,8 +48,8 @@ class IdeaSearcher:
     ) -> None:
     
         # 国际化设置
-        self._lang: str = 'zh_CN'
-        self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._lang], fallback=True)
+        self._language: str = 'zh_CN'
+        self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
         self._ = self._translation.gettext
     
         self._program_name: Optional[str] = None
@@ -1650,7 +1650,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._backup_on = value
 
-    def set_lang(
+    def set_language(
         self,
         value: str,
     ) -> None:
@@ -1659,8 +1659,12 @@ class IdeaSearcher:
             raise TypeError(self._("【IdeaSearcher】 参数`lang`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
-            self._lang = value
-            self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._lang], fallback=True)
+            if value == "zh":
+                value = "zh_CN"
+            if value == "zh_TW":
+                raise ValueError(self._("【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"))
+            self._language = value
+            self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
             self._ = self._translation.gettext
 
     def set_generate_prompt_func(
@@ -2030,9 +2034,11 @@ class IdeaSearcher:
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]:
         
             return self._generate_prompt_func
-    def get_lang(
+    
+    
+    def get_language(
         self,
     )-> str:
         
-            return self._lang
+            return self._language
 

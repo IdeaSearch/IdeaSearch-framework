@@ -3,7 +3,7 @@ from typing import Optional
 from typing import List
 from math import isnan
 from os.path import basename
-from src.IdeaSearch.utils import append_to_file
+from IdeaSearch.utils import append_to_file
 from pathlib import Path
 import gettext
 

@@ -1,4 +1,4 @@
-from src.IdeaSearch.ideasearcher import IdeaSearcher
+from IdeaSearch import IdeaSearcher
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
 from programs.TemplateProgram.user_code.evaluation import evaluate as TemplateProgram_evaluate

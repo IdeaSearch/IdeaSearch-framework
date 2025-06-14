@@ -1,5 +1,3 @@
-from ideasearcher import IdeaSearcher
+from IdeaSearch.ideasearcher import IdeaSearcher
 
-__all__ = [
-    "IdeaSearcher",
-]
+__all__ = ["IdeaSearcher"]

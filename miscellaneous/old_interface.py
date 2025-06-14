@@ -9,12 +9,12 @@ from typing import Dict
 from IdeaSearch.utils import guarantee_path_exist
 from IdeaSearch.utils import clear_file_content
 from IdeaSearch.utils import append_to_file
-from src.API4LLMs.model_manager import init_model_manager
-from src.API4LLMs.model_manager import shutdown_model_manager
-# from src.IdeaSearch.island import Idea
-from src.IdeaSearch.island import Island
-from src.IdeaSearch.sampler import Sampler
-from src.IdeaSearch.evaluator import Evaluator
+from API4LLMs.model_manager import init_model_manager
+from API4LLMs.model_manager import shutdown_model_manager
+# from IdeaSearch.island import Idea
+from IdeaSearch.island import Island
+from IdeaSearch.sampler import Sampler
+from IdeaSearch.evaluator import Evaluator
 
 
 __all__ = [

@@ -3,7 +3,7 @@ from typing import Optional
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
-from src.IdeaSearch.utils import append_to_file
+from IdeaSearch.utils import append_to_file
 from pathlib import Path
 import gettext
 

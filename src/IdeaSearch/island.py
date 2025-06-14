@@ -14,10 +14,10 @@ from typing import List
 from copy import deepcopy
 from os.path import basename
 from os.path import sep as seperator
-from src.IdeaSearch.utils import append_to_file
-from src.IdeaSearch.utils import guarantee_path_exist
-from src.IdeaSearch.utils import get_label
-from src.IdeaSearch.utils import make_boltzmann_choice
+from IdeaSearch.utils import append_to_file
+from IdeaSearch.utils import guarantee_path_exist
+from IdeaSearch.utils import get_label
+from IdeaSearch.utils import make_boltzmann_choice
 import gettext
 
 
