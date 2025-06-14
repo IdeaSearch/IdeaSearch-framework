@@ -29,6 +29,13 @@ def main():
     ideasearcher.set_backup_on(True)
     # ideasearcher.set_model_sample_temperature(0.0)
     # ideasearcher.set_sample_temperature(0.0)
+    def my_generate_prompt_func(
+        ideas, 
+        scores,
+        infos
+    ):
+        return "阿巴阿巴阿巴"
+    ideasearcher.set_generate_prompt_func(my_generate_prompt_func)
 
     # add two islands
     ideasearcher.add_island()

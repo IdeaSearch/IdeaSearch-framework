@@ -92,7 +92,7 @@ class IdeaSearcher:
         self._generation_bonus: float = 0.0
         self._backup_path: Optional[str] = None
         self._backup_on: bool = True
-        self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]] = None
+        self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]] = None
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -1739,11 +1739,11 @@ class IdeaSearcher:
 
     def set_generate_prompt_func(
         self,
-        value: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]],
+        value: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]],
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为{str(type(value))}")
+            raise TypeError(f"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]，实为{str(type(value))}")
 
         with self._user_lock:
             self._generate_prompt_func = value
@@ -2108,7 +2108,7 @@ class IdeaSearcher:
 
     def get_generate_prompt_func(
         self,
-    )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]:
+    )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]:
         
             return self._generate_prompt_func
 

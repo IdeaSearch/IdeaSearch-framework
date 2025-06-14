@@ -10,6 +10,7 @@ from typing import Tuple
 from typing import Callable
 from typing import Optional
 from typing import List
+from copy import deepcopy
 from os.path import basename
 from os.path import sep as seperator
 from src.utils import append_to_file
@@ -406,6 +407,30 @@ class Island:
                 ))
 
             return selected_examples
+        
+        
+    def get_ideas_called_when_generate_prompt_func_set(
+        self,
+    ):
+        with self._lock:
+            
+            if self.status == "Terminated":
+                return None
+            
+            diary_path = self.ideasearcher.get_diary_path()
+            
+            self.interaction_count += 1
+            
+            with self._console_lock:
+                append_to_file(
+                    file_path = diary_path,
+                    content_str = (
+                        f"【{self.id}号岛屿】 已分发交互次数为： {self.interaction_count} ，"
+                        f"还剩 {self.interaction_num-self.interaction_count} 次！"
+                    ),
+                )
+                
+            return deepcopy(self.ideas)
         
         
     def receive_result(

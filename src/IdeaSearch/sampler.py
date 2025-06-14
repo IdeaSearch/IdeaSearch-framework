@@ -112,6 +112,21 @@ class Sampler:
                 
             else:
                 
+                island_ideas = self.island.get_ideas_called_when_generate_prompt_func_set()
+                if island_ideas is None: 
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 工作结束。",
+                        )
+                    return
+                else:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已从{self.island.id}号岛屿获得所有 ideas ，预备调用自定义的 generate prompt 函数！",
+                        )
+                        
                 example_idea_paths = None
                 example_idea_scores = None
                 example_idea_levels = None
@@ -121,7 +136,7 @@ class Sampler:
                 scores: list[float] = []
                 infos: list[Optional[str]] = []
                 
-                for idea in self.island.ideas:
+                for idea in island_ideas:
                         
                     assert idea.content is not None
                     assert idea.score is not None
