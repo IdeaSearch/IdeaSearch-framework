@@ -3,7 +3,7 @@ from typing import Optional
 from typing import List
 from math import isnan
 from os.path import basename
-from src.utils import append_to_file
+from src.IdeaSearch.utils import append_to_file
 
 
 __all__ = [
@@ -139,7 +139,7 @@ class Evaluator:
                 self.island.receive_result(accepted_ideas, self.id, source, level)
             
             else:
-                source = f"由 {model}(T={model_temperature:.2f}) 生成；由于使用自定义的generate prompt函数，无法自动推演level，认为是0）"
+                source = f"由 {model}(T={model_temperature:.2f}) 生成；由于使用自定义的generate prompt函数，框架无法自动推演level，认为是0）"
                 self.island.receive_result(accepted_ideas, self.id, source, 0)
         
         else:

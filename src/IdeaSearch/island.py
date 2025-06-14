@@ -13,10 +13,10 @@ from typing import List
 from copy import deepcopy
 from os.path import basename
 from os.path import sep as seperator
-from src.utils import append_to_file
-from src.utils import guarantee_path_exist
-from src.utils import get_label
-from src.utils import make_boltzmann_choice
+from src.IdeaSearch.utils import append_to_file
+from src.IdeaSearch.utils import guarantee_path_exist
+from src.IdeaSearch.utils import get_label
+from src.IdeaSearch.utils import make_boltzmann_choice
 
 
 __all__ = [
@@ -429,6 +429,8 @@ class Island:
                         f"还剩 {self.interaction_num-self.interaction_count} 次！"
                     ),
                 )
+                
+            self._check_threshold()
                 
             return deepcopy(self.ideas)
         

@@ -11,7 +11,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from time import perf_counter
 from threading import Lock
-from pathlib import Path
 from typing import Tuple
 from typing import Callable
 from typing import Optional
@@ -19,12 +18,12 @@ from typing import List
 from typing import Dict
 from os.path import basename
 from os.path import sep as seperator
-from src.utils import append_to_file
-from src.utils import guarantee_path_exist
-from src.utils import get_auto_markersize
-from src.utils import clear_file_content
-from src.utils import default_assess_func
-from src.utils import make_boltzmann_choice
+from src.IdeaSearch.utils import append_to_file
+from src.IdeaSearch.utils import guarantee_path_exist
+from src.IdeaSearch.utils import get_auto_markersize
+from src.IdeaSearch.utils import clear_file_content
+from src.IdeaSearch.utils import default_assess_func
+from src.IdeaSearch.utils import make_boltzmann_choice
 from src.API4LLMs.model_manager import ModelManager
 from src.API4LLMs.get_answer import get_answer_online
 from src.API4LLMs.get_answer import get_answer_local

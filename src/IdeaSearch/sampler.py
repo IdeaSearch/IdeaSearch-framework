@@ -3,7 +3,7 @@ from typing import Optional
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
-from src.utils import append_to_file
+from src.IdeaSearch.utils import append_to_file
 
 
 __all__ = [
