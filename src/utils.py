@@ -3,6 +3,8 @@ import bisect
 import numpy as np
 from typing import List
 from typing import Optional
+from typing import Union
+from typing import Sequence
 
 
 __all__ = [
@@ -12,6 +14,7 @@ __all__ = [
     "get_auto_markersize",
     "get_label",
     "default_assess_func",
+    "make_boltzmann_choice",
 ]
 
 
@@ -118,3 +121,76 @@ def default_assess_func(
     
     database_score = np.max(np.array(scores))
     return database_score
+
+
+boltzmann_random_generator = np.random.default_rng()
+
+def make_boltzmann_choice(
+    energies: Union[Sequence[float], np.ndarray],
+    temperature: float,
+    size: Optional[int] = None,
+    replace: bool = False,
+) -> Union[int, List[int]]:
+    
+    """
+    从能量列表中根据 softmax(energy / temperature) 分布采样索引。
+
+    特殊温度值：
+        - temperature = np.inf: 高温极限，均匀采样；
+        - temperature = 0.0: 低温极限，总是选择能量最高的索引（不是最低）；
+    
+    参数:
+        energies: 能量列表。
+        temperature: 温度参数。
+        size: 返回样本数量，None 表示返回单个索引。
+        replace: 是否放回采样。
+
+    返回:
+        单个索引，或多个索引组成的列表。
+    """
+    
+    energies_ndarray = np.array(energies)
+    num_energies = len(energies_ndarray)
+
+    if temperature == np.inf:
+        print("i am here~")
+        # 高温：完全随机
+        if size is None:
+            return boltzmann_random_generator.choice(
+                a = num_energies,
+            )
+        else:
+            return boltzmann_random_generator.choice(
+                a = num_energies,
+                size = size,
+                replace = replace,
+            ).tolist()
+
+    elif temperature == 0.0:
+        # 低温极限：选择能量从高到低排序后的前 size 个索引
+        sorted_indices = np.argsort(-energies_ndarray)
+
+        if size is None:
+            return int(sorted_indices[0])  # 确保返回 Python int
+        else:
+            return sorted_indices[:size].tolist()
+
+    else:
+        # 一般 softmax 采样
+        logits = energies_ndarray / temperature
+        max_logit = np.max(logits)
+        probabilities = np.exp(logits - max_logit)
+        probabilities /= np.sum(probabilities)
+
+        if size is None:
+            return boltzmann_random_generator.choice(
+                a = num_energies,
+                p = probabilities,
+            )
+        else:
+            return boltzmann_random_generator.choice(
+                a = num_energies,
+                p = probabilities,
+                size = size,
+                replace = replace,
+            ).tolist()

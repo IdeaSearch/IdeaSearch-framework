@@ -1,4 +1,5 @@
 from threading import Lock
+from typing import Optional
 from os.path import basename
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
@@ -35,6 +36,7 @@ class Sampler:
         generate_num = self.ideasearcher.get_generate_num()
         filter_func = self.ideasearcher.get_filter_func()
         record_prompt_in_diary = self.ideasearcher.get_record_prompt_in_diary()
+        generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
         
         assert system_prompt is not None
         assert prologue_section is not None
@@ -53,53 +55,99 @@ class Sampler:
                     file_path = diary_path,
                     content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已开始新一轮采样！",
                 )
-            
-            examples = self.island.get_examples()
-            if examples is None: 
-                with self.console_lock:
-                    append_to_file(
-                        file_path = diary_path,
-                        content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 工作结束。",
-                    )
-                return
-            else:
-                with self.console_lock:
-                    append_to_file(
-                        file_path = diary_path,
-                        content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已从{self.island.id}号岛屿采样 {len(examples)} 个idea！",
-                    )
-            
-            examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
-            for index, example in enumerate(examples):
-                idea, score, info, similar_num, similarity_prompt, path, _ = example
-                examples_section += f"[第 {index + 1} 个例子]\n"
-                examples_section += f"内容：\n"
                 
-                if filter_func is not None:
-                    try:
-                        idea = filter_func(idea)
-                    except Exception as error:
-                        with self.console_lock:
-                            append_to_file(
-                                file_path = diary_path,
-                                content_str = (
-                                    f"【{self.island.id}号岛屿的{self.id}号采样器】 "
-                                    f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
-                                    f"{error}\n延用原来的 idea ！"
-                                ),
-                            )
-
-                examples_section += f'{idea}\n'
-                examples_section += f"评分：{score:.2f}\n"
-                if info is not None:
-                    examples_section += f"评语：{info}\n"
-                if similar_num is not None:
-                    examples_section += (
-                        f"重复情况说明：{self.island.id}号岛屿里有{similar_num}个例子和这个例子相似\n"
-                        f"{similarity_prompt}\n"
-                    )
+            if generate_prompt_func is None:
             
-            prompt = prologue_section + examples_section + epilogue_section
+                examples = self.island.get_examples()
+                if examples is None: 
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 工作结束。",
+                        )
+                    return
+                else:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已从{self.island.id}号岛屿采样 {len(examples)} 个idea！",
+                        )
+                        
+                example_idea_paths = [current_idea[-2] for current_idea in examples]
+                example_idea_scores = [current_idea[1] for current_idea in examples]
+                example_idea_levels = [current_idea[-1] for current_idea in examples]
+                level = max(example_idea_levels) + 1
+                
+                examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
+                for index, example in enumerate(examples):
+                    idea, score, info, similar_num, similarity_prompt, path, _ = example
+                    examples_section += f"[第 {index + 1} 个例子]\n"
+                    examples_section += f"内容：\n"
+                    
+                    if filter_func is not None:
+                        try:
+                            idea = filter_func(idea)
+                        except Exception as error:
+                            with self.console_lock:
+                                append_to_file(
+                                    file_path = diary_path,
+                                    content_str = (
+                                        f"【{self.island.id}号岛屿的{self.id}号采样器】 "
+                                        f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
+                                        f"{error}\n延用原来的 idea ！"
+                                    ),
+                                )
+
+                    examples_section += f'{idea}\n'
+                    examples_section += f"评分：{score:.2f}\n"
+                    if info is not None:
+                        examples_section += f"评语：{info}\n"
+                    if similar_num is not None:
+                        examples_section += (
+                            f"重复情况说明：{self.island.id}号岛屿里有{similar_num}个例子和这个例子相似\n"
+                            f"{similarity_prompt}\n"
+                        )
+                
+                prompt = prologue_section + examples_section + epilogue_section
+                
+            else:
+                
+                example_idea_paths = None
+                example_idea_scores = None
+                example_idea_levels = None
+                level = None
+                
+                ideas: list[str] = []
+                scores: list[float] = []
+                infos: list[Optional[str]] = []
+                
+                for idea in self.island.ideas:
+                        
+                    assert idea.content is not None
+                    assert idea.score is not None
+                    
+                    ideas.append(idea.content)
+                    scores.append(idea.score)
+                    infos.append(idea.info)
+                
+                try:
+                    prompt = generate_prompt_func(
+                        ideas,
+                        scores,
+                        infos,
+                    )
+                    
+                except Exception as error:
+                    with self.console_lock:
+                        append_to_file(
+                            file_path = diary_path,
+                            content_str = (
+                                f"【{self.island.id}号岛屿的{self.id}号采样器】 "
+                                f"使用自定义的 generate_prompt_func 时发生错误：\n"
+                                f"{error}\nIdeaSearch终止！"
+                            ),
+                        )
+                    return
             
             with self.console_lock:
                 append_to_file(
@@ -192,11 +240,6 @@ class Sampler:
                         f"的 {generate_num} 个回答！"
                     ),
                 )
-            
-            example_idea_paths = [current_idea[-2] for current_idea in examples]
-            example_idea_scores = [current_idea[1] for current_idea in examples]
-            example_idea_levels = [current_idea[-1] for current_idea in examples]
-            level = max(example_idea_levels) + 1
             
             evaluator = self._get_idle_evaluator()
             if evaluator:

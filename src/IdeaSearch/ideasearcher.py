@@ -24,6 +24,7 @@ from src.utils import guarantee_path_exist
 from src.utils import get_auto_markersize
 from src.utils import clear_file_content
 from src.utils import default_assess_func
+from src.utils import make_boltzmann_choice
 from src.API4LLMs.model_manager import ModelManager
 from src.API4LLMs.get_answer import get_answer_online
 from src.API4LLMs.get_answer import get_answer_local
@@ -91,6 +92,7 @@ class IdeaSearcher:
         self._generation_bonus: float = 0.0
         self._backup_path: Optional[str] = None
         self._backup_on: bool = True
+        self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]] = None
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -631,14 +633,14 @@ class IdeaSearcher:
         model_assess_initial_score = self._model_assess_initial_score
         assert models is not None
     
-        self.model_recent_scores = []
-        self.model_scores = []
+        self._model_recent_scores = []
+        self._model_scores = []
         
         for _ in range(len(models)):
-            self.model_recent_scores.append(
+            self._model_recent_scores.append(
                 np.full((model_assess_window_size,), model_assess_initial_score)
             )
-            self.model_scores.append(model_assess_initial_score)
+            self._model_scores.append(model_assess_initial_score)
             
         if model_assess_save_result:
             self._scores_of_models = np.zeros((1+self._total_interaction_num, len(models)))
@@ -695,20 +697,20 @@ class IdeaSearcher:
             while index < len(models):
                 
                 if models[index] == model and model_temperatures[index] == model_temperature:
-                    self.model_recent_scores[index][:-1] = self.model_recent_scores[index][1:]
+                    self._model_recent_scores[index][:-1] = self._model_recent_scores[index][1:]
                     scores_array = np.array(score_result)
                     if p != np.inf:
-                        self.model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
-                        self.model_scores[index] = (np.mean(np.abs(self.model_recent_scores[index]) ** p)) ** (1 / p)
+                        self._model_recent_scores[index][-1] = (np.mean(np.abs(scores_array) ** p)) ** (1 / p)
+                        self._model_scores[index] = (np.mean(np.abs(self._model_recent_scores[index]) ** p)) ** (1 / p)
                     else:
-                        self.model_recent_scores[index][-1] = np.max(scores_array)
-                        self.model_scores[index] = np.max(self.model_recent_scores[index])
+                        self._model_recent_scores[index][-1] = np.max(scores_array)
+                        self._model_scores[index] = np.max(self._model_recent_scores[index])
                     with self._console_lock:    
                         append_to_file(
                             file_path = diary_path,
                             content_str = (
-                                f"【IdeaSearcher】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self.model_recent_scores[index][-1]:.2f} ，"
-                                f"其总评分已被更新为 {self.model_scores[index]:.2f} ！"
+                                f"【IdeaSearcher】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self._model_recent_scores[index][-1]:.2f} ，"
+                                f"其总评分已被更新为 {self._model_scores[index]:.2f} ！"
                             ),
                         )
                     if model_assess_save_result:
@@ -742,7 +744,7 @@ class IdeaSearcher:
         assert models is not None
         assert model_temperatures is not None
         
-        self._scores_of_models[self._scores_of_models_length] = self.model_scores
+        self._scores_of_models[self._scores_of_models_length] = self._model_scores
         self._scores_of_models_length += 1
         
         scores_of_models = self._scores_of_models.T
@@ -809,18 +811,16 @@ class IdeaSearcher:
             
             models = self._models
             model_temperatures = self._model_temperatures
+            model_sample_temperature = self._model_sample_temperature
             assert models is not None
             assert model_temperatures is not None
+            assert model_sample_temperature is not None
             
-            probabilities = np.array(self.model_scores) / self._model_sample_temperature
-            max_value = np.max(probabilities)
-            probabilities = np.exp(probabilities - max_value)
-            probabilities /= np.sum(probabilities)
-            
-            selected_index = self._random_generator.choice(
-                a = len(models), 
-                p = probabilities,
+            selected_index = make_boltzmann_choice(
+                energies = self._model_scores,
+                temperature = model_sample_temperature,
             )
+            assert isinstance(selected_index, int)
             
             selected_model_name = models[selected_index]
             selected_model_temperature = model_temperatures[selected_index]
@@ -851,7 +851,7 @@ class IdeaSearcher:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self.model_scores[index]:.2f}"
+                        f"  {index+1}. {model}(T={model_temperature:.2f}): {self._model_scores[index]:.2f}"
                     ),
                 )
 
@@ -1737,6 +1737,18 @@ class IdeaSearcher:
             self._backup_on = value
 
 
+    def set_generate_prompt_func(
+        self,
+        value: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]],
+    ) -> None:
+
+        if not (value is None or callable(value)):
+            raise TypeError(f"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为{str(type(value))}")
+
+        with self._user_lock:
+            self._generate_prompt_func = value
+
+
     def get_program_name(
         self,
     )-> Optional[str]:
@@ -2092,4 +2104,11 @@ class IdeaSearcher:
     )-> bool:
         
             return self._backup_on
+
+
+    def get_generate_prompt_func(
+        self,
+    )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]:
+        
+            return self._generate_prompt_func
 

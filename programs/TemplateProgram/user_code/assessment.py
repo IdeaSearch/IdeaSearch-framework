@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional
+from typing import List
 
 
 __all__ = [
@@ -8,9 +9,9 @@ __all__ = [
 
 
 def assess(
-    ideas: list[str],
-    scores: list[float],
-    info: list[Optional[str]]
+    ideas: List[str],
+    scores: List[float],
+    infos: List[Optional[str]]
 ) -> float:
     
     database_score = np.max(np.array(scores))

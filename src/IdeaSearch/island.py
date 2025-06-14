@@ -15,6 +15,7 @@ from os.path import sep as seperator
 from src.utils import append_to_file
 from src.utils import guarantee_path_exist
 from src.utils import get_label
+from src.utils import make_boltzmann_choice
 
 
 __all__ = [
@@ -329,6 +330,8 @@ class Island:
             crossover_interval = self.ideasearcher.get_crossover_interval()
             similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
             similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
+            sample_temperature = self.ideasearcher.get_sample_temperature()
+            generation_bonus = self.ideasearcher.get_generation_bonus()
             
             self.interaction_count += 1
             
@@ -364,21 +367,14 @@ class Island:
                         content_str = "【{self.id}号岛屿】 发生异常： ideas 列表为空！",
                     )
                 exit()
-                
-            generation_bonus = self.ideasearcher.get_generation_bonus()
-            probabilities = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas])
-            probabilities /= self.ideasearcher.get_sample_temperature()
-            max_value = np.max(probabilities)
-            probabilities = np.exp(probabilities - max_value)
-            probabilities /= np.array(self.idea_similar_nums)
-            probabilities /= np.sum(probabilities)
             
-            selected_indices = self.random_generator.choice(
-                a = len(self.ideas),
+            selected_indices = make_boltzmann_choice(
+                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                temperature = sample_temperature,
                 size = min(len(self.ideas), self.ideasearcher.get_examples_num()),
-                replace = False, # 不允许重复选择同一个元素
-                p = probabilities,
+                replace = False,
             )
+            assert not isinstance(selected_indices, int)
             
             selected_examples = []
             for i in selected_indices:
@@ -611,10 +607,12 @@ class Island:
         mutation_num = self.ideasearcher.get_mutation_num()
         mutation_temperature = self.ideasearcher.get_mutation_temperature()
         mutation_func = self.ideasearcher.get_mutation_func()
+        generation_bonus = self.ideasearcher.get_generation_bonus()
         assert evaluate_func is not None
         assert mutation_num is not None
         assert mutation_temperature is not None
         assert mutation_func is not None
+        assert generation_bonus is not None
         
         with self._console_lock:
             append_to_file(
@@ -624,16 +622,12 @@ class Island:
         
         for index in range(mutation_num):
             
-            probabilities = np.array([idea.score for idea in self.ideas]) / mutation_temperature
-            max_value = np.max(probabilities)
-            probabilities = np.exp(probabilities - max_value)
-            probabilities /= np.array(self.idea_similar_nums)
-            probabilities /= np.sum(probabilities)
-            
-            selected_index = self.random_generator.choice(
-                a = len(self.ideas), 
-                p = probabilities
+            selected_index = make_boltzmann_choice(
+                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                temperature = mutation_temperature,
             )
+            assert isinstance(selected_index, int)
+            
             selected_idea = self.ideas[selected_index]
             
             try:
@@ -773,10 +767,12 @@ class Island:
         crossover_num = self.ideasearcher.get_crossover_num()
         crossover_temperature = self.ideasearcher.get_crossover_temperature()
         crossover_func = self.ideasearcher.get_crossover_func()
+        generation_bonus = self.ideasearcher.get_generation_bonus()
         assert evaluate_func is not None
         assert crossover_num is not None
         assert crossover_temperature is not None
         assert crossover_func is not None
+        assert generation_bonus is not None
     
         with self._console_lock:
             diary_path = self.ideasearcher.get_diary_path()
@@ -787,17 +783,14 @@ class Island:
 
         for index in range(crossover_num):
             
-            probabilities = np.array([idea.score for idea in self.ideas]) / crossover_temperature
-            max_value = np.max(probabilities)
-            probabilities = np.exp(probabilities - max_value)
-            probabilities /= np.sum(probabilities)
-            
-            parent_indices = self.random_generator.choice(
-                a = len(self.ideas), 
-                size = 2, 
-                replace = False, # 不允许重复选择同一个元素
-                p = probabilities
+            parent_indices = make_boltzmann_choice(
+                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                temperature = crossover_temperature,
+                size = 2,
+                replace = False,
             )
+            assert not isinstance(parent_indices, int)
+            
             parent_1 = self.ideas[parent_indices[0]]
             parent_2 = self.ideas[parent_indices[1]]
 

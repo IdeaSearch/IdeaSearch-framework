@@ -1,3 +1,4 @@
+import numpy as np
 from src.IdeaSearch.ideasearcher import IdeaSearcher
 from programs.TemplateProgram.user_code.prompt import prologue_section as TemplateProgram_prologue_section
 from programs.TemplateProgram.user_code.prompt import epilogue_section as TemplateProgram_epilogue_section
@@ -26,6 +27,8 @@ def main():
     # set optional parameters
     # ideasearcher.set_assess_func(None)
     ideasearcher.set_backup_on(True)
+    # ideasearcher.set_model_sample_temperature(0.0)
+    # ideasearcher.set_sample_temperature(0.0)
 
     # add two islands
     ideasearcher.add_island()

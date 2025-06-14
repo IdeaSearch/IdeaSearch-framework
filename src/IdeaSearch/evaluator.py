@@ -1,4 +1,6 @@
 from threading import Lock
+from typing import Optional
+from typing import List
 from math import isnan
 from os.path import basename
 from src.utils import append_to_file
@@ -44,9 +46,9 @@ class Evaluator:
         generated_ideas: list[str],
         model: str,
         model_temperature: float,
-        example_idea_paths: list[str],
-        example_idea_scores: list[float],
-        level: int,
+        example_idea_paths: Optional[List[str]],
+        example_idea_scores: Optional[List[float]],
+        level: Optional[int],
     )-> None:
         
         hand_over_threshold = self.ideasearcher.get_hand_over_threshold()
@@ -59,16 +61,14 @@ class Evaluator:
         accepted_ideas = []
         score_result = []
         
-        example_idea_string = "，".join(
-            f"{basename(path)}({score:.2f})" 
-            for path, score in zip(example_idea_paths, example_idea_scores)
-        )
-        
         for idea in generated_ideas:
             
             try:
                 
                 score, info = evaluate_func(idea)
+                
+                score = float(score)
+                if info is not None: info = str(info)
                 
                 if not isinstance(score, float):
                     with self._console_lock:
@@ -127,10 +127,21 @@ class Evaluator:
                     file_path = diary_path,
                     content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
                 )
-                
-            source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
-            self.island.receive_result(accepted_ideas, self.id, source, level)
             
+            if example_idea_paths is not None and example_idea_scores is not None and level is not None:
+                
+                example_idea_string = "，".join(
+                    f"{basename(path)}({score:.2f})" 
+                    for path, score in zip(example_idea_paths, example_idea_scores)
+                )
+                source = f"由 {model}(T={model_temperature:.2f}) 阅读 {example_idea_string} 后生成"
+            
+                self.island.receive_result(accepted_ideas, self.id, source, level)
+            
+            else:
+                source = f"由 {model}(T={model_temperature:.2f}) 生成；由于使用自定义的generate prompt函数，无法自动推演level，认为是0）"
+                self.island.receive_result(accepted_ideas, self.id, source, 0)
+        
         else:
             with self._console_lock:
                 append_to_file(
