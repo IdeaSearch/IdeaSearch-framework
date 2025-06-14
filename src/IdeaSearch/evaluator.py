@@ -4,6 +4,15 @@ from typing import List
 from math import isnan
 from os.path import basename
 from src.IdeaSearch.utils import append_to_file
+from pathlib import Path
+import gettext
+
+
+# 国际化设置
+_LOCALE_DIR = Path(__file__).parent / "locales"
+_DOMAIN = "ideasearch"
+gettext.bindtextdomain(_DOMAIN, _LOCALE_DIR)
+gettext.textdomain(_DOMAIN)
 
 
 __all__ = [
@@ -29,6 +38,9 @@ class Evaluator:
         self._console_lock = console_lock
         self._lock = Lock()
         self.status = "Vacant"
+        
+        # 获取国际化函数
+        self._ = ideasearcher._
         
     # ----------------------------- 外部调用动作 ----------------------------- 
 
@@ -74,10 +86,7 @@ class Evaluator:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
-                            ),
+                            content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(score)),
                         )
                     return
                 
@@ -85,10 +94,7 @@ class Evaluator:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 不应为 NaN ！"
-                            ),
+                            content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！") % (self.island.id, self.id, program_name),
                         )
                     return
                 
@@ -97,10 +103,7 @@ class Evaluator:
                         with self._console_lock:
                             append_to_file(
                                 file_path = diary_path,
-                                content_str = (
-                                    f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误："
-                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
-                                ),
+                                content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(info)),
                             )
                         return
                 
@@ -108,9 +111,7 @@ class Evaluator:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.island.id}号岛屿的{self.id}号评估器】 调用 {program_name} 的评估函数时发生错误：\n{e}\n评估终止！"
-                        ),
+                        content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：\n%s\n评估终止！") % (self.island.id, self.id, program_name, e),
                     )  
                 return
             
@@ -125,7 +126,7 @@ class Evaluator:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 已将 {len(accepted_ideas)}/{len(generated_ideas)} 个满足条件的 idea 递交给岛屿！",
+                    content_str = self._("【%d号岛屿的%d号评估器】 已将 %d/%d 个满足条件的 idea 递交给岛屿！") % (self.island.id, self.id, len(accepted_ideas), len(generated_ideas)),
                 )
             
             if example_idea_paths is not None and example_idea_scores is not None and level is not None:
@@ -146,7 +147,7 @@ class Evaluator:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！",
+                    content_str = self._("【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！") % (self.island.id, self.id),
                 )
                     
     
@@ -158,7 +159,7 @@ class Evaluator:
             if self.status != "Busy":
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.island.id}号岛屿的{self.id}号评估器】 发生异常，状态应为Busy，实为{self.status}！",
+                    content_str = self._("【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！") % (self.island.id, self.id, self.status),
                 )
                 exit()
 

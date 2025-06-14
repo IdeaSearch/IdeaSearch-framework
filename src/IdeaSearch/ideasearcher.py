@@ -24,11 +24,19 @@ from src.IdeaSearch.utils import get_auto_markersize
 from src.IdeaSearch.utils import clear_file_content
 from src.IdeaSearch.utils import default_assess_func
 from src.IdeaSearch.utils import make_boltzmann_choice
+import gettext
+from pathlib import Path
 from src.IdeaSearch.sampler import Sampler
 from src.IdeaSearch.evaluator import Evaluator
 from src.IdeaSearch.island import Island
 from src.IdeaSearch.API4LLMs.model_manager import ModelManager
 from src.IdeaSearch.API4LLMs.get_answer import get_answer_online
+
+# 国际化设置
+_LOCALE_DIR = Path(__file__).parent / "locales"
+_DOMAIN = "ideasearch"
+gettext.bindtextdomain(_DOMAIN, _LOCALE_DIR)
+gettext.textdomain(_DOMAIN)
 
 
 class IdeaSearcher:
@@ -38,6 +46,11 @@ class IdeaSearcher:
     def __init__(
         self
     ) -> None:
+    
+        # 国际化设置
+        self._lang: str = 'zh_CN'
+        self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._lang], fallback=True)
+        self._ = self._translation.gettext
     
         self._program_name: Optional[str] = None
         self._prologue_section: Optional[str] = None
@@ -134,7 +147,7 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 run 动作！")
+                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 run 动作！") % missing_param)
                 
             diary_path = self._diary_path
             database_path = self._database_path
@@ -145,7 +158,7 @@ class IdeaSearcher:
                 
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【IdeaSearcher】 {program_name} 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 {additional_interaction_num} 个 epoch ！"
+                content_str = self._("【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！") % (program_name, additional_interaction_num)
             )
                 
             self._total_interaction_num += len(self._islands) * additional_interaction_num
@@ -184,10 +197,9 @@ class IdeaSearcher:
                     except Exception as e:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = f"【IdeaSearcher】 {island_id}号岛屿的{sampler_id}号采样器在运行过程中出现错误：\n{e}\nIdeaSearch意外终止！",
+                            content_str = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\n%s\nIdeaSearch意外终止！") % (island_id, sampler_id, e),
                         )
                         exit()
-
 
     def _check_runnability(
         self,
@@ -280,8 +292,7 @@ class IdeaSearcher:
     
             if self._api_keys_path is None:
                 raise ValueError(
-                    "【IdeaSearcher】 加载模型时发生错误："
-                    " api keys path 不应为 None ！"
+                    self._("【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！")
                 )
                 
             self._model_manager.load_api_keys(self._api_keys_path)
@@ -346,7 +357,7 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_score 动作！")
+                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_score 动作！") % missing_param)
             
             scores: list[float] = []
             
@@ -356,10 +367,9 @@ class IdeaSearcher:
                     assert idea.score is not None
                     scores.append(idea.score)
                     
-            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！")
+            if not scores: raise RuntimeError(self._("【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"))
                 
             return max(scores)
-
 
     # ⭐️ Important
     def get_best_idea(
@@ -370,7 +380,7 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 get_best_idea 动作！")
+                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_idea 动作！") % missing_param)
         
             scores: list[float] = []
             ideas: list[str] = []
@@ -383,11 +393,10 @@ class IdeaSearcher:
                     scores.append(idea.score)
                     ideas.append(idea.content)
                     
-            if not scores: raise RuntimeError(f"【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！")
+            if not scores: raise RuntimeError(self._("【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！"))
                 
             return ideas[scores.index(max(scores))]
 
-    
     def get_idea_uid(
         self,
     )-> str:
@@ -479,7 +488,7 @@ class IdeaSearcher:
         
             missing_param = self._check_runnability()
             if missing_param is not None:
-                raise RuntimeError(f"【IdeaSearcher】 参数`{missing_param}`未传入，在当前设置下无法进行 add_island 动作！")
+                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_island 动作！") % missing_param)
                 
             diary_path = self._diary_path
             database_path = self._database_path
@@ -572,7 +581,7 @@ class IdeaSearcher:
             with self._console_lock:
                 append_to_file(
                     file_path = self._diary_path,
-                    content_str = f"【IdeaSearcher】 现在 ideas 开始在岛屿间重分布"
+                    content_str = self._("【IdeaSearcher】 现在 ideas 开始在岛屿间重分布")
                 )
             
             island_ids = self._islands.keys()
@@ -598,7 +607,7 @@ class IdeaSearcher:
             with self._console_lock:
                 append_to_file(
                     file_path = self._diary_path,
-                    content_str = f"【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
+                    content_str = self._("【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成")
                 )
 
     # ----------------------------- Model Score 相关 ----------------------------- 
@@ -688,10 +697,7 @@ class IdeaSearcher:
                     with self._console_lock:    
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【IdeaSearcher】 模型 {model}(T={model_temperature:.2f}) 此轮评分为 {self._model_recent_scores[index][-1]:.2f} ，"
-                                f"其总评分已被更新为 {self._model_scores[index]:.2f} ！"
-                            ),
+                            content_str = self._("【IdeaSearcher】 模型 %s(T=%.2f) 此轮评分为 %.2f ，其总评分已被更新为 %.2f ！") % (model, model_temperature, self._model_recent_scores[index][-1], self._model_scores[index]),
                         )
                     if model_assess_save_result:
                         self._sync_model_score_result()
@@ -702,7 +708,7 @@ class IdeaSearcher:
             with self._console_lock:    
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【IdeaSearcher】 出现错误！未知的模型名称及温度： {{model}}(T={{model_temperature:.2f}}) ！",
+                    content_str = self._("【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！") % (model, model_temperature),
                 )
                 
             exit()
@@ -822,7 +828,7 @@ class IdeaSearcher:
             
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【IdeaSearcher】 各模型目前评分情况如下：",
+                content_str = self._("【IdeaSearcher】 各模型目前评分情况如下："),
             )
             for index, model in enumerate(models):
                 
@@ -894,7 +900,7 @@ class IdeaSearcher:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【IdeaSearcher】 初始 ideas 的整体质量评分为：{database_initial_score:.2f}！",
+                        content_str = self._("【IdeaSearcher】 初始 ideas 的整体质量评分为：%.2f！") % database_initial_score,
                     )
                     
             except Exception as error:
@@ -902,10 +908,7 @@ class IdeaSearcher:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\n"
-                            f"{error}"
-                        ),
+                        content_str = self._("【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\n%s") % error,
                     )
                     
             self._assess_result_ndarray[0] = database_initial_score
@@ -959,7 +962,7 @@ class IdeaSearcher:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！",
+                    content_str = self._("【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！"),
                 )
                 
             ideas: list[str] = []
@@ -992,7 +995,7 @@ class IdeaSearcher:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = f"【IdeaSearcher】 数据库中 ideas 的整体质量评分为：{database_score:.2f}！评估用时：{total_time:.2f}秒。",
+                        content_str = self._("【IdeaSearcher】 数据库中 ideas 的整体质量评分为：%.2f！评估用时：%.2f秒。") % (database_score, total_time),
                     )
                     
             except Exception as error:
@@ -1000,10 +1003,7 @@ class IdeaSearcher:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n"
-                            f"{error}"
-                        ),
+                        content_str = self._("【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n%s") % error,
                     )
                     
             self._assess_result_ndarray[self._assess_result_ndarray_length] = database_score
@@ -1081,19 +1081,13 @@ class IdeaSearcher:
             if is_initialization:
                 append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【IdeaSearcher】 初始质量评估结束，"
-                            f" {basename(assess_result_data_path)} 与 {basename(assess_result_pic_path)} 已更新！"
-                        ),
+                        content_str = self._("【IdeaSearcher】 初始质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
                     )
             else:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【IdeaSearcher】 此轮质量评估结束，"
-                            f" {basename(assess_result_data_path)} 与 {basename(assess_result_pic_path)} 已更新！"
-                        ),
+                        content_str = self._("【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
                     )
 
     # ----------------------------- Getters and Setters ----------------------------- 
@@ -1105,11 +1099,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`program_name`类型应为str，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`program_name`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._program_name = value
-
 
     # ⭐️ Important
     def set_prologue_section(
@@ -1118,11 +1111,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`prologue_section`类型应为str，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`prologue_section`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._prologue_section = value
-
 
     # ⭐️ Important
     def set_epilogue_section(
@@ -1131,11 +1123,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`epilogue_section`类型应为str，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`epilogue_section`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._epilogue_section = value
-
 
     # ⭐️ Important
     def set_database_path(
@@ -1144,11 +1135,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`database_path`类型应为str，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`database_path`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._database_path = value
-
 
     # ⭐️ Important
     def set_models(
@@ -1157,11 +1147,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not hasattr(value, "__iter__") and not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`models`类型应为List[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`models`类型应为List[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._models = value
-
 
     # ⭐️ Important
     def set_model_temperatures(
@@ -1170,11 +1159,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not hasattr(value, "__iter__") and not isinstance(value, str):
-            raise TypeError(f"【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_temperatures = value
-
 
     # ⭐️ Important
     def set_evaluate_func(
@@ -1183,11 +1171,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not callable(value):
-            raise TypeError(f"【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, Optional[str]]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, Optional[str]]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._evaluate_func = value
-
 
     def set_score_range(
         self,
@@ -1195,11 +1182,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, tuple):
-            raise TypeError(f"【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._score_range = value
-
 
     def set_hand_over_threshold(
         self,
@@ -1207,11 +1193,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._hand_over_threshold = value
-
 
     def set_system_prompt(
         self,
@@ -1219,11 +1204,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._system_prompt = value
-
 
     def set_diary_path(
         self,
@@ -1231,11 +1215,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._diary_path = value
-
 
     def set_api_keys_path(
         self,
@@ -1243,7 +1226,7 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._api_keys_path = value
@@ -1255,11 +1238,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`samplers_num`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`samplers_num`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._samplers_num = value
-
 
     def set_evaluators_num(
         self,
@@ -1267,11 +1249,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`evaluators_num`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`evaluators_num`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._evaluators_num = value
-
 
     def set_examples_num(
         self,
@@ -1279,11 +1260,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`examples_num`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`examples_num`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._examples_num = value
-
 
     def set_generate_num(
         self,
@@ -1291,11 +1271,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`generate_num`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`generate_num`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._generate_num = value
-
 
     def set_sample_temperature(
         self,
@@ -1303,11 +1282,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`sample_temperature`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`sample_temperature`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._sample_temperature = value
-
 
     def set_model_sample_temperature(
         self,
@@ -1315,11 +1293,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_sample_temperature = value
-
 
     def set_assess_func(
         self,
@@ -1327,11 +1304,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._assess_func = value
-
 
     def set_assess_interval(
         self,
@@ -1339,11 +1315,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, int)):
-            raise TypeError(f"【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._assess_interval = value
-
 
     def set_assess_baseline(
         self,
@@ -1351,11 +1326,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, float)):
-            raise TypeError(f"【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._assess_baseline = value
-
 
     def set_assess_result_data_path(
         self,
@@ -1363,11 +1337,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._assess_result_data_path = value
-
 
     def set_assess_result_pic_path(
         self,
@@ -1375,11 +1348,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._assess_result_pic_path = value
-
 
     def set_model_assess_window_size(
         self,
@@ -1387,11 +1359,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_window_size = value
-
 
     def set_model_assess_initial_score(
         self,
@@ -1399,11 +1370,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_initial_score = value
-
 
     def set_model_assess_average_order(
         self,
@@ -1411,11 +1381,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_average_order = value
-
 
     def set_model_assess_save_result(
         self,
@@ -1423,11 +1392,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_save_result = value
-
 
     def set_model_assess_result_data_path(
         self,
@@ -1435,11 +1403,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_result_data_path = value
-
 
     def set_model_assess_result_pic_path(
         self,
@@ -1447,11 +1414,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._model_assess_result_pic_path = value
-
 
     def set_mutation_func(
         self,
@@ -1459,11 +1425,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._mutation_func = value
-
 
     def set_mutation_interval(
         self,
@@ -1471,11 +1436,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, int)):
-            raise TypeError(f"【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._mutation_interval = value
-
 
     def set_mutation_num(
         self,
@@ -1483,11 +1447,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, int)):
-            raise TypeError(f"【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._mutation_num = value
-
 
     def set_mutation_temperature(
         self,
@@ -1495,11 +1458,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, float)):
-            raise TypeError(f"【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._mutation_temperature = value
-
 
     def set_crossover_func(
         self,
@@ -1507,11 +1469,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], str]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], str]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._crossover_func = value
-
 
     def set_crossover_interval(
         self,
@@ -1519,11 +1480,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, int)):
-            raise TypeError(f"【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._crossover_interval = value
-
 
     def set_crossover_num(
         self,
@@ -1531,11 +1491,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, int)):
-            raise TypeError(f"【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._crossover_num = value
-
 
     def set_crossover_temperature(
         self,
@@ -1543,11 +1502,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, float)):
-            raise TypeError(f"【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._crossover_temperature = value
-
 
     def set_similarity_threshold(
         self,
@@ -1555,11 +1513,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._similarity_threshold = value
-
 
     def set_similarity_distance_func(
         self,
@@ -1567,11 +1524,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._similarity_distance_func = value
-
 
     def set_similarity_sys_info_thresholds(
         self,
@@ -1579,11 +1535,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
-            raise TypeError(f"【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._similarity_sys_info_thresholds = value
-
 
     def set_similarity_sys_info_prompts(
         self,
@@ -1591,11 +1546,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
-            raise TypeError(f"【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._similarity_sys_info_prompts = value
-
 
     def set_load_idea_skip_evaluation(
         self,
@@ -1603,11 +1557,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._load_idea_skip_evaluation = value
-
 
     def set_initialization_cleanse_threshold(
         self,
@@ -1615,11 +1568,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._initialization_cleanse_threshold = value
-
 
     def set_delete_when_initial_cleanse(
         self,
@@ -1627,11 +1579,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._delete_when_initial_cleanse = value
-
 
     def set_idea_uid_length(
         self,
@@ -1639,11 +1590,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, int):
-            raise TypeError(f"【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._idea_uid_length = value
-
 
     def set_record_prompt_in_diary(
         self,
@@ -1651,11 +1601,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._record_prompt_in_diary = value
-
 
     def set_filter_func(
         self,
@@ -1663,11 +1612,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._filter_func = value
-
 
     def set_generation_bonus(
         self,
@@ -1675,11 +1623,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, float):
-            raise TypeError(f"【IdeaSearcher】 参数`generation_bonus`类型应为float，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._generation_bonus = value
-
 
     def set_backup_path(
         self,
@@ -1687,11 +1634,10 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or isinstance(value, str)):
-            raise TypeError(f"【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._backup_path = value
-
 
     def set_backup_on(
         self,
@@ -1699,11 +1645,23 @@ class IdeaSearcher:
     ) -> None:
 
         if not isinstance(value, bool):
-            raise TypeError(f"【IdeaSearcher】 参数`backup_on`类型应为bool，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`backup_on`类型应为bool，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._backup_on = value
 
+    def set_lang(
+        self,
+        value: str,
+    ) -> None:
+
+        if not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`lang`类型应为str，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._lang = value
+            self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._lang], fallback=True)
+            self._ = self._translation.gettext
 
     def set_generate_prompt_func(
         self,
@@ -2072,4 +2030,9 @@ class IdeaSearcher:
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]:
         
             return self._generate_prompt_func
+    def get_lang(
+        self,
+    )-> str:
+        
+            return self._lang
 

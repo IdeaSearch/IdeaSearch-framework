@@ -18,7 +18,14 @@ from src.IdeaSearch.utils import append_to_file
 from src.IdeaSearch.utils import guarantee_path_exist
 from src.IdeaSearch.utils import get_label
 from src.IdeaSearch.utils import make_boltzmann_choice
+import gettext
 
+
+# 国际化设置
+_LOCALE_DIR = Path(__file__).parent / "locales"
+_DOMAIN = "ideasearch"
+gettext.bindtextdomain(_DOMAIN, _LOCALE_DIR)
+gettext.textdomain(_DOMAIN)
 
 __all__ = [
     "Idea",
@@ -76,6 +83,9 @@ class Island:
         self.ideas = []
         self.idea_similar_nums = []
         
+        # 获取国际化函数
+        self._ = ideasearcher._
+        
         database_path = self.ideasearcher.get_database_path()
         assert database_path is not None
         
@@ -132,7 +142,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path=diary_path,
-                            content_str=f"【{self.id}号岛屿】 已从 {idea_source_score_sheet_path} 成功读取用于迅捷加载的 score sheet 文件！",
+                            content_str=self._("【%d号岛屿】 已从 %s 成功读取用于迅捷加载的 score sheet 文件！") % (self.id, idea_source_score_sheet_path),
                         )
                         
                 except Exception as error:
@@ -142,18 +152,14 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 未从 {idea_source_score_sheet_path} 成功读取用于迅捷加载的 score sheet 文件，报错：\n"
-                                f"{error}\n"
-                                "请检查该行为是否符合预期！"
-                            ),
+                            content_str = self._("【%d号岛屿】 未从 %s 成功读取用于迅捷加载的 score sheet 文件，报错：\n%s\n请检查该行为是否符合预期！") % (self.id, idea_source_score_sheet_path, error),
                         )
                         
             
             self._reset_ideas()
             
             # 此部分疑似存在 mac OS 系统的兼容性问题
-            initial_source = "初始化时读入"
+            initial_source = self._("初始化时读入")
             path_to_search = Path(idea_source_path).resolve()
             
             for path in path_to_search.rglob('*.idea'):
@@ -200,20 +206,20 @@ class Island:
                             with self._console_lock:
                                 append_to_file(
                                     file_path=diary_path,
-                                    content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分与评语！",
+                                    content_str=self._("【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分与评语！") % (self.id, basename(path)),
                                 )
                         else:
                             with self._console_lock:
                                 append_to_file(
                                     file_path=diary_path,
-                                    content_str=f"【{self.id}号岛屿】 已从 score sheet 文件中迅捷加载文件 {basename(path)} 的评分！",
+                                    content_str=self._("【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分！") % (self.id, basename(path)),
                                 )
                         
                     else:
                         with self._console_lock:
                             append_to_file(
                                 file_path=diary_path,
-                                content_str=f"【{self.id}号岛屿】 没有在 score sheet 文件中找到文件 {basename(path)} ，迅捷加载失败！",
+                                content_str=self._("【%d号岛屿】 没有在 score sheet 文件中找到文件 %s ，迅捷加载失败！") % (self.id, basename(path)),
                             )
                         
                         idea = Idea(
@@ -240,7 +246,7 @@ class Island:
                         with self._console_lock:
                             append_to_file(
                                 file_path=diary_path,
-                                content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已删除。",
+                                content_str=self._("【%d号岛屿】 文件 %s 评分未达到%.2f，已删除。") % (self.id, basename(path), initialization_cleanse_threshold),
                             )
                             
                     else:
@@ -249,7 +255,7 @@ class Island:
                         with self._console_lock:
                             append_to_file(
                                 file_path=diary_path,
-                                content_str=f"【{self.id}号岛屿】 文件 {basename(path)} 评分未达到{initialization_cleanse_threshold:.2f}，已忽略。",
+                                content_str=self._("【%d号岛屿】 文件 %s 评分未达到%.2f，已忽略。") % (self.id, basename(path), initialization_cleanse_threshold),
                             )
                             
                 else:
@@ -259,7 +265,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path=diary_path,
-                            content_str=f"【{self.id}号岛屿】 初始文件 {basename(path)} 已评分并加入{self.id}号岛屿。",
+                            content_str=self._("【%d号岛屿】 初始文件 %s 已评分并加入%d号岛屿。") % (self.id, basename(path), self.id),
                         )
                     shutil.copy2(
                         src = f"{idea_source_path}{seperator}{basename(path)}",
@@ -312,7 +318,7 @@ class Island:
         with self._lock:
             
             if additional_interaction_num <= 0:
-                raise RuntimeError(f"【{self.id}号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为{additional_interaction_num}！")
+                raise RuntimeError(self._("【%d号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为%d！") % (self.id, additional_interaction_num))
             
             self.interaction_num += additional_interaction_num
             self.status = "Running"
@@ -350,10 +356,7 @@ class Island:
             with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 已分发交互次数为： {self.interaction_count} ，"
-                            f"还剩 {self.interaction_num-self.interaction_count} 次！"
-                        ),
+                        content_str = self._("【%d号岛屿】 已分发交互次数为： %d ，还剩 %d 次！") % (self.id, self.interaction_count, self.interaction_num-self.interaction_count),
                     )
             
             if mutation_func is not None:
@@ -376,7 +379,7 @@ class Island:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = "【{self.id}号岛屿】 发生异常： ideas 列表为空！",
+                        content_str = self._("【%d号岛屿】 发生异常： ideas 列表为空！") % self.id,
                     )
                 exit()
             
@@ -471,7 +474,7 @@ class Island:
             with self._console_lock:    
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号岛屿】 {evaluator_id} 号评估器递交的 {len(result)} 个新文件已评分并加入{self.id}号岛屿。",
+                    content_str = self._("【%d号岛屿】 %d 号评估器递交的 %d 个新文件已评分并加入%d号岛屿。") % (self.id, evaluator_id, len(result), self.id),
                 )
             
             self._sync_score_sheet()
@@ -557,7 +560,7 @@ class Island:
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号岛屿】 {program_name} 的 score sheet 已更新，用时{total_time:.2f}秒！",
+                content_str = self._("【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！") % (self.id, program_name, total_time),
             )
             
     def _sync_best_score(self):
@@ -622,7 +625,7 @@ class Island:
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号岛屿】 成功将idea_similar_nums与ideas同步，用时{total_time:.2f}秒！",
+                content_str = self._("【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！") % (self.id, total_time),
             )
     
     
@@ -632,7 +635,7 @@ class Island:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = f"【{self.id}号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。",
+                    content_str = self._("【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。") % self.id,
                 )
             self.status = "Terminated"
 
@@ -656,7 +659,7 @@ class Island:
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号岛屿】 现在开始进行单体突变！",
+                content_str = self._("【%d号岛屿】 现在开始进行单体突变！") % self.id,
             )
         
         for index in range(mutation_num):
@@ -676,21 +679,14 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的单体突变函数时发生错误："
-                                f"返回结果中的 mutated_idea 应为一字符串，不应为一个 {type(mutated_idea)} 类型的对象！"
-                                "\n此轮单体突变意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的单体突变函数时发生错误：返回结果中的 mutated_idea 应为一字符串，不应为一个 %s 类型的对象！\n此轮单体突变意外终止！") % (self.id, program_name, type(mutated_idea)),
                         )
                     return
             except Exception as error:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 第 {index+1} 次单体突变在运行 mutation_func 时发生了错误：\n"
-                            f"{error}\n此轮单体突变意外终止！"
-                        ),
+                        content_str = self._("【%d号岛屿】 第 %d 次单体突变在运行 mutation_func 时发生了错误：\n%s\n此轮单体突变意外终止！") % (self.id, index+1, error),
                     )
                 return
             
@@ -701,11 +697,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
-                                "\n此轮单体突变意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n此轮单体突变意外终止！") % (self.id, program_name, type(score)),
                         )
                     return
                 
@@ -713,11 +705,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 不应为 NaN ！"
-                                "\n此轮单体突变意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n此轮单体突变意外终止！") % (self.id, program_name),
                         )
                     return
                 
@@ -726,11 +714,7 @@ class Island:
                         with self._console_lock:
                             append_to_file(
                                 file_path = diary_path,
-                                content_str = (
-                                    f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
-                                    "\n此轮单体突变意外终止！"
-                                ),
+                                content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n此轮单体突变意外终止！") % (self.id, program_name, type(info)),
                             )
                         return
                 
@@ -738,14 +722,11 @@ class Island:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
-                            "\n此轮单体突变意外终止！"
-                        ),
+                        content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：\n%s\n此轮单体突变意外终止！") % (self.id, program_name, error),
                     )  
                 return
             
-            source = f"由 {basename(selected_idea.path)}({selected_idea.score:.2f}) 突变而来"
+            source = self._("由 %s(%.2f) 突变而来") % (basename(selected_idea.path), selected_idea.score)
             
             if score >= handover_threshold:
             
@@ -761,10 +742,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 第 {index+1} 次单体突变："
-                                f" {basename(selected_idea.path)} 突变为 {basename(path)} "
-                            ),
+                            content_str = self._("【%d号岛屿】 第 %d 次单体突变： %s 突变为 %s ") % (self.id, index+1, basename(selected_idea.path), basename(path)),
                         )
                     self._sync_score_sheet()
                     self._sync_best_score()
@@ -773,10 +751,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 第 {index+1} 次单体突变发生了错误：\n"
-                                f"{self._store_idea_error_message}\n此轮单体突变意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 第 %d 次单体突变发生了错误：\n%s\n此轮单体突变意外终止！") % (self.id, index+1, self._store_idea_error_message),
                         )
                     return
                 
@@ -784,16 +759,13 @@ class Island:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 第 {index+1} 次单体突变结果未达到入库分数阈值"
-                            f"（{handover_threshold:.2f}分），已删除！"
-                        ),
+                        content_str = self._("【%d号岛屿】 第 %d 次单体突变结果未达到入库分数阈值（%.2f分），已删除！") % (self.id, index+1, handover_threshold),
                     )
                 
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = "【{self.id}号岛屿】 此轮单体突变已结束。",
+                content_str = self._("【%d号岛屿】 此轮单体突变已结束。") % self.id,
             )
     
     
@@ -817,7 +789,7 @@ class Island:
             diary_path = self.ideasearcher.get_diary_path()
             append_to_file(
                 file_path = diary_path,
-                content_str = f"【{self.id}号岛屿】 现在开始进行交叉变异！",
+                content_str = self._("【%d号岛屿】 现在开始进行交叉变异！") % self.id,
             )
 
         for index in range(crossover_num):
@@ -841,21 +813,14 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的交叉变异函数时发生错误："
-                                f"返回结果中的 crossover_idea 应为一字符串，不应为一个 {type(crossover_idea)} 类型的对象！"
-                                "\n此轮交叉变异意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的交叉变异函数时发生错误：返回结果中的 crossover_idea 应为一字符串，不应为一个 %s 类型的对象！\n此轮交叉变异意外终止！") % (self.id, program_name, type(crossover_idea)),
                         )
                     return
             except Exception as error:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 第 {index+1} 次交叉变异在运行 crossover_func 时发生了错误：\n"
-                            f"{error}"
-                        ),
+                        content_str = self._("【%d号岛屿】 第 %d 次交叉变异在运行 crossover_func 时发生了错误：\n%s") % (self.id, index+1, error),
                     )
                 continue
             
@@ -866,11 +831,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 应为一浮点数，不应为一个 {type(score)} 类型的对象！"
-                                "\n此轮交叉变异意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n此轮交叉变异意外终止！") % (self.id, program_name, type(score)),
                         )
                     return
                 
@@ -878,11 +839,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                f"返回结果中的 score 不应为 NaN ！"
-                                "\n此轮交叉变异意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n此轮交叉变异意外终止！") % (self.id, program_name),
                         )
                     return
                 
@@ -891,11 +848,7 @@ class Island:
                         with self._console_lock:
                             append_to_file(
                                 file_path = diary_path,
-                                content_str = (
-                                    f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误："
-                                    f"返回结果中的 info 应为 None 或一字符串，不应为一个 {type(info)} 类型的对象！"
-                                    "\n此轮交叉变异意外终止！"
-                                ),
+                                content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n此轮交叉变异意外终止！") % (self.id, program_name, type(info)),
                             )
                         return
                 
@@ -903,14 +856,11 @@ class Island:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 调用 {program_name} 的评估函数时发生错误：\n{error}"
-                            "\n此轮交叉变异意外终止！"
-                        ),
+                        content_str = self._("【%d号岛屿】 调用 %s 的评估函数时发生错误：\n%s\n此轮交叉变异意外终止！") % (self.id, program_name, error),
                     )  
                 return
             
-            source = f"由 {basename(parent_1.path)}({parent_1.score:.2f}) 和 {basename(parent_2.path)}({parent_2.score:.2f}) 交叉而来"
+            source = self._("由 %s(%.2f) 和 %s(%.2f) 交叉而来") % (basename(parent_1.path), parent_1.score, basename(parent_2.path), parent_2.score)
 
             if score >= handover_threshold:
                 
@@ -926,10 +876,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 第 {index+1} 次交叉变异："
-                                f"{basename(parent_1.path)} × {basename(parent_2.path)} 交叉为 {basename(path)} "
-                            ),
+                            content_str = self._("【%d号岛屿】 第 %d 次交叉变异：%s × %s 交叉为 %s ") % (self.id, index+1, basename(parent_1.path), basename(parent_2.path), basename(path)),
                         )
                     self._sync_score_sheet()
                     self._sync_best_score()
@@ -938,10 +885,7 @@ class Island:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.id}号岛屿】 第 {index+1} 次交叉变异发生了错误：\n"
-                                f"{self._store_idea_error_message}\n此轮交叉变异意外终止！"
-                            ),
+                            content_str = self._("【%d号岛屿】 第 %d 次交叉变异发生了错误：\n%s\n此轮交叉变异意外终止！") % (self.id, index+1, self._store_idea_error_message),
                         )
                     return
                 
@@ -949,16 +893,13 @@ class Island:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = (
-                            f"【{self.id}号岛屿】 第 {index+1} 次交叉变异结果未达到入库分数阈值"
-                            f"（{handover_threshold:.2f}分），已删除！"
-                        ),
+                        content_str = self._("【%d号岛屿】 第 %d 次交叉变异结果未达到入库分数阈值（%.2f分），已删除！") % (self.id, index+1, handover_threshold),
                     )
 
         with self._console_lock:
             append_to_file(
                 file_path = diary_path,
-                content_str = "【{self.id}号岛屿】 此轮交叉变异已结束。",
+                content_str = self._("【%d号岛屿】 此轮交叉变异已结束。") % self.id,
             )
     
     
@@ -1026,4 +967,3 @@ class Island:
         idea_uid = self.ideasearcher.get_idea_uid()
         path = os.path.join(f"{self.path}", f"idea_{idea_uid}.idea")
         return path
-            
