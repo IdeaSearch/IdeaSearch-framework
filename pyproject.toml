@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "IdeaSearch"
-version = "0.0.2"
+version = "0.0.3"
 description = "IdeaSearch Framework - An AI-powered research idea generation and optimization system"
 readme = "README.md"
 license = "MIT"

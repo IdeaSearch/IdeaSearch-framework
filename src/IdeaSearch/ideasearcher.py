@@ -135,6 +135,18 @@ class IdeaSearcher:
         self._recorded_ideas = []
         self._recorded_idea_names = set()
 
+    def __dir__(self):
+        # 返回类的所有属性和方法
+        return [
+            attr for attr in super().__dir__() 
+            if not attr.startswith('_') and not callable(getattr(self, attr))
+        ] + [
+            'run', 'load_models', 'shutdown_models', 'get_best_score', 
+            'get_best_idea', 'add_island', 'delete_island', 
+            'repopulate_islands', 'get_idea_uid', 'record_ideas_in_backup',
+            'assess_database', 'get_model'
+        ]
+
     # ----------------------------- 核心功能 ----------------------------- 
     
     # ⭐️ Important
