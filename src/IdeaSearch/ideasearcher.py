@@ -201,6 +201,7 @@ class IdeaSearcher:
                         )
                         exit()
 
+
     def _check_runnability(
         self,
     )-> Optional[str]:
@@ -371,6 +372,7 @@ class IdeaSearcher:
                 
             return max(scores)
 
+
     # ⭐️ Important
     def get_best_idea(
         self,
@@ -397,6 +399,7 @@ class IdeaSearcher:
                 
             return ideas[scores.index(max(scores))]
 
+    
     def get_idea_uid(
         self,
     )-> str:
@@ -1091,6 +1094,24 @@ class IdeaSearcher:
                     )
 
     # ----------------------------- Getters and Setters ----------------------------- 
+    
+    def set_language(
+        self,
+        value: str,
+    ) -> None:
+
+        if not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`language`类型应为str，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            if value == "zh":
+                value = "zh_CN"
+            if value == "zh_TW":
+                raise ValueError(self._("【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"))
+            self._language = value
+            self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
+            self._ = self._translation.gettext
+
         
     # ⭐️ Important
     def set_program_name(
@@ -1104,6 +1125,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._program_name = value
 
+
     # ⭐️ Important
     def set_prologue_section(
         self,
@@ -1115,6 +1137,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._prologue_section = value
+
 
     # ⭐️ Important
     def set_epilogue_section(
@@ -1128,6 +1151,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._epilogue_section = value
 
+
     # ⭐️ Important
     def set_database_path(
         self,
@@ -1139,6 +1163,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._database_path = value
+
 
     # ⭐️ Important
     def set_models(
@@ -1152,6 +1177,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._models = value
 
+
     # ⭐️ Important
     def set_model_temperatures(
         self,
@@ -1163,6 +1189,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._model_temperatures = value
+
 
     # ⭐️ Important
     def set_evaluate_func(
@@ -1176,6 +1203,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._evaluate_func = value
 
+
     def set_score_range(
         self,
         value: Tuple[float, float],
@@ -1186,6 +1214,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._score_range = value
+
 
     def set_hand_over_threshold(
         self,
@@ -1198,6 +1227,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._hand_over_threshold = value
 
+
     def set_system_prompt(
         self,
         value: Optional[str],
@@ -1209,6 +1239,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._system_prompt = value
 
+
     def set_diary_path(
         self,
         value: Optional[str],
@@ -1219,6 +1250,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._diary_path = value
+
 
     def set_api_keys_path(
         self,
@@ -1243,6 +1275,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._samplers_num = value
 
+
     def set_evaluators_num(
         self,
         value: int,
@@ -1253,6 +1286,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._evaluators_num = value
+
 
     def set_examples_num(
         self,
@@ -1265,6 +1299,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._examples_num = value
 
+
     def set_generate_num(
         self,
         value: int,
@@ -1275,6 +1310,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._generate_num = value
+
 
     def set_sample_temperature(
         self,
@@ -1287,6 +1323,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._sample_temperature = value
 
+
     def set_model_sample_temperature(
         self,
         value: float,
@@ -1297,6 +1334,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._model_sample_temperature = value
+
 
     def set_assess_func(
         self,
@@ -1309,6 +1347,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._assess_func = value
 
+
     def set_assess_interval(
         self,
         value: Optional[int],
@@ -1319,6 +1358,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._assess_interval = value
+
 
     def set_assess_baseline(
         self,
@@ -1331,6 +1371,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._assess_baseline = value
 
+
     def set_assess_result_data_path(
         self,
         value: Optional[str],
@@ -1341,6 +1382,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._assess_result_data_path = value
+
 
     def set_assess_result_pic_path(
         self,
@@ -1353,6 +1395,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._assess_result_pic_path = value
 
+
     def set_model_assess_window_size(
         self,
         value: int,
@@ -1363,6 +1406,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._model_assess_window_size = value
+
 
     def set_model_assess_initial_score(
         self,
@@ -1375,6 +1419,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._model_assess_initial_score = value
 
+
     def set_model_assess_average_order(
         self,
         value: float,
@@ -1385,6 +1430,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._model_assess_average_order = value
+
 
     def set_model_assess_save_result(
         self,
@@ -1397,6 +1443,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._model_assess_save_result = value
 
+
     def set_model_assess_result_data_path(
         self,
         value: Optional[str],
@@ -1407,6 +1454,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._model_assess_result_data_path = value
+
 
     def set_model_assess_result_pic_path(
         self,
@@ -1419,6 +1467,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._model_assess_result_pic_path = value
 
+
     def set_mutation_func(
         self,
         value: Optional[Callable[[str], str]],
@@ -1429,6 +1478,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._mutation_func = value
+
 
     def set_mutation_interval(
         self,
@@ -1441,6 +1491,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._mutation_interval = value
 
+
     def set_mutation_num(
         self,
         value: Optional[int],
@@ -1451,6 +1502,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._mutation_num = value
+
 
     def set_mutation_temperature(
         self,
@@ -1463,6 +1515,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._mutation_temperature = value
 
+
     def set_crossover_func(
         self,
         value: Optional[Callable[[str, str], str]],
@@ -1473,6 +1526,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._crossover_func = value
+
 
     def set_crossover_interval(
         self,
@@ -1485,6 +1539,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._crossover_interval = value
 
+
     def set_crossover_num(
         self,
         value: Optional[int],
@@ -1495,6 +1550,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._crossover_num = value
+
 
     def set_crossover_temperature(
         self,
@@ -1507,6 +1563,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._crossover_temperature = value
 
+
     def set_similarity_threshold(
         self,
         value: float,
@@ -1517,6 +1574,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._similarity_threshold = value
+
 
     def set_similarity_distance_func(
         self,
@@ -1529,6 +1587,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._similarity_distance_func = value
 
+
     def set_similarity_sys_info_thresholds(
         self,
         value: Optional[List[int]],
@@ -1539,6 +1598,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._similarity_sys_info_thresholds = value
+
 
     def set_similarity_sys_info_prompts(
         self,
@@ -1551,6 +1611,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._similarity_sys_info_prompts = value
 
+
     def set_load_idea_skip_evaluation(
         self,
         value: bool,
@@ -1561,6 +1622,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._load_idea_skip_evaluation = value
+
 
     def set_initialization_cleanse_threshold(
         self,
@@ -1573,6 +1635,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._initialization_cleanse_threshold = value
 
+
     def set_delete_when_initial_cleanse(
         self,
         value: bool,
@@ -1583,6 +1646,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._delete_when_initial_cleanse = value
+
 
     def set_idea_uid_length(
         self,
@@ -1595,6 +1659,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._idea_uid_length = value
 
+
     def set_record_prompt_in_diary(
         self,
         value: bool,
@@ -1605,6 +1670,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._record_prompt_in_diary = value
+
 
     def set_filter_func(
         self,
@@ -1617,6 +1683,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._filter_func = value
 
+
     def set_generation_bonus(
         self,
         value: float,
@@ -1627,6 +1694,7 @@ class IdeaSearcher:
 
         with self._user_lock:
             self._generation_bonus = value
+
 
     def set_backup_path(
         self,
@@ -1639,6 +1707,7 @@ class IdeaSearcher:
         with self._user_lock:
             self._backup_path = value
 
+
     def set_backup_on(
         self,
         value: bool,
@@ -1650,22 +1719,6 @@ class IdeaSearcher:
         with self._user_lock:
             self._backup_on = value
 
-    def set_language(
-        self,
-        value: str,
-    ) -> None:
-
-        if not isinstance(value, str):
-            raise TypeError(self._("【IdeaSearcher】 参数`lang`类型应为str，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            if value == "zh":
-                value = "zh_CN"
-            if value == "zh_TW":
-                raise ValueError(self._("【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"))
-            self._language = value
-            self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
-            self._ = self._translation.gettext
 
     def set_generate_prompt_func(
         self,
@@ -1673,372 +1726,372 @@ class IdeaSearcher:
     ) -> None:
 
         if not (value is None or callable(value)):
-            raise TypeError(f"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]，实为{str(type(value))}")
+            raise TypeError(self._("【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]，实为%s") % str(type(value)))
 
         with self._user_lock:
             self._generate_prompt_func = value
+
+
+    def get_language(
+        self,
+    )-> str:
+        
+        return self._language
 
 
     def get_program_name(
         self,
     )-> Optional[str]:
         
-            return self._program_name
+        return self._program_name
 
 
     def get_prologue_section(
         self,
     )-> Optional[str]:
         
-            return self._prologue_section
+        return self._prologue_section
 
 
     def get_epilogue_section(
         self,
     )-> Optional[str]:
         
-            return self._epilogue_section
+        return self._epilogue_section
 
 
     def get_database_path(
         self,
     )-> Optional[str]:
         
-            return self._database_path
+        return self._database_path
 
 
     def get_models(
         self,
     )-> Optional[List[str]]:
         
-            return self._models
+        return self._models
 
 
     def get_model_temperatures(
         self,
     )-> Optional[List[float]]:
         
-            return self._model_temperatures
+        return self._model_temperatures
 
 
     def get_evaluate_func(
         self,
     )-> Optional[Callable[[str], Tuple[float, Optional[str]]]]:
         
-            return self._evaluate_func
+        return self._evaluate_func
 
 
     def get_score_range(
         self,
     )-> Tuple[float, float]:
         
-            return self._score_range
+        return self._score_range
 
 
     def get_hand_over_threshold(
         self,
     )-> float:
         
-            return self._hand_over_threshold
+        return self._hand_over_threshold
 
 
     def get_system_prompt(
         self,
     )-> Optional[str]:
         
-            return self._system_prompt
+        return self._system_prompt
 
 
     def get_diary_path(
         self,
     )-> Optional[str]:
         
-            return self._diary_path
+        return self._diary_path
 
 
     def get_api_keys_path(
         self,
     )-> Optional[str]:
         
-            return self._api_keys_path
+        return self._api_keys_path
 
 
     def get_samplers_num(
         self,
     )-> int:
         
-            return self._samplers_num
+        return self._samplers_num
 
 
     def get_evaluators_num(
         self,
     )-> int:
         
-            return self._evaluators_num
+        return self._evaluators_num
 
 
     def get_examples_num(
         self,
     )-> int:
         
-            return self._examples_num
+        return self._examples_num
 
 
     def get_generate_num(
         self,
     )-> int:
         
-            return self._generate_num
+        return self._generate_num
 
 
     def get_sample_temperature(
         self,
     )-> float:
         
-            return self._sample_temperature
+        return self._sample_temperature
 
 
     def get_model_sample_temperature(
         self,
     )-> float:
         
-            return self._model_sample_temperature
+        return self._model_sample_temperature
 
 
     def get_assess_func(
         self,
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]:
         
-            return self._assess_func
+        return self._assess_func
 
 
     def get_assess_interval(
         self,
     )-> Optional[int]:
         
-            return self._assess_interval
+        return self._assess_interval
 
 
     def get_assess_baseline(
         self,
     )-> Optional[float]:
         
-            return self._assess_baseline
+        return self._assess_baseline
 
 
     def get_assess_result_data_path(
         self,
     )-> Optional[str]:
         
-            return self._assess_result_data_path
+        return self._assess_result_data_path
 
 
     def get_assess_result_pic_path(
         self,
     )-> Optional[str]:
         
-            return self._assess_result_pic_path
+        return self._assess_result_pic_path
 
 
     def get_model_assess_window_size(
         self,
     )-> int:
         
-            return self._model_assess_window_size
+        return self._model_assess_window_size
 
 
     def get_model_assess_initial_score(
         self,
     )-> float:
         
-            return self._model_assess_initial_score
+        return self._model_assess_initial_score
 
 
     def get_model_assess_average_order(
         self,
     )-> float:
         
-            return self._model_assess_average_order
+        return self._model_assess_average_order
 
 
     def get_model_assess_save_result(
         self,
     )-> bool:
         
-            return self._model_assess_save_result
+        return self._model_assess_save_result
 
 
     def get_model_assess_result_data_path(
         self,
     )-> Optional[str]:
         
-            return self._model_assess_result_data_path
+        return self._model_assess_result_data_path
 
 
     def get_model_assess_result_pic_path(
         self,
     )-> Optional[str]:
         
-            return self._model_assess_result_pic_path
+        return self._model_assess_result_pic_path
 
 
     def get_mutation_func(
         self,
     )-> Optional[Callable[[str], str]]:
         
-            return self._mutation_func
+        return self._mutation_func
 
 
     def get_mutation_interval(
         self,
     )-> Optional[int]:
         
-            return self._mutation_interval
+        return self._mutation_interval
 
 
     def get_mutation_num(
         self,
     )-> Optional[int]:
         
-            return self._mutation_num
+        return self._mutation_num
 
 
     def get_mutation_temperature(
         self,
     )-> Optional[float]:
         
-            return self._mutation_temperature
+        return self._mutation_temperature
 
 
     def get_crossover_func(
         self,
     )-> Optional[Callable[[str, str], str]]:
         
-            return self._crossover_func
+        return self._crossover_func
 
 
     def get_crossover_interval(
         self,
     )-> Optional[int]:
         
-            return self._crossover_interval
+        return self._crossover_interval
 
 
     def get_crossover_num(
         self,
     )-> Optional[int]:
         
-            return self._crossover_num
+        return self._crossover_num
 
 
     def get_crossover_temperature(
         self,
     )-> Optional[float]:
         
-            return self._crossover_temperature
+        return self._crossover_temperature
 
 
     def get_similarity_threshold(
         self,
     )-> float:
         
-            return self._similarity_threshold
+        return self._similarity_threshold
 
 
     def get_similarity_distance_func(
         self,
     )-> Optional[Callable[[str, str], float]]:
         
-            return self._similarity_distance_func
+        return self._similarity_distance_func
 
 
     def get_similarity_sys_info_thresholds(
         self,
     )-> Optional[List[int]]:
         
-            return self._similarity_sys_info_thresholds
+        return self._similarity_sys_info_thresholds
 
 
     def get_similarity_sys_info_prompts(
         self,
     )-> Optional[List[str]]:
         
-            return self._similarity_sys_info_prompts
+        return self._similarity_sys_info_prompts
 
 
     def get_load_idea_skip_evaluation(
         self,
     )-> bool:
         
-            return self._load_idea_skip_evaluation
+        return self._load_idea_skip_evaluation
 
 
     def get_initialization_cleanse_threshold(
         self,
     )-> float:
         
-            return self._initialization_cleanse_threshold
+        return self._initialization_cleanse_threshold
 
 
     def get_delete_when_initial_cleanse(
         self,
     )-> bool:
         
-            return self._delete_when_initial_cleanse
+        return self._delete_when_initial_cleanse
 
 
     def get_idea_uid_length(
         self,
     )-> int:
         
-            return self._idea_uid_length
+        return self._idea_uid_length
 
 
     def get_record_prompt_in_diary(
         self,
     )-> bool:
         
-            return self._record_prompt_in_diary
+        return self._record_prompt_in_diary
 
 
     def get_filter_func(
         self,
     )-> Optional[Callable[[str], str]]:
         
-            return self._filter_func
+        return self._filter_func
 
 
     def get_generation_bonus(
         self,
     )-> float:
         
-            return self._generation_bonus
+        return self._generation_bonus
 
 
     def get_backup_path(
         self,
     )-> Optional[str]:
         
-            return self._backup_path
+        return self._backup_path
 
 
     def get_backup_on(
         self,
     )-> bool:
         
-            return self._backup_on
+        return self._backup_on
 
 
     def get_generate_prompt_func(
         self,
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]:
         
-            return self._generate_prompt_func
-    
-    
-    def get_language(
-        self,
-    )-> str:
-        
-            return self._language
+        return self._generate_prompt_func
 
