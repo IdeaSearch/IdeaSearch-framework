@@ -135,6 +135,7 @@ class IdeaSearcher:
         self._recorded_ideas = []
         self._recorded_idea_names = set()
 
+
     def __dir__(self):
         # 返回类的所有属性和方法
         return [
