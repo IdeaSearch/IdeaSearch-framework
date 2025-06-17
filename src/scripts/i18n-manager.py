@@ -77,6 +77,9 @@ class I18nManager:
         try:
             cmd = [
                 "pybabel", "extract",
+                "--no-location",
+                # "--no-wrap",
+                "--sort-by-file",
                 "-F", str(self.babel_cfg),
                 "-k", "_",  # 标记函数名
                 "-k", "gettext",
@@ -193,6 +196,7 @@ class I18nManager:
             try:
                 cmd = [
                     "pybabel", "update",
+                    "--omit-header",
                     "-i", str(self.pot_file),
                     "-d", str(self.locales_dir),
                     "-D", "ideasearch",  # 指定域名

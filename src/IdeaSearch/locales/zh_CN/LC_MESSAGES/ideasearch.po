@@ -1,38 +1,35 @@
+# Chinese (Simplified, China) translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-06-14 17:23+0800\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"POT-Creation-Date: 2025-06-17 19:00+0800\n"
+"PO-Revision-Date: 2025-06-17 19:05+0800\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
+"Language: zh_Hans_CN\n"
+"Language-Team: zh_Hans_CN <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:74
-msgid "，"
-msgstr "，"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:89
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！"
 msgstr "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:97
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！"
 msgstr "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:106
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！"
 msgstr "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:114
 #, python-format
 msgid ""
 "【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：\n"
@@ -43,37 +40,26 @@ msgstr ""
 "%s\n"
 "评估终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:129
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 已将 %d/%d 个满足条件的 idea 递交给岛屿！"
 msgstr "【%d号岛屿的%d号评估器】 已将 %d/%d 个满足条件的 idea 递交给岛屿！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:132
-#, python-format
-msgid "由 %s(T=%.2f) 阅读 %s 后生成"
-msgstr "由 %s(T=%.2f) 阅读 %s 后生成"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:139
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！"
 msgstr "【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/evaluator.py:151
 #, python-format
 msgid "【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！"
 msgstr "【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:150
 #, python-format
 msgid "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 run 动作！"
 msgstr "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 run 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:161
 #, python-format
 msgid "【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！"
 msgstr "【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:200
 #, python-format
 msgid ""
 "【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\n"
@@ -84,63 +70,52 @@ msgstr ""
 "%s\n"
 "IdeaSearch意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:295
-msgid ""
-"【IdeaSearcher】 加载模型时发生错误： api keys path 和 local models path 中至少应有一个不为 "
-"None ！"
-msgstr "【IdeaSearcher】 加载模型时发生错误： api keys path 和 local models path 中至少应有一个不为 None ！"
+msgid "【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！"
+msgstr "【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:378
+#, python-format
+msgid "【IdeaSearcher】 get answer 过程报错：模型 %s 未被记录！"
+msgstr "【IdeaSearcher】 get answer 过程报错：模型 %s 未被记录！"
+
 #, python-format
 msgid "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_score 动作！"
 msgstr "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_score 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:388
 msgid "【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"
 msgstr "【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:401
 #, python-format
 msgid "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_idea 动作！"
 msgstr "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_idea 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:414
 msgid "【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！"
 msgstr "【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_idea 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:508
 #, python-format
 msgid "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_island 动作！"
 msgstr "【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_island 动作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:601
 msgid "【IdeaSearcher】 现在 ideas 开始在岛屿间重分布"
 msgstr "【IdeaSearcher】 现在 ideas 开始在岛屿间重分布"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:627
 msgid "【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
 msgstr "【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:717
 #, python-format
 msgid "【IdeaSearcher】 模型 %s(T=%.2f) 此轮评分为 %.2f ，其总评分已被更新为 %.2f ！"
 msgstr "【IdeaSearcher】 模型 %s(T=%.2f) 此轮评分为 %.2f ，其总评分已被更新为 %.2f ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:728
 #, python-format
 msgid "【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！"
 msgstr "【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:850
 msgid "【IdeaSearcher】 各模型目前评分情况如下："
 msgstr "【IdeaSearcher】 各模型目前评分情况如下："
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:922
 #, python-format
 msgid "【IdeaSearcher】 初始 ideas 的整体质量评分为：%.2f！"
 msgstr "【IdeaSearcher】 初始 ideas 的整体质量评分为：%.2f！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:930
 #, python-format
 msgid ""
 "【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\n"
@@ -149,16 +124,13 @@ msgstr ""
 "【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\n"
 "%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:984
 msgid "【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！"
 msgstr "【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1017
 #, python-format
 msgid "【IdeaSearcher】 数据库中 ideas 的整体质量评分为：%.2f！评估用时：%.2f秒。"
 msgstr "【IdeaSearcher】 数据库中 ideas 的整体质量评分为：%.2f！评估用时：%.2f秒。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1025
 #, python-format
 msgid ""
 "【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n"
@@ -167,324 +139,253 @@ msgstr ""
 "【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\n"
 "%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1103
 #, python-format
 msgid "【IdeaSearcher】 初始质量评估结束， %s 与 %s 已更新！"
 msgstr "【IdeaSearcher】 初始质量评估结束， %s 与 %s 已更新！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1109
 #, python-format
 msgid "【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！"
 msgstr "【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1121
+#, python-format
+msgid "【IdeaSearcher】 参数`language`类型应为str，实为%s"
+msgstr "【IdeaSearcher】 参数`language`类型应为str，实为%s"
+
+msgid "【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"
+msgstr "【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"
+
 #, python-format
 msgid "【IdeaSearcher】 参数`program_name`类型应为str，实为%s"
 msgstr "【IdeaSearcher】 参数`program_name`类型应为str，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1133
 #, python-format
 msgid "【IdeaSearcher】 参数`prologue_section`类型应为str，实为%s"
 msgstr "【IdeaSearcher】 参数`prologue_section`类型应为str，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1145
 #, python-format
 msgid "【IdeaSearcher】 参数`epilogue_section`类型应为str，实为%s"
 msgstr "【IdeaSearcher】 参数`epilogue_section`类型应为str，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1157
 #, python-format
 msgid "【IdeaSearcher】 参数`database_path`类型应为str，实为%s"
 msgstr "【IdeaSearcher】 参数`database_path`类型应为str，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1169
 #, python-format
 msgid "【IdeaSearcher】 参数`models`类型应为List[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`models`类型应为List[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1181
 #, python-format
 msgid "【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为%s"
 msgstr "【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1193
 #, python-format
 msgid ""
 "【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, "
 "Optional[str]]]，实为%s"
-msgstr "【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, Optional[str]]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, "
+"Optional[str]]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1204
+#, python-format
+msgid "【IdeaSearcher】 参数`api_keys_path`类型应为str，实为%s"
+msgstr "【IdeaSearcher】 参数`api_keys_path`类型应为str，实为%s"
+
 #, python-format
 msgid "【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为%s"
 msgstr "【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1215
 #, python-format
 msgid "【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1226
 #, python-format
 msgid "【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1237
 #, python-format
 msgid "【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1248
-#, python-format
-msgid "【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为%s"
-msgstr "【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为%s"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1259
-#, python-format
-msgid "【IdeaSearcher】 参数`local_models_path`类型应为Optional[str]，实为%s"
-msgstr "【IdeaSearcher】 参数`local_models_path`类型应为Optional[str]，实为%s"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1270
 #, python-format
 msgid "【IdeaSearcher】 参数`samplers_num`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`samplers_num`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1281
 #, python-format
 msgid "【IdeaSearcher】 参数`evaluators_num`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`evaluators_num`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1292
 #, python-format
 msgid "【IdeaSearcher】 参数`examples_num`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`examples_num`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1303
 #, python-format
 msgid "【IdeaSearcher】 参数`generate_num`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`generate_num`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1314
 #, python-format
 msgid "【IdeaSearcher】 参数`sample_temperature`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`sample_temperature`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1325
 #, python-format
 msgid "【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1336
 #, python-format
 msgid ""
 "【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], "
 "List[float], List[Optional[str]]], float]]，实为%s"
-msgstr "【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], "
+"List[float], List[Optional[str]]], float]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1347
 #, python-format
 msgid "【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为%s"
 msgstr "【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1358
 #, python-format
 msgid "【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为%s"
 msgstr "【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1369
 #, python-format
 msgid "【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1380
 #, python-format
 msgid "【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1391
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1402
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1413
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1424
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1435
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1446
 #, python-format
 msgid "【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1457
 #, python-format
 msgid "【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为%s"
 msgstr "【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1468
 #, python-format
 msgid "【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为%s"
 msgstr "【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1479
 #, python-format
 msgid "【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为%s"
 msgstr "【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1490
 #, python-format
 msgid "【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为%s"
 msgstr "【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1501
 #, python-format
 msgid ""
 "【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], "
 "str]]，实为%s"
-msgstr "【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], str]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], "
+"str]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1512
 #, python-format
 msgid "【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为%s"
 msgstr "【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1523
 #, python-format
 msgid "【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为%s"
 msgstr "【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1534
 #, python-format
 msgid "【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为%s"
 msgstr "【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1545
 #, python-format
 msgid "【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1556
 #, python-format
 msgid ""
 "【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, "
 "str], float]]，实为%s"
-msgstr "【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, "
+"str], float]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1567
 #, python-format
 msgid ""
 "【IdeaSearcher】 "
 "参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
-msgstr "【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 "
+"参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1578
 #, python-format
 msgid "【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s"
 msgstr "【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1589
 #, python-format
 msgid "【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1600
 #, python-format
 msgid "【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1611
 #, python-format
 msgid "【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1622
 #, python-format
 msgid "【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为%s"
 msgstr "【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1633
 #, python-format
 msgid "【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1644
 #, python-format
 msgid "【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s"
 msgstr "【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1655
 #, python-format
 msgid "【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s"
 msgstr "【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1666
 #, python-format
 msgid "【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s"
 msgstr "【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1677
 #, python-format
 msgid "【IdeaSearcher】 参数`backup_on`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`backup_on`类型应为bool，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/ideasearcher.py:1688
 #, python-format
-msgid "【IdeaSearcher】 参数`lang`类型应为str，实为%s"
-msgstr "【IdeaSearcher】 参数`lang`类型应为str，实为%s"
+msgid ""
+"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], "
+"List[float], List[Optional[str]]], str]]，实为%s"
+msgstr ""
+"【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], "
+"List[float], List[Optional[str]]], str]]，实为%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:17
-msgid "IdeaSearch Framework"
-msgstr "想法搜索框架"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:18
-msgid "A powerful framework for idea search and management"
-msgstr "一个强大的想法搜索和管理框架"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:20
-msgid "Development Team"
-msgstr "开发团队"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:30
-msgid "Author"
-msgstr "作者"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:31
-msgid "License"
-msgstr "许可证"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:32
-msgid "Homepage"
-msgstr "主页"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:51
-msgid "Switching to English:"
-msgstr "切换到英文："
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/info.py:55
-msgid "Switching to Chinese:"
-msgstr "切换到中文："
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:134
 #, python-format
 msgid "【%d号岛屿】 已从 %s 成功读取用于迅捷加载的 score sheet 文件！"
 msgstr "【%d号岛屿】 已从 %s 成功读取用于迅捷加载的 score sheet 文件！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:144
 #, python-format
 msgid ""
 "【%d号岛屿】 未从 %s 成功读取用于迅捷加载的 score sheet 文件，报错：\n"
@@ -495,81 +396,73 @@ msgstr ""
 "%s\n"
 "请检查该行为是否符合预期！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:151
 msgid "初始化时读入"
 msgstr "初始化时读入"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:196
 #, python-format
 msgid "【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分与评语！"
 msgstr "【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分与评语！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:202
 #, python-format
 msgid "【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分！"
 msgstr "【%d号岛屿】 已从 score sheet 文件中迅捷加载文件 %s 的评分！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:209
 #, python-format
 msgid "【%d号岛屿】 没有在 score sheet 文件中找到文件 %s ，迅捷加载失败！"
 msgstr "【%d号岛屿】 没有在 score sheet 文件中找到文件 %s ，迅捷加载失败！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:236
 #, python-format
 msgid "【%d号岛屿】 文件 %s 评分未达到%.2f，已删除。"
 msgstr "【%d号岛屿】 文件 %s 评分未达到%.2f，已删除。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:245
 #, python-format
 msgid "【%d号岛屿】 文件 %s 评分未达到%.2f，已忽略。"
 msgstr "【%d号岛屿】 文件 %s 评分未达到%.2f，已忽略。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:255
 #, python-format
 msgid "【%d号岛屿】 初始文件 %s 已评分并加入%d号岛屿。"
 msgstr "【%d号岛屿】 初始文件 %s 已评分并加入%d号岛屿。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:307
 #, python-format
 msgid "【%d号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为%d！"
 msgstr "【%d号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为%d！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:343
 #, python-format
 msgid "【%d号岛屿】 已分发交互次数为： %d ，还剩 %d 次！"
 msgstr "【%d号岛屿】 已分发交互次数为： %d ，还剩 %d 次！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:366
 #, python-format
 msgid "【%d号岛屿】 发生异常： ideas 列表为空！"
 msgstr "【%d号岛屿】 发生异常： ideas 列表为空！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:442
+#, python-format
+msgid ""
+"【%d号岛屿】 已分发交互次数为： %d ，\n"
+" 还剩 %d 次！"
+msgstr ""
+"【%d号岛屿】 已分发交互次数为： %d ，\n"
+" 还剩 %d 次！"
+
 #, python-format
 msgid "【%d号岛屿】 %d 号评估器递交的 %d 个新文件已评分并加入%d号岛屿。"
 msgstr "【%d号岛屿】 %d 号评估器递交的 %d 个新文件已评分并加入%d号岛屿。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:527
 #, python-format
 msgid "【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！"
 msgstr "【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:592
 #, python-format
 msgid "【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！"
 msgstr "【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:602
 #, python-format
 msgid "【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。"
 msgstr "【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:624
 #, python-format
 msgid "【%d号岛屿】 现在开始进行单体突变！"
 msgstr "【%d号岛屿】 现在开始进行单体突变！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:648
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的单体突变函数时发生错误：返回结果中的 mutated_idea 应为一字符串，不应为一个 %s 类型的对象！\n"
@@ -578,7 +471,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的单体突变函数时发生错误：返回结果中的 mutated_idea 应为一字符串，不应为一个 %s 类型的对象！\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:655
 #, python-format
 msgid ""
 "【%d号岛屿】 第 %d 次单体突变在运行 mutation_func 时发生了错误：\n"
@@ -589,7 +481,6 @@ msgstr ""
 "%s\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:666
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n"
@@ -598,7 +489,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:674
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n"
@@ -607,7 +497,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:683
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n"
@@ -616,7 +505,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:691
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：\n"
@@ -627,17 +515,14 @@ msgstr ""
 "%s\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:695
 #, python-format
 msgid "由 %s(%.2f) 突变而来"
 msgstr "由 %s(%.2f) 突变而来"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:711
 #, python-format
 msgid "【%d号岛屿】 第 %d 次单体突变： %s 突变为 %s "
 msgstr "【%d号岛屿】 第 %d 次单体突变： %s 突变为 %s "
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:720
 #, python-format
 msgid ""
 "【%d号岛屿】 第 %d 次单体突变发生了错误：\n"
@@ -648,22 +533,18 @@ msgstr ""
 "%s\n"
 "此轮单体突变意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:728
 #, python-format
 msgid "【%d号岛屿】 第 %d 次单体突变结果未达到入库分数阈值（%.2f分），已删除！"
 msgstr "【%d号岛屿】 第 %d 次单体突变结果未达到入库分数阈值（%.2f分），已删除！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:734
 #, python-format
 msgid "【%d号岛屿】 此轮单体突变已结束。"
 msgstr "【%d号岛屿】 此轮单体突变已结束。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:756
 #, python-format
 msgid "【%d号岛屿】 现在开始进行交叉变异！"
 msgstr "【%d号岛屿】 现在开始进行交叉变异！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:783
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的交叉变异函数时发生错误：返回结果中的 crossover_idea 应为一字符串，不应为一个 %s 类型的对象！\n"
@@ -672,7 +553,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的交叉变异函数时发生错误：返回结果中的 crossover_idea 应为一字符串，不应为一个 %s 类型的对象！\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:790
 #, python-format
 msgid ""
 "【%d号岛屿】 第 %d 次交叉变异在运行 crossover_func 时发生了错误：\n"
@@ -681,7 +561,6 @@ msgstr ""
 "【%d号岛屿】 第 %d 次交叉变异在运行 crossover_func 时发生了错误：\n"
 "%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:801
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n"
@@ -690,7 +569,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:809
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n"
@@ -699,7 +577,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:818
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n"
@@ -708,7 +585,6 @@ msgstr ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:826
 #, python-format
 msgid ""
 "【%d号岛屿】 调用 %s 的评估函数时发生错误：\n"
@@ -719,17 +595,14 @@ msgstr ""
 "%s\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:830
 #, python-format
 msgid "由 %s(%.2f) 和 %s(%.2f) 交叉而来"
 msgstr "由 %s(%.2f) 和 %s(%.2f) 交叉而来"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:846
 #, python-format
 msgid "【%d号岛屿】 第 %d 次交叉变异：%s × %s 交叉为 %s "
 msgstr "【%d号岛屿】 第 %d 次交叉变异：%s × %s 交叉为 %s "
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:855
 #, python-format
 msgid ""
 "【%d号岛屿】 第 %d 次交叉变异发生了错误：\n"
@@ -740,92 +613,62 @@ msgstr ""
 "%s\n"
 "此轮交叉变异意外终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:863
 #, python-format
 msgid "【%d号岛屿】 第 %d 次交叉变异结果未达到入库分数阈值（%.2f分），已删除！"
 msgstr "【%d号岛屿】 第 %d 次交叉变异结果未达到入库分数阈值（%.2f分），已删除！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/island.py:869
 #, python-format
 msgid "【%d号岛屿】 此轮交叉变异已结束。"
 msgstr "【%d号岛屿】 此轮交叉变异已结束。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:57
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已开始工作！"
 msgstr "【%d号岛屿的%d号采样器】 已开始工作！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:65
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已开始新一轮采样！"
 msgstr "【%d号岛屿的%d号采样器】 已开始新一轮采样！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:73
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:214
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 工作结束。"
 msgstr "【%d号岛屿的%d号采样器】 工作结束。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:80
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea！"
 msgstr "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:83
-#, python-format
-msgid "举例部分（一共有%d个例子）：\n"
-msgstr "举例部分（一共有%d个例子）：\n"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:86
-#, python-format
-msgid "[第 %d 个例子]\n"
-msgstr "[第 %d 个例子]\n"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:87
-msgid "内容：\n"
-msgstr "内容：\n"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:96
 #, python-format
 msgid ""
-"【%d号岛屿的%d号采样器】 将 filter_func 作用于 %s 时发生错误：\n"
-"%s\n"
+"【%d号岛屿的%d号采样器】将 filter_func 作用于 %s 时发生错误：\n"
+" %s \n"
 "延用原来的 idea ！"
 msgstr ""
-"【%d号岛屿的%d号采样器】 将 filter_func 作用于 %s 时发生错误：\n"
-"%s\n"
+"【%d号岛屿的%d号采样器】将 filter_func 作用于 %s 时发生错误：\n"
+" %s \n"
 "延用原来的 idea ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:100
 #, python-format
-msgid "评分：%.2f\n"
-msgstr "评分：%.2f\n"
+msgid "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea，预备调用自定义的 generate_prompt_func！"
+msgstr "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea，预备调用自定义的 generate_prompt_func！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:102
-#, python-format
-msgid "评语：%s\n"
-msgstr "评语：%s\n"
-
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:104
 #, python-format
 msgid ""
-"重复情况说明：%d号岛屿里有%d个例子和这个例子相似\n"
-"%s\n"
+"【%d号岛屿的%d号采样器】使用自定义的 generate_prompt_func 时发生错误：\n"
+" %s\n"
+"IdeaSearch终止！"
 msgstr ""
-"重复情况说明：%d号岛屿里有%d个例子和这个例子相似\n"
-"%s\n"
+"【%d号岛屿的%d号采样器】使用自定义的 generate_prompt_func 时发生错误：\n"
+" %s\n"
+"IdeaSearch终止！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:111
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 正在询问 IdeaSearcher 使用何模型。。。"
 msgstr "【%d号岛屿的%d号采样器】 正在询问 IdeaSearcher 使用何模型。。。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:119
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 根据各模型得分情况，依概率选择了 %s(T=%.2f) ！"
 msgstr "【%d号岛屿的%d号采样器】 根据各模型得分情况，依概率选择了 %s(T=%.2f) ！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:126
 #, python-format
 msgid ""
 "【%d号岛屿的%d号采样器】 向 %s(T=%.2f) 发送的 system prompt 是：\n"
@@ -834,7 +677,6 @@ msgstr ""
 "【%d号岛屿的%d号采样器】 向 %s(T=%.2f) 发送的 system prompt 是：\n"
 "%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:130
 #, python-format
 msgid ""
 "【%d号岛屿的%d号采样器】 向 %s(T=%.2f) 发送的 prompt 是：\n"
@@ -843,12 +685,10 @@ msgstr ""
 "【%d号岛屿的%d号采样器】 向 %s(T=%.2f) 发送的 prompt 是：\n"
 "%s"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:136
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已向 %s(T=%.2f) 发送prompt，正在等待回答！"
 msgstr "【%d号岛屿的%d号采样器】 已向 %s(T=%.2f) 发送prompt，正在等待回答！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:161
 #, python-format
 msgid ""
 "【%d号岛屿的%d号采样器】 尝试获取 %s(T=%.2f) 的回答时发生错误: \n"
@@ -859,27 +699,22 @@ msgstr ""
 "%s\n"
 "此轮采样失败。。。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:170
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。"
 msgstr "【%d号岛屿的%d号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:178
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已收到来自 %s(T=%.2f) 的 %d 个回答！"
 msgstr "【%d号岛屿的%d号采样器】 已收到来自 %s(T=%.2f) 的 %d 个回答！"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:201
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已释放%d号评估器。"
 msgstr "【%d号岛屿的%d号采样器】 已释放%d号评估器。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:208
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 没有找到空闲的评估器，此轮采样失败。。。"
 msgstr "【%d号岛屿的%d号采样器】 没有找到空闲的评估器，此轮采样失败。。。"
 
-#: /home/wjs/Documents/project/python/IdeaSearch-framework/src/IdeaSearch/sampler.py:229
 #, python-format
 msgid "【%d号岛屿的%d号采样器】 已找到%d号评估器进行评估！"
 msgstr "【%d号岛屿的%d号采样器】 已找到%d号评估器进行评估！"

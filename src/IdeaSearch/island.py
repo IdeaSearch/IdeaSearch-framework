@@ -439,9 +439,9 @@ class Island:
                 append_to_file(
                     file_path = diary_path,
                     content_str = (
-                        f"【{self.id}号岛屿】 已分发交互次数为： {self.interaction_count} ，"
-                        f"还剩 {self.interaction_num-self.interaction_count} 次！"
-                    ),
+                        self._("【%d号岛屿】 已分发交互次数为： %d ，\n 还剩 %d 次！") %
+                        (self.id, self.interaction_count, self.interaction_num-self.interaction_count)
+                    )
                 )
                 
             self._check_threshold()

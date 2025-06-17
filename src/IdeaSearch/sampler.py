@@ -74,14 +74,16 @@ class Sampler:
                     with self.console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 工作结束。",
+                            content_str= self._("【%d号岛屿的%d号采样器】 工作结束。") % (self.island.id, self.id)
                         )
                     return
                 else:
                     with self.console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已从{self.island.id}号岛屿采样 {len(examples)} 个idea！",
+                            content_str= self._(
+                                "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea！"
+                            ) % (self.island.id, self.id, self.island.id, len(examples))
                         )
                         
                 example_idea_paths = [current_idea[-2] for current_idea in examples]
@@ -102,11 +104,14 @@ class Sampler:
                             with self.console_lock:
                                 append_to_file(
                                     file_path = diary_path,
-                                    content_str = (
-                                        f"【{self.island.id}号岛屿的{self.id}号采样器】 "
-                                        f"将 filter_func 作用于 {basename(path)} 时发生错误：\n"
-                                        f"{error}\n延用原来的 idea ！"
-                                    ),
+                                    content_str= self._(
+                                        "【%d号岛屿的%d号采样器】将 filter_func 作用于 %s 时发生错误：\n %s \n延用原来的 idea ！"
+                                    ) % (
+                                        self.island.id, 
+                                        self.id, 
+                                        basename(path), 
+                                        error
+                                    )
                                 )
 
                     examples_section += f'{idea}\n'
@@ -128,14 +133,16 @@ class Sampler:
                     with self.console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 工作结束。",
+                            content_str = self._("【%d号岛屿的%d号采样器】 工作结束。") % (self.island.id, self.id)
                         )
                     return
                 else:
                     with self.console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = f"【{self.island.id}号岛屿的{self.id}号采样器】 已从{self.island.id}号岛屿获得所有 ideas ，预备调用自定义的 generate prompt 函数！",
+                            content_str= self._(
+                                "【%d号岛屿的%d号采样器】 已从%d号岛屿采样 %d 个idea，预备调用自定义的 generate_prompt_func！"
+                            ) % (self.island.id, self.id, self.island.id, len(island_ideas))
                         )
                         
                 example_idea_paths = None
@@ -167,11 +174,9 @@ class Sampler:
                     with self.console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = (
-                                f"【{self.island.id}号岛屿的{self.id}号采样器】 "
-                                f"使用自定义的 generate_prompt_func 时发生错误：\n"
-                                f"{error}\nIdeaSearch终止！"
-                            ),
+                            content_str= self._(
+                                "【%d号岛屿的%d号采样器】使用自定义的 generate_prompt_func 时发生错误：\n %s\nIdeaSearch终止！"
+                            ) % (self.island.id, self.id, error)
                         )
                     return
             
