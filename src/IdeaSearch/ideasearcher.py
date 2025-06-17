@@ -59,11 +59,11 @@ class IdeaSearcher:
         self._models: Optional[List[str]] = None
         self._model_temperatures: Optional[List[float]] = None
         self._evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]] = None
+        self._api_keys_path: Optional[str] = None
         self._score_range: Tuple[float, float] = (0.0, 100.0)
         self._hand_over_threshold: float = 0.0
         self._system_prompt: Optional[str] = None
         self._diary_path: Optional[str] = None
-        self._api_keys_path: Optional[str] = None
         self._samplers_num: int = 3
         self._evaluators_num: int = 3
         self._examples_num: int = 3
@@ -155,6 +155,11 @@ class IdeaSearcher:
         self,
         additional_interaction_num: int,
     )-> None:
+    
+        """
+        Run the IdeaSearch process for each island, extending their evolution by the given number of epochs.
+        This method performs internal initialization, launches all samplers, and handles logging and error management.
+        """
 
         with self._user_lock:
         
@@ -224,10 +229,10 @@ class IdeaSearcher:
         if self._program_name is None:
             missing_param = "program_name"
             
-        if self._prologue_section is None:
+        if self._prologue_section is None and self._generate_prompt_func is None:
             missing_param = "prologue_section"
             
-        if self._epilogue_section is None:
+        if self._epilogue_section is None and self._generate_prompt_func is None:
             missing_param = "epilogue_section"
             
         if self._database_path is None:
@@ -302,6 +307,11 @@ class IdeaSearcher:
         self
     )-> None:
     
+        """
+        Load API keys for all models from the specified configuration file.
+        Parameter  `api_keys_path` must be set before calling this method; otherwise, a ValueError will be raised.
+        """
+    
         with self._user_lock:
     
             if self._api_keys_path is None:
@@ -316,6 +326,10 @@ class IdeaSearcher:
     def shutdown_models(
         self,
     )-> None:
+    
+        """
+        Shut down all models managed by the ModelManager to release resources and gracefully terminate sessions.
+        """
 
         with self._user_lock:
         
@@ -367,6 +381,11 @@ class IdeaSearcher:
         self,
     )-> float:
     
+        """
+        Return the highest score among all ideas across islands.
+        Raises a RuntimeError if any required parameter is missing or if there are no ideas available.
+        """
+    
         with self._user_lock:
         
             missing_param = self._check_runnability()
@@ -390,6 +409,11 @@ class IdeaSearcher:
     def get_best_idea(
         self,
     )-> str:
+    
+        """
+        Return the content of the idea with the highest score across all islands.
+        Raises a RuntimeError if any required parameter is missing or if there are no ideas available.
+        """
     
         with self._user_lock:
         
@@ -499,6 +523,13 @@ class IdeaSearcher:
     def add_island(
         self,
     )-> int:
+    
+        """
+        Add a new island to the IdeaSearcher system and return its island_id.
+        If this is the first island added, the method will also perform necessary initialization,
+        such as clearing diary logs, removing old idea directories, and resetting backup folders.
+        Raises RuntimeError if essential parameters are missing.
+        """
         
         with self._user_lock:
         
@@ -576,6 +607,11 @@ class IdeaSearcher:
         self,
         island_id: int,
     )-> int:
+
+        """
+        Delete the island with the given island_id from the IdeaSearcher system.
+        Returns 1 if deletion is successful, or 0 if the island_id does not exist.
+        """
     
         with self._user_lock:
             
@@ -591,6 +627,17 @@ class IdeaSearcher:
     def repopulate_islands(
         self,
     )-> None:
+    
+        """
+        Redistribute ideas among islands by colonization from top-performing islands to lower-ranked ones.
+
+        This method sorts all islands by their _best_score in descending order, then copies the best ideas from the top half 
+        of islands to the bottom half to promote idea sharing and improve overall search performance.
+
+        Logs the start and completion of the redistribution process to the diary file.
+
+        It helps to prevent local optima stagnation by enabling migration of high-quality ideas across islands.
+        """
     
         with self._user_lock:
         
@@ -1112,6 +1159,12 @@ class IdeaSearcher:
         self,
         value: str,
     ) -> None:
+    
+        """
+        Set the parameter `language` to the given value, if it is of the type str.
+        This parameter sets the language for the user interface and translations; currently, only 'zh_CN' and 'en' are supported.
+        The shorthand 'zh' will be converted to 'zh_CN'.
+        """
 
         if not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`language`类型应为str，实为%s") % str(type(value)))
@@ -1131,6 +1184,13 @@ class IdeaSearcher:
         self,
         value: str,
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `program_name` to the given value, if it is of the type str.
+        This parameter is the name of the current project.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`program_name`类型应为str，实为%s") % str(type(value)))
@@ -1144,6 +1204,13 @@ class IdeaSearcher:
         self,
         value: str,
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `prologue_section` to the given value, if it is of the type str.
+        This parameter holds the leading text snippet of every prompt.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`prologue_section`类型应为str，实为%s") % str(type(value)))
@@ -1157,6 +1224,13 @@ class IdeaSearcher:
         self,
         value: str,
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `epilogue_section` to the given value, if it is of the type str.
+        This parameter holds the ending text snippet of every prompt.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`epilogue_section`类型应为str，实为%s") % str(type(value)))
@@ -1170,6 +1244,13 @@ class IdeaSearcher:
         self,
         value: str,
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `database_path` to the given value, if it is of the type str.
+        The user-specified database path is the only location that the IdeaSearch package will modify on your file system once it starts running. When you begin, this path should already contain a subfolder named ideas/initial_ideas/, which itself should hold some .idea text files; these will be read in as the initial ideas for the system. Subsequently, the system will automatically generate folders like island1, island2, etc., under ideas/ to store ideas from different islands. Additionally, data/, pic/, and log/ folders will be automatically created at the same level as ideas/ to display system operation information.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`database_path`类型应为str，实为%s") % str(type(value)))
@@ -1183,6 +1264,13 @@ class IdeaSearcher:
         self,
         value: List[str],
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `models` to the given value, if it is of the type List[str].
+        This parameter is a list of model names participating in idea generation.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not hasattr(value, "__iter__") and not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`models`类型应为List[str]，实为%s") % str(type(value)))
@@ -1196,6 +1284,13 @@ class IdeaSearcher:
         self,
         value: List[float],
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `model_temperatures` to the given value, if it is of the type List[float].
+        This parameter defines the sampling temperature for each model, with its length matching the models list.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not hasattr(value, "__iter__") and not isinstance(value, str):
             raise TypeError(self._("【IdeaSearcher】 参数`model_temperatures`类型应为List[float]，实为%s") % str(type(value)))
@@ -1209,6 +1304,13 @@ class IdeaSearcher:
         self,
         value: Callable[[str], Tuple[float, Optional[str]]],
     ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `evaluate_func` to the given value, if it is of the type Callable[[str], Tuple[float, Optional[str]]].
+        This parameter is a function designed to score a single idea; it should accept a string as input and output a tuple containing a float for the score and an optional string for additional information.
+        This parameter is important and must be set manually by the user.
+        """
 
         if not callable(value):
             raise TypeError(self._("【IdeaSearcher】 参数`evaluate_func`类型应为Callable[[str], Tuple[float, Optional[str]]]，实为%s") % str(type(value)))
@@ -1217,10 +1319,36 @@ class IdeaSearcher:
             self._evaluate_func = value
 
 
+    # ⭐️ Important
+    def set_api_keys_path(
+        self,
+        value: str,
+    ) -> None:
+    
+        """
+        ⭐️ Important
+        Set the parameter `api_keys_path` to the given value, if it is of the type str.
+        This parameter indicates the path to the API key configuration file.
+        This parameter is important and must be set manually by the user.
+        """
+
+        if not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`api_keys_path`类型应为str，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._api_keys_path = value
+
+
     def set_score_range(
         self,
         value: Tuple[float, float],
     ) -> None:
+    
+        """
+        Set the parameter score_range to the given value, if it is of the type Tuple[float, float].
+        This parameter defines the range of scores, which is used for normalization and display, and scores given by the `evaluate_func` should fall within this range.
+        Its default value is (0.0, 100.0).
+        """
 
         if not isinstance(value, tuple):
             raise TypeError(self._("【IdeaSearcher】 参数`score_range`类型应为Tuple[float, float]，实为%s") % str(type(value)))
@@ -1233,6 +1361,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter hand_over_threshold to the given value, if it is of the type float.
+        This parameter defines the minimum score an idea must meet to enter the island.
+        Its default value is 0.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`hand_over_threshold`类型应为float，实为%s") % str(type(value)))
@@ -1245,6 +1379,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter system_prompt to the given value, if it is of the type Optional[str].
+        This parameter contains the system prompt for IdeaSearcher.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`system_prompt`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1257,6 +1397,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter diary_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the path to the log file; if set to `None` at runtime, it will automatically default to `database_path` + 'log/diary.txt'.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`diary_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1265,22 +1411,16 @@ class IdeaSearcher:
             self._diary_path = value
 
 
-    def set_api_keys_path(
-        self,
-        value: Optional[str],
-    ) -> None:
-
-        if not (value is None or isinstance(value, str)):
-            raise TypeError(self._("【IdeaSearcher】 参数`api_keys_path`类型应为Optional[str]，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._api_keys_path = value
-
-
     def set_samplers_num(
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter samplers_num to the given value, if it is of the type int.
+        This parameter determines the number of Samplers equipped for each island.
+        Its default value is 3.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`samplers_num`类型应为int，实为%s") % str(type(value)))
@@ -1293,6 +1433,12 @@ class IdeaSearcher:
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter evaluators_num to the given value, if it is of the type int.
+        This parameter determines the number of Evaluators equipped for each island.
+        Its default value is 3.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`evaluators_num`类型应为int，实为%s") % str(type(value)))
@@ -1305,6 +1451,12 @@ class IdeaSearcher:
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter examples_num to the given value, if it is of the type int.
+        This parameter specifies the number of historical ideas displayed to the model per round.
+        Its default value is 3.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`examples_num`类型应为int，实为%s") % str(type(value)))
@@ -1317,6 +1469,12 @@ class IdeaSearcher:
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter generate_num to the given value, if it is of the type int.
+        This parameter sets the number of ideas generated by each Sampler per round.
+        Its default value is 1.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`generate_num`类型应为int，实为%s") % str(type(value)))
@@ -1329,6 +1487,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter sample_temperature to the given value, if it is of the type float.
+        This parameter controls the softmax temperature for idea selection.
+        Its default value is 50.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`sample_temperature`类型应为float，实为%s") % str(type(value)))
@@ -1341,6 +1505,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter model_sample_temperature to the given value, if it is of the type float.
+        This parameter controls the softmax temperature for model selection.
+        Its default value is 50.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`model_sample_temperature`类型应为float，实为%s") % str(type(value)))
@@ -1353,6 +1523,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]],
     ) -> None:
+    
+        """
+        Set the parameter assess_func to the given value, if it is of the type Optional[Callable[[List[str], List[float], List[Optional[str]]], float]].
+        This parameter defines the comprehensive evaluation function for all ideas.
+        Its default value is default_assess_func.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`assess_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]，实为%s") % str(type(value)))
@@ -1365,6 +1541,12 @@ class IdeaSearcher:
         self,
         value: Optional[int],
     ) -> None:
+    
+        """
+        Set the parameter assess_interval to the given value, if it is of the type Optional[int].
+        This parameter sets the interval in rounds between assess_func evaluations.
+        Its default value is 1.
+        """
 
         if not (value is None or isinstance(value, int)):
             raise TypeError(self._("【IdeaSearcher】 参数`assess_interval`类型应为Optional[int]，实为%s") % str(type(value)))
@@ -1377,6 +1559,12 @@ class IdeaSearcher:
         self,
         value: Optional[float],
     ) -> None:
+    
+        """
+        Set the parameter assess_baseline to the given value, if it is of the type Optional[float].
+        This parameter establishes the baseline for island assessment, which is displayed in the graph.
+        Its default value is 60.0.
+        """
 
         if not (value is None or isinstance(value, float)):
             raise TypeError(self._("【IdeaSearcher】 参数`assess_baseline`类型应为Optional[float]，实为%s") % str(type(value)))
@@ -1389,6 +1577,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter assess_result_data_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the path to store assessment scores in an .npz file; if set to `None` at runtime, it will automatically default to `database_path` + 'data/database_assessment.npz'.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`assess_result_data_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1401,6 +1595,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter assess_result_pic_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the path to store assessment images as a .png file; if set to `None` at runtime, it will automatically default to `database_path` + 'pic/database_assessment.png'.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`assess_result_pic_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1413,6 +1613,12 @@ class IdeaSearcher:
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter model_assess_window_size to the given value, if it is of the type int.
+        This parameter sets the window size for model moving average assessment.
+        Its default value is 20.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_window_size`类型应为int，实为%s") % str(type(value)))
@@ -1425,6 +1631,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter model_assess_initial_score to the given value, if it is of the type float.
+        This parameter defines the initial score for models and is set high in order to encourage exploration.
+        Its default value is 100.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_initial_score`类型应为float，实为%s") % str(type(value)))
@@ -1437,6 +1649,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter model_assess_average_order to the given value, if it is of the type float.
+        This parameter sets the p-norm for the model score moving average.
+        Its default value is 1.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_average_order`类型应为float，实为%s") % str(type(value)))
@@ -1449,6 +1667,12 @@ class IdeaSearcher:
         self,
         value: bool,
     ) -> None:
+    
+        """
+        Set the parameter model_assess_save_result to the given value, if it is of the type bool.
+        This parameter determines whether to save model assessment results.
+        Its default value is True.
+        """
 
         if not isinstance(value, bool):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_save_result`类型应为bool，实为%s") % str(type(value)))
@@ -1461,6 +1685,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter model_assess_result_data_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the save path for model assessment result data in an .npz file; if set to `None` at runtime, it will automatically default to `database_path` + 'data/model_scores.npz'.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_result_data_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1473,6 +1703,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter model_assess_result_pic_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the save path for model assessment images as a .png file; if set to `None` at runtime, it will automatically default to `database_path` + 'pic/model_scores.png'.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`model_assess_result_pic_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1485,6 +1721,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[str], str]],
     ) -> None:
+    
+        """
+        Set the parameter mutation_func to the given value, if it is of the type Optional[Callable[[str], str]].
+        This parameter is the mutation function for ideas.
+        Its default value is None.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`mutation_func`类型应为Optional[Callable[[str], str]]，实为%s") % str(type(value)))
@@ -1497,6 +1739,12 @@ class IdeaSearcher:
         self,
         value: Optional[int],
     ) -> None:
+    
+        """
+        Set the parameter mutation_interval to the given value, if it is of the type Optional[int].
+        This parameter sets the interval in rounds between mutation operations.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, int)):
             raise TypeError(self._("【IdeaSearcher】 参数`mutation_interval`类型应为Optional[int]，实为%s") % str(type(value)))
@@ -1509,6 +1757,12 @@ class IdeaSearcher:
         self,
         value: Optional[int],
     ) -> None:
+    
+        """
+        Set the parameter mutation_num to the given value, if it is of the type Optional[int].
+        This parameter determines the number of mutations performed per round.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, int)):
             raise TypeError(self._("【IdeaSearcher】 参数`mutation_num`类型应为Optional[int]，实为%s") % str(type(value)))
@@ -1521,6 +1775,12 @@ class IdeaSearcher:
         self,
         value: Optional[float],
     ) -> None:
+    
+        """
+        Set the parameter mutation_temperature to the given value, if it is of the type Optional[float].
+        This parameter controls the softmax temperature for mutation candidate selection.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, float)):
             raise TypeError(self._("【IdeaSearcher】 参数`mutation_temperature`类型应为Optional[float]，实为%s") % str(type(value)))
@@ -1533,6 +1793,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[str, str], str]],
     ) -> None:
+    
+        """
+        Set the parameter crossover_func to the given value, if it is of the type Optional[Callable[[str, str], str]].
+        This parameter is the crossover function for ideas.
+        Its default value is None.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`crossover_func`类型应为Optional[Callable[[str, str], str]]，实为%s") % str(type(value)))
@@ -1545,6 +1811,12 @@ class IdeaSearcher:
         self,
         value: Optional[int],
     ) -> None:
+    
+        """
+        Set the parameter crossover_interval to the given value, if it is of the type Optional[int].
+        This parameter sets the interval in rounds between crossover operations.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, int)):
             raise TypeError(self._("【IdeaSearcher】 参数`crossover_interval`类型应为Optional[int]，实为%s") % str(type(value)))
@@ -1557,6 +1829,12 @@ class IdeaSearcher:
         self,
         value: Optional[int],
     ) -> None:
+    
+        """
+        Set the parameter crossover_num to the given value, if it is of the type Optional[int].
+        This parameter determines the number of ideas generated by crossover per round.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, int)):
             raise TypeError(self._("【IdeaSearcher】 参数`crossover_num`类型应为Optional[int]，实为%s") % str(type(value)))
@@ -1569,6 +1847,12 @@ class IdeaSearcher:
         self,
         value: Optional[float],
     ) -> None:
+    
+        """
+        Set the parameter crossover_temperature to the given value, if it is of the type Optional[float].
+        This parameter controls the softmax temperature for crossover candidate selection.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, float)):
             raise TypeError(self._("【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为%s") % str(type(value)))
@@ -1581,6 +1865,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter similarity_threshold to the given value, if it is of the type float.
+        This parameter defines the distance threshold for idea similarity; a value of -1 means only exact matches are considered similar.
+        Its default value is -1.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s") % str(type(value)))
@@ -1593,6 +1883,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[str, str], float]],
     ) -> None:
+    
+        """
+        Set the parameter similarity_distance_func to the given value, if it is of the type Optional[Callable[[str, str], float]].
+        This parameter is the function used to calculate idea similarity, defaulting to the absolute difference in scores.
+        Its default value is None.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为%s") % str(type(value)))
@@ -1605,6 +1901,12 @@ class IdeaSearcher:
         self,
         value: Optional[List[int]],
     ) -> None:
+    
+        """
+        Set the parameter similarity_sys_info_thresholds to the given value, if it is of the type Optional[List[int]].
+        This parameter is a list of thresholds that trigger similarity system prompts.
+        Its default value is None.
+        """
 
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
             raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s") % str(type(value)))
@@ -1617,6 +1919,12 @@ class IdeaSearcher:
         self,
         value: Optional[List[str]],
     ) -> None:
+    
+        """
+        Set the parameter similarity_sys_info_prompts to the given value, if it is of the type Optional[List[str]].
+        This parameter contains the system prompt content corresponding to the thresholds. The length of `similarity_sys_info_prompts` should be the length of `similarity_sys_info_thresholds` + 1.
+        Its default value is None.
+        """
 
         if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
             raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s") % str(type(value)))
@@ -1629,6 +1937,12 @@ class IdeaSearcher:
         self,
         value: bool,
     ) -> None:
+    
+        """
+        Set the parameter load_idea_skip_evaluation to the given value, if it is of the type bool.
+        This parameter determines whether to attempt skipping evaluation by loading from score_sheet.json.
+        Its default value is True.
+        """
 
         if not isinstance(value, bool):
             raise TypeError(self._("【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s") % str(type(value)))
@@ -1641,6 +1955,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter initialization_cleanse_threshold to the given value, if it is of the type float.
+        This parameter sets the minimum score threshold for initial cleansing.
+        Its default value is -1.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`initialization_cleanse_threshold`类型应为float，实为%s") % str(type(value)))
@@ -1653,6 +1973,12 @@ class IdeaSearcher:
         self,
         value: bool,
     ) -> None:
+    
+        """
+        Set the parameter delete_when_initial_cleanse to the given value, if it is of the type bool.
+        This parameter determines whether to directly delete low-scoring ideas during cleansing.
+        Its default value is False.
+        """
 
         if not isinstance(value, bool):
             raise TypeError(self._("【IdeaSearcher】 参数`delete_when_initial_cleanse`类型应为bool，实为%s") % str(type(value)))
@@ -1665,6 +1991,12 @@ class IdeaSearcher:
         self,
         value: int,
     ) -> None:
+    
+        """
+        Set the parameter idea_uid_length to the given value, if it is of the type int.
+        This parameter specifies the length of the UID in idea filenames.
+        Its default value is 6.
+        """
 
         if not isinstance(value, int):
             raise TypeError(self._("【IdeaSearcher】 参数`idea_uid_length`类型应为int，实为%s") % str(type(value)))
@@ -1677,6 +2009,12 @@ class IdeaSearcher:
         self,
         value: bool,
     ) -> None:
+    
+        """
+        Set the parameter record_prompt_in_diary to the given value, if it is of the type bool.
+        This parameter controls whether to record each round's prompt in the diary.
+        Its default value is False.
+        """
 
         if not isinstance(value, bool):
             raise TypeError(self._("【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实为%s") % str(type(value)))
@@ -1689,6 +2027,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[str], str]],
     ) -> None:
+    
+        """
+        Set the parameter filter_func to the given value, if it is of the type Optional[Callable[[str], str]].
+        This parameter is a function for preprocessing before sampling and prompt construction.
+        Its default value is None.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s") % str(type(value)))
@@ -1701,6 +2045,12 @@ class IdeaSearcher:
         self,
         value: float,
     ) -> None:
+    
+        """
+        Set the parameter generation_bonus to the given value, if it is of the type float.
+        This parameter provides a bonus for ideas from more recent generations, which is then incorporated into their scores for softmax sampling.
+        Its default value is 0.0.
+        """
 
         if not isinstance(value, float):
             raise TypeError(self._("【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s") % str(type(value)))
@@ -1713,6 +2063,12 @@ class IdeaSearcher:
         self,
         value: Optional[str],
     ) -> None:
+    
+        """
+        Set the parameter backup_path to the given value, if it is of the type Optional[str].
+        This parameter specifies the path for backups; if set to `None` at runtime, it will automatically default to `database_path` + 'ideas/backup/.
+        Its default value is None.
+        """
 
         if not (value is None or isinstance(value, str)):
             raise TypeError(self._("【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s") % str(type(value)))
@@ -1725,6 +2081,12 @@ class IdeaSearcher:
         self,
         value: bool,
     ) -> None:
+    
+        """
+        Set the parameter backup_on to the given value, if it is of the type bool.
+        This parameter indicates whether backups are enabled.
+        Its default value is True.
+        """
 
         if not isinstance(value, bool):
             raise TypeError(self._("【IdeaSearcher】 参数`backup_on`类型应为bool，实为%s") % str(type(value)))
@@ -1737,6 +2099,12 @@ class IdeaSearcher:
         self,
         value: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]],
     ) -> None:
+    
+        """
+        Set the parameter generate_prompt_func to the given value, if it is of the type Optional[Callable[[List[str], List[float], List[Optional[str]]], str]].
+        This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos.
+        Its default value is None.
+        """
 
         if not (value is None or callable(value)):
             raise TypeError(self._("【IdeaSearcher】 参数`generate_prompt_func`类型应为Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]，实为%s") % str(type(value)))
@@ -1748,6 +2116,11 @@ class IdeaSearcher:
     def get_language(
         self,
     )-> str:
+    
+        """
+        Get the current value of the `language` parameter.
+        This parameter determines the active language for translations and interface text.
+        """
         
         return self._language
 
@@ -1756,6 +2129,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `program_name` parameter.
+        This parameter is the name of the current project.
+        """
+
         return self._program_name
 
 
@@ -1763,6 +2141,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `prologue_section` parameter.
+        This parameter holds the leading text snippet of every prompt.
+        """
+
         return self._prologue_section
 
 
@@ -1770,6 +2153,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `epilogue_section` parameter.
+        This parameter holds the ending text snippet of every prompt.
+        """
+
         return self._epilogue_section
 
 
@@ -1777,6 +2165,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `database_path` parameter.
+        The user-specified database path is the only location that the IdeaSearch package will modify on your file system once it starts running. When you begin, this path should already contain a subfolder named ideas/initial_ideas/, which itself should hold some .idea text files; these will be read in as the initial ideas for the system. Subsequently, the system will automatically generate folders like island1, island2, etc., under ideas/ to store ideas from different islands. Additionally, data/, pic/, and log/ folders will be automatically created at the same level as ideas/ to display system operation information.
+        """
+
         return self._database_path
 
 
@@ -1784,6 +2177,11 @@ class IdeaSearcher:
         self,
     )-> Optional[List[str]]:
         
+        """
+        Get the current value of the `models` parameter.
+        This parameter is a list of model names participating in idea generation.
+        """
+
         return self._models
 
 
@@ -1791,6 +2189,11 @@ class IdeaSearcher:
         self,
     )-> Optional[List[float]]:
         
+        """
+        Get the current value of the `model_temperatures` parameter.
+        This parameter defines the sampling temperature for each model, with its length matching the models list.
+        """
+
         return self._model_temperatures
 
 
@@ -1798,13 +2201,35 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[str], Tuple[float, Optional[str]]]]:
         
+        """
+        Get the current value of the `evaluate_func` parameter.
+        This parameter is a function designed to score a single idea; it should accept a string as input and output a tuple containing a float for the score and an optional string for additional information.
+        """
+
         return self._evaluate_func
+
+
+    def get_api_keys_path(
+        self,
+    )-> Optional[str]:
+        
+        """
+        Get the current value of the `api_keys_path` parameter.
+        This parameter indicates the path to the API key configuration file.
+        """
+
+        return self._api_keys_path
 
 
     def get_score_range(
         self,
     )-> Tuple[float, float]:
         
+        """
+        Get the current value of the `score_range` parameter.
+        This parameter defines the range of scores, which is used for normalization and display, and scores given by the `evaluate_func` should fall within this range.
+        """
+
         return self._score_range
 
 
@@ -1812,6 +2237,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `hand_over_threshold` parameter.
+        This parameter defines the minimum score an idea must meet to enter the island.
+        """
+
         return self._hand_over_threshold
 
 
@@ -1819,6 +2249,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `system_prompt` parameter.
+        This parameter contains the system prompt for IdeaSearcher.
+        """
+
         return self._system_prompt
 
 
@@ -1826,20 +2261,23 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `diary_path` parameter.
+        This parameter specifies the path to the log file; if set to `None` at runtime, it will automatically default to `database_path` + 'log/diary.txt'.
+        """
+
         return self._diary_path
-
-
-    def get_api_keys_path(
-        self,
-    )-> Optional[str]:
-        
-        return self._api_keys_path
 
 
     def get_samplers_num(
         self,
     )-> int:
         
+        """
+        Get the current value of the `samplers_num` parameter.
+        This parameter determines the number of Samplers equipped for each island.
+        """
+
         return self._samplers_num
 
 
@@ -1847,6 +2285,11 @@ class IdeaSearcher:
         self,
     )-> int:
         
+        """
+        Get the current value of the `evaluators_num` parameter.
+        This parameter determines the number of Evaluators equipped for each island.
+        """
+
         return self._evaluators_num
 
 
@@ -1854,6 +2297,11 @@ class IdeaSearcher:
         self,
     )-> int:
         
+        """
+        Get the current value of the `examples_num` parameter.
+        This parameter specifies the number of historical ideas displayed to the model per round.
+        """
+
         return self._examples_num
 
 
@@ -1861,6 +2309,11 @@ class IdeaSearcher:
         self,
     )-> int:
         
+        """
+        Get the current value of the `generate_num` parameter.
+        This parameter sets the number of ideas generated by each Sampler per round.
+        """
+
         return self._generate_num
 
 
@@ -1868,6 +2321,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `sample_temperature` parameter.
+        This parameter controls the softmax temperature for idea selection.
+        """
+
         return self._sample_temperature
 
 
@@ -1875,6 +2333,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `model_sample_temperature` parameter.
+        This parameter controls the softmax temperature for model selection.
+        """
+
         return self._model_sample_temperature
 
 
@@ -1882,6 +2345,11 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], float]]:
         
+        """
+        Get the current value of the `assess_func` parameter.
+        This parameter defines the comprehensive evaluation function for all ideas.
+        """
+
         return self._assess_func
 
 
@@ -1889,6 +2357,11 @@ class IdeaSearcher:
         self,
     )-> Optional[int]:
         
+        """
+        Get the current value of the `assess_interval` parameter.
+        This parameter sets the interval in rounds between assess_func evaluations.
+        """
+
         return self._assess_interval
 
 
@@ -1896,6 +2369,11 @@ class IdeaSearcher:
         self,
     )-> Optional[float]:
         
+        """
+        Get the current value of the `assess_baseline` parameter.
+        This parameter establishes the baseline for island assessment, which is displayed in the graph.
+        """
+
         return self._assess_baseline
 
 
@@ -1903,6 +2381,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `assess_result_data_path` parameter.
+        This parameter specifies the path to store assessment scores in an .npz file; if set to `None` at runtime, it will automatically default to `database_path` + 'data/database_assessment.npz'.
+        """
+
         return self._assess_result_data_path
 
 
@@ -1910,6 +2393,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `assess_result_pic_path` parameter.
+        This parameter specifies the path to store assessment images as a .png file; if set to `None` at runtime, it will automatically default to `database_path` + 'pic/database_assessment.png'.
+        """
+
         return self._assess_result_pic_path
 
 
@@ -1917,6 +2405,11 @@ class IdeaSearcher:
         self,
     )-> int:
         
+        """
+        Get the current value of the `model_assess_window_size` parameter.
+        This parameter sets the window size for model moving average assessment.
+        """
+
         return self._model_assess_window_size
 
 
@@ -1924,6 +2417,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `model_assess_initial_score` parameter.
+        This parameter defines the initial score for models and is set high in order to encourage exploration.
+        """
+
         return self._model_assess_initial_score
 
 
@@ -1931,6 +2429,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `model_assess_average_order` parameter.
+        This parameter sets the p-norm for the model score moving average.
+        """
+
         return self._model_assess_average_order
 
 
@@ -1938,6 +2441,11 @@ class IdeaSearcher:
         self,
     )-> bool:
         
+        """
+        Get the current value of the `model_assess_save_result` parameter.
+        This parameter determines whether to save model assessment results.
+        """
+
         return self._model_assess_save_result
 
 
@@ -1945,6 +2453,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `model_assess_result_data_path` parameter.
+        This parameter specifies the save path for model assessment result data in an .npz file; if set to `None` at runtime, it will automatically default to `database_path` + 'data/model_scores.npz'.
+        """
+
         return self._model_assess_result_data_path
 
 
@@ -1952,6 +2465,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `model_assess_result_pic_path` parameter.
+        This parameter specifies the save path for model assessment images as a .png file; if set to `None` at runtime, it will automatically default to `database_path` + 'pic/model_scores.png'.
+        """
+
         return self._model_assess_result_pic_path
 
 
@@ -1959,6 +2477,11 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[str], str]]:
         
+        """
+        Get the current value of the `mutation_func` parameter.
+        This parameter is the mutation function for ideas.
+        """
+
         return self._mutation_func
 
 
@@ -1966,6 +2489,11 @@ class IdeaSearcher:
         self,
     )-> Optional[int]:
         
+        """
+        Get the current value of the `mutation_interval` parameter.
+        This parameter sets the interval in rounds between mutation operations.
+        """
+
         return self._mutation_interval
 
 
@@ -1973,6 +2501,11 @@ class IdeaSearcher:
         self,
     )-> Optional[int]:
         
+        """
+        Get the current value of the `mutation_num` parameter.
+        This parameter determines the number of mutations performed per round.
+        """
+
         return self._mutation_num
 
 
@@ -1980,6 +2513,11 @@ class IdeaSearcher:
         self,
     )-> Optional[float]:
         
+        """
+        Get the current value of the `mutation_temperature` parameter.
+        This parameter controls the softmax temperature for mutation candidate selection.
+        """
+
         return self._mutation_temperature
 
 
@@ -1987,6 +2525,11 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[str, str], str]]:
         
+        """
+        Get the current value of the `crossover_func` parameter.
+        This parameter is the crossover function for ideas.
+        """
+
         return self._crossover_func
 
 
@@ -1994,6 +2537,11 @@ class IdeaSearcher:
         self,
     )-> Optional[int]:
         
+        """
+        Get the current value of the `crossover_interval` parameter.
+        This parameter sets the interval in rounds between crossover operations.
+        """
+
         return self._crossover_interval
 
 
@@ -2001,6 +2549,11 @@ class IdeaSearcher:
         self,
     )-> Optional[int]:
         
+        """
+        Get the current value of the `crossover_num` parameter.
+        This parameter determines the number of ideas generated by crossover per round.
+        """
+
         return self._crossover_num
 
 
@@ -2008,6 +2561,11 @@ class IdeaSearcher:
         self,
     )-> Optional[float]:
         
+        """
+        Get the current value of the `crossover_temperature` parameter.
+        This parameter controls the softmax temperature for crossover candidate selection.
+        """
+
         return self._crossover_temperature
 
 
@@ -2015,6 +2573,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `similarity_threshold` parameter.
+        This parameter defines the distance threshold for idea similarity; a value of -1 means only exact matches are considered similar.
+        """
+
         return self._similarity_threshold
 
 
@@ -2022,6 +2585,11 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[str, str], float]]:
         
+        """
+        Get the current value of the `similarity_distance_func` parameter.
+        This parameter is the function used to calculate idea similarity, defaulting to the absolute difference in scores.
+        """
+
         return self._similarity_distance_func
 
 
@@ -2029,6 +2597,11 @@ class IdeaSearcher:
         self,
     )-> Optional[List[int]]:
         
+        """
+        Get the current value of the `similarity_sys_info_thresholds` parameter.
+        This parameter is a list of thresholds that trigger similarity system prompts.
+        """
+
         return self._similarity_sys_info_thresholds
 
 
@@ -2036,6 +2609,11 @@ class IdeaSearcher:
         self,
     )-> Optional[List[str]]:
         
+        """
+        Get the current value of the `similarity_sys_info_prompts` parameter.
+        This parameter contains the system prompt content corresponding to the thresholds. The length of `similarity_sys_info_prompts` should be the length of `similarity_sys_info_thresholds` + 1.
+        """
+
         return self._similarity_sys_info_prompts
 
 
@@ -2043,6 +2621,11 @@ class IdeaSearcher:
         self,
     )-> bool:
         
+        """
+        Get the current value of the `load_idea_skip_evaluation` parameter.
+        This parameter determines whether to attempt skipping evaluation by loading from score_sheet.json.
+        """
+
         return self._load_idea_skip_evaluation
 
 
@@ -2050,6 +2633,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `initialization_cleanse_threshold` parameter.
+        This parameter sets the minimum score threshold for initial cleansing.
+        """
+
         return self._initialization_cleanse_threshold
 
 
@@ -2057,6 +2645,11 @@ class IdeaSearcher:
         self,
     )-> bool:
         
+        """
+        Get the current value of the `delete_when_initial_cleanse` parameter.
+        This parameter determines whether to directly delete low-scoring ideas during cleansing.
+        """
+
         return self._delete_when_initial_cleanse
 
 
@@ -2064,6 +2657,11 @@ class IdeaSearcher:
         self,
     )-> int:
         
+        """
+        Get the current value of the `idea_uid_length` parameter.
+        This parameter specifies the length of the UID in idea filenames.
+        """
+
         return self._idea_uid_length
 
 
@@ -2071,6 +2669,11 @@ class IdeaSearcher:
         self,
     )-> bool:
         
+        """
+        Get the current value of the `record_prompt_in_diary` parameter.
+        This parameter controls whether to record each round's prompt in the diary.
+        """
+
         return self._record_prompt_in_diary
 
 
@@ -2078,6 +2681,11 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[str], str]]:
         
+        """
+        Get the current value of the `filter_func` parameter.
+        This parameter is a function for preprocessing before sampling and prompt construction.
+        """
+
         return self._filter_func
 
 
@@ -2085,6 +2693,11 @@ class IdeaSearcher:
         self,
     )-> float:
         
+        """
+        Get the current value of the `generation_bonus` parameter.
+        This parameter provides a bonus for ideas from more recent generations, which is then incorporated into their scores for softmax sampling.
+        """
+
         return self._generation_bonus
 
 
@@ -2092,6 +2705,11 @@ class IdeaSearcher:
         self,
     )-> Optional[str]:
         
+        """
+        Get the current value of the `backup_path` parameter.
+        This parameter specifies the path for backups; if set to `None` at runtime, it will automatically default to `database_path` + 'ideas/backup/.
+        """
+
         return self._backup_path
 
 
@@ -2099,6 +2717,11 @@ class IdeaSearcher:
         self,
     )-> bool:
         
+        """
+        Get the current value of the `backup_on` parameter.
+        This parameter indicates whether backups are enabled.
+        """
+
         return self._backup_on
 
 
@@ -2106,5 +2729,10 @@ class IdeaSearcher:
         self,
     )-> Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]:
         
+        """
+        Get the current value of the `generate_prompt_func` parameter.
+        This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos.
+        """
+
         return self._generate_prompt_func
 
