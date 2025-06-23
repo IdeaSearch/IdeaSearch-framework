@@ -211,7 +211,7 @@ class Sampler:
                     content_str = self._("【%d号岛屿的%d号采样器】 已向 %s(T=%.2f) 发送prompt，正在等待回答！") % (self.island.id, self.id, model, model_temperature),
                 )
                 
-            generated_ideas = [""] * generate_num
+            generated_ideas = [None] * generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
@@ -235,7 +235,7 @@ class Sampler:
                                 file_path = diary_path,
                                 content_str = self._("【%d号岛屿的%d号采样器】 尝试获取 %s(T=%.2f) 的回答时发生错误: \n%s\n此轮采样失败。。。") % (self.island.id, self.id, model, model_temperature, e),
                             )
-                        continue
+                        break
                             
             if any(idea is None for idea in generated_ideas):
                 
