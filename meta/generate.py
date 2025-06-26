@@ -201,6 +201,7 @@ def main():
         self._assigned_idea_uids = set()
         self._recorded_ideas = []
         self._recorded_idea_names = set()
+        self._added_initial_idea_no: int = 1
 """
 
 
@@ -667,8 +668,9 @@ gettext.textdomain(_DOMAIN)
         assert database_path is not None
         assert models is not None
         
+        default_model_temperature = 0.9
         if self._model_temperatures is None:
-            self._model_temperatures = [1.0] * len(models)
+            self._model_temperatures = [default_model_temperature] * len(models)
         
         if self._similarity_distance_func is None:
             self._similarity_distance_func = self._default_similarity_distance_func
@@ -1284,6 +1286,36 @@ gettext.textdomain(_DOMAIN)
             'assess_database', 'get_model'
         ]
 """
+
+    add_initial_ideas = f"""    def add_initial_ideas(
+        self,
+        initial_ideas: List[str],
+    ):
+    
+        with self._user_lock:
+        
+            missing_param = self._check_runnability()
+            if missing_param is not None:
+                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_initial_ideas 动作！") % missing_param)
+            
+            database_path = self._database_path
+            assert database_path is not None
+            
+            initial_ideas_path = f"{{database_path}}{{seperator}}ideas{{seperator}}initial_ideas{{seperator}}"
+            guarantee_path_exist(initial_ideas_path)
+            
+            for initial_idea in initial_ideas:
+            
+                with open(
+                    file = f"{{initial_ideas_path}}added_initial_idea{{self._added_initial_idea_no}}.idea",
+                    mode = "w",
+                    encoding = "UTF-8",
+                ) as file:
+                
+                    file.write(initial_idea)
+                    
+                self._added_initial_idea_no += 1
+"""
     
     ideasearcher_code = f"""{import_section}
 
@@ -1320,6 +1352,9 @@ class IdeaSearcher:
 
     # ⭐️ Important
 {get_best_idea}
+
+    # ⭐️ Important
+{add_initial_ideas}
     
 {get_idea_uid}
 
