@@ -614,7 +614,7 @@ gettext.textdomain(_DOMAIN)
             )
         
         else:
-            raise RuntimeError(f"【IdeaSearcher】 get answer 过程报错：模型 {{model_name}} 未被记录！")
+            raise RuntimeError(self._("【IdeaSearcher】 get answer 过程报错：模型 %s 未被记录！") % model_name)
 """
 
     check_runnability = f"""    def _check_runnability(
