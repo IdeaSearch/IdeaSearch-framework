@@ -43,7 +43,7 @@ def guarantee_path_exist(path):
 
 
 def append_to_file(
-    file_path, 
+    file_path,
     content_str, 
     end="\n", 
     encoding = "utf-16"
@@ -58,24 +58,31 @@ def append_to_file(
     end (str, optional): 内容结尾的字符，默认为换行符。
     encoding (str, optional): 编码方式，默认为utf-16
     """
+    
+    guarantee_path_exist(file_path)
 
     # 以追加模式打开文件并写入内容
     with open(file_path, "a", encoding=encoding) as file:
         file.write(content_str + end)
         
+        
 def clear_file_content(
     file_path, 
-    encoding="utf-16"):
+    encoding="utf-16"
+):
     """
     清空指定文件的全部内容。
+    
+    若文件不存在，则静默跳过。
 
     参数:
-    file_path (str): 目标文件的路径。
-    encoding (str, optional): 编码方式，默认为utf-16。
+        file_path (str): 目标文件的路径。
+        encoding (str, optional): 编码方式，默认为 utf-16。
     """
-
-    # 以写入模式打开文件并立即关闭，清空原内容
-    with open(file_path, "w", encoding=encoding):
+    try:
+        with open(file_path, "w", encoding=encoding):
+            pass
+    except FileNotFoundError:
         pass
     
     
