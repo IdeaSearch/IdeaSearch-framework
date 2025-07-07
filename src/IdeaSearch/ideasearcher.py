@@ -135,6 +135,7 @@ class IdeaSearcher:
         self._recorded_ideas = []
         self._recorded_idea_names = set()
         self._added_initial_idea_no: int = 1
+        self._models_loaded_from_api_keys_json: bool = False
 
 
     def __dir__(self):
@@ -167,6 +168,10 @@ class IdeaSearcher:
             missing_param = self._check_runnability()
             if missing_param is not None:
                 raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 run 动作！") % missing_param)
+                
+            if not self._models_loaded_from_api_keys_json:
+                self._load_models()
+                self._models_loaded_from_api_keys_json = True
                 
             diary_path = self._diary_path
             database_path = self._database_path
@@ -303,9 +308,8 @@ class IdeaSearcher:
         return None
 
     # ----------------------------- API4LLMs 相关 ----------------------------- 
-   
-    # ⭐️ Important
-    def load_models(
+
+    def _load_models(
         self
     )-> None:
     
@@ -314,29 +318,13 @@ class IdeaSearcher:
         Parameter  `api_keys_path` must be set before calling this method; otherwise, a ValueError will be raised.
         """
     
-        with self._user_lock:
-    
-            if self._api_keys_path is None:
-                raise ValueError(
-                    self._("【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！")
-                )
-                
-            self._model_manager.load_api_keys(self._api_keys_path)
- 
-
-    # ⭐️ Important
-    def shutdown_models(
-        self,
-    )-> None:
-    
-        """
-        Shut down all models managed by the ModelManager to release resources and gracefully terminate sessions.
-        """
-
-        with self._user_lock:
-        
-            self._model_manager.shutdown()
-   
+        if self._api_keys_path is None:
+            raise ValueError(
+                self._("【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！")
+            )
+            
+        self._model_manager.load_api_keys(self._api_keys_path)
+  
 
     def _is_online_model(
         self,

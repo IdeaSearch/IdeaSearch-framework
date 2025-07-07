@@ -202,6 +202,7 @@ def main():
         self._recorded_ideas = []
         self._recorded_idea_names = set()
         self._added_initial_idea_no: int = 1
+        self._models_loaded_from_api_keys_json: bool = False
 """
 
 
@@ -246,7 +247,7 @@ gettext.bindtextdomain(_DOMAIN, _LOCALE_DIR)
 gettext.textdomain(_DOMAIN)
 """
 
-    load_models = """    def load_models(
+    load_models = """    def _load_models(
         self
     )-> None:
     
@@ -255,14 +256,12 @@ gettext.textdomain(_DOMAIN)
         Parameter  `api_keys_path` must be set before calling this method; otherwise, a ValueError will be raised.
         \"""
     
-        with self._user_lock:
-    
-            if self._api_keys_path is None:
-                raise ValueError(
-                    self._("【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！")
-                )
-                
-            self._model_manager.load_api_keys(self._api_keys_path)
+        if self._api_keys_path is None:
+            raise ValueError(
+                self._("【IdeaSearcher】 加载模型时发生错误： api keys path 不应为 None ！")
+            )
+            
+        self._model_manager.load_api_keys(self._api_keys_path)
 """
 
     add_island = f"""    def add_island(
@@ -434,6 +433,10 @@ gettext.textdomain(_DOMAIN)
             missing_param = self._check_runnability()
             if missing_param is not None:
                 raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 run 动作！") % missing_param)
+                
+            if not self._models_loaded_from_api_keys_json:
+                self._load_models()
+                self._models_loaded_from_api_keys_json = True
                 
             diary_path = self._diary_path
             database_path = self._database_path
@@ -1333,12 +1336,8 @@ class IdeaSearcher:
 
 {check_runnability}
     # ----------------------------- API4LLMs 相关 ----------------------------- 
-   
-    # ⭐️ Important
-{load_models} 
 
-    # ⭐️ Important
-{shutdown_models}   
+{load_models}  
 
 {is_online_model}
         

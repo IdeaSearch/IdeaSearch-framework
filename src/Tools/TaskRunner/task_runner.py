@@ -33,7 +33,7 @@ def get_tmp_path(
     Args:
         suffix (str or None): 文件后缀名；若为 None，则表示创建临时目录。
         prefix (str): 文件或目录前缀，默认 "tmp_"。
-        directory (str): 保存路径，默认使用IdeaSearcher临时目录。
+        directory (str): 保存路径，默认使用临时目录。
 
     Returns:
         str: 生成的临时文件路径或临时目录路径。
