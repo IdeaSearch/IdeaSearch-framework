@@ -1204,7 +1204,7 @@ class IdeaSearcher:
     def set_program_name(
         self,
         value: str,
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1224,7 +1224,7 @@ class IdeaSearcher:
     def set_prologue_section(
         self,
         value: str,
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1244,7 +1244,7 @@ class IdeaSearcher:
     def set_epilogue_section(
         self,
         value: str,
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1264,7 +1264,7 @@ class IdeaSearcher:
     def set_database_path(
         self,
         value: str,
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1284,7 +1284,7 @@ class IdeaSearcher:
     def set_models(
         self,
         value: List[str],
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1304,7 +1304,7 @@ class IdeaSearcher:
     def set_model_temperatures(
         self,
         value: List[float],
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1324,7 +1324,7 @@ class IdeaSearcher:
     def set_evaluate_func(
         self,
         value: Callable[[str], Tuple[float, Optional[str]]],
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1344,7 +1344,7 @@ class IdeaSearcher:
     def set_api_keys_path(
         self,
         value: str,
-    ) -> None:
+    )-> None:
     
         """
         ⭐️ Important
@@ -1363,7 +1363,7 @@ class IdeaSearcher:
     def set_score_range(
         self,
         value: Tuple[float, float],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter score_range to the given value, if it is of the type Tuple[float, float].
@@ -1381,7 +1381,7 @@ class IdeaSearcher:
     def set_hand_over_threshold(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter hand_over_threshold to the given value, if it is of the type float.
@@ -1399,7 +1399,7 @@ class IdeaSearcher:
     def set_system_prompt(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter system_prompt to the given value, if it is of the type Optional[str].
@@ -1417,7 +1417,7 @@ class IdeaSearcher:
     def set_diary_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter diary_path to the given value, if it is of the type Optional[str].
@@ -1435,7 +1435,7 @@ class IdeaSearcher:
     def set_samplers_num(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter samplers_num to the given value, if it is of the type int.
@@ -1453,7 +1453,7 @@ class IdeaSearcher:
     def set_evaluators_num(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter evaluators_num to the given value, if it is of the type int.
@@ -1471,7 +1471,7 @@ class IdeaSearcher:
     def set_examples_num(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter examples_num to the given value, if it is of the type int.
@@ -1489,7 +1489,7 @@ class IdeaSearcher:
     def set_generate_num(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter generate_num to the given value, if it is of the type int.
@@ -1507,7 +1507,7 @@ class IdeaSearcher:
     def set_sample_temperature(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter sample_temperature to the given value, if it is of the type float.
@@ -1525,7 +1525,7 @@ class IdeaSearcher:
     def set_model_sample_temperature(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_sample_temperature to the given value, if it is of the type float.
@@ -1543,7 +1543,7 @@ class IdeaSearcher:
     def set_assess_func(
         self,
         value: Optional[Callable[[List[str], List[float], List[Optional[str]]], float]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter assess_func to the given value, if it is of the type Optional[Callable[[List[str], List[float], List[Optional[str]]], float]].
@@ -1561,7 +1561,7 @@ class IdeaSearcher:
     def set_assess_interval(
         self,
         value: Optional[int],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter assess_interval to the given value, if it is of the type Optional[int].
@@ -1579,7 +1579,7 @@ class IdeaSearcher:
     def set_assess_baseline(
         self,
         value: Optional[float],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter assess_baseline to the given value, if it is of the type Optional[float].
@@ -1597,7 +1597,7 @@ class IdeaSearcher:
     def set_assess_result_data_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter assess_result_data_path to the given value, if it is of the type Optional[str].
@@ -1615,7 +1615,7 @@ class IdeaSearcher:
     def set_assess_result_pic_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter assess_result_pic_path to the given value, if it is of the type Optional[str].
@@ -1633,7 +1633,7 @@ class IdeaSearcher:
     def set_model_assess_window_size(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_window_size to the given value, if it is of the type int.
@@ -1651,7 +1651,7 @@ class IdeaSearcher:
     def set_model_assess_initial_score(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_initial_score to the given value, if it is of the type float.
@@ -1669,7 +1669,7 @@ class IdeaSearcher:
     def set_model_assess_average_order(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_average_order to the given value, if it is of the type float.
@@ -1687,7 +1687,7 @@ class IdeaSearcher:
     def set_model_assess_save_result(
         self,
         value: bool,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_save_result to the given value, if it is of the type bool.
@@ -1705,7 +1705,7 @@ class IdeaSearcher:
     def set_model_assess_result_data_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_result_data_path to the given value, if it is of the type Optional[str].
@@ -1723,7 +1723,7 @@ class IdeaSearcher:
     def set_model_assess_result_pic_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter model_assess_result_pic_path to the given value, if it is of the type Optional[str].
@@ -1741,7 +1741,7 @@ class IdeaSearcher:
     def set_mutation_func(
         self,
         value: Optional[Callable[[str], str]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter mutation_func to the given value, if it is of the type Optional[Callable[[str], str]].
@@ -1759,7 +1759,7 @@ class IdeaSearcher:
     def set_mutation_interval(
         self,
         value: Optional[int],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter mutation_interval to the given value, if it is of the type Optional[int].
@@ -1777,7 +1777,7 @@ class IdeaSearcher:
     def set_mutation_num(
         self,
         value: Optional[int],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter mutation_num to the given value, if it is of the type Optional[int].
@@ -1795,7 +1795,7 @@ class IdeaSearcher:
     def set_mutation_temperature(
         self,
         value: Optional[float],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter mutation_temperature to the given value, if it is of the type Optional[float].
@@ -1813,7 +1813,7 @@ class IdeaSearcher:
     def set_crossover_func(
         self,
         value: Optional[Callable[[str, str], str]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter crossover_func to the given value, if it is of the type Optional[Callable[[str, str], str]].
@@ -1831,7 +1831,7 @@ class IdeaSearcher:
     def set_crossover_interval(
         self,
         value: Optional[int],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter crossover_interval to the given value, if it is of the type Optional[int].
@@ -1849,7 +1849,7 @@ class IdeaSearcher:
     def set_crossover_num(
         self,
         value: Optional[int],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter crossover_num to the given value, if it is of the type Optional[int].
@@ -1867,7 +1867,7 @@ class IdeaSearcher:
     def set_crossover_temperature(
         self,
         value: Optional[float],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter crossover_temperature to the given value, if it is of the type Optional[float].
@@ -1885,7 +1885,7 @@ class IdeaSearcher:
     def set_similarity_threshold(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter similarity_threshold to the given value, if it is of the type float.
@@ -1903,7 +1903,7 @@ class IdeaSearcher:
     def set_similarity_distance_func(
         self,
         value: Optional[Callable[[str, str], float]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter similarity_distance_func to the given value, if it is of the type Optional[Callable[[str, str], float]].
@@ -1921,7 +1921,7 @@ class IdeaSearcher:
     def set_similarity_sys_info_thresholds(
         self,
         value: Optional[List[int]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter similarity_sys_info_thresholds to the given value, if it is of the type Optional[List[int]].
@@ -1939,7 +1939,7 @@ class IdeaSearcher:
     def set_similarity_sys_info_prompts(
         self,
         value: Optional[List[str]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter similarity_sys_info_prompts to the given value, if it is of the type Optional[List[str]].
@@ -1957,7 +1957,7 @@ class IdeaSearcher:
     def set_load_idea_skip_evaluation(
         self,
         value: bool,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter load_idea_skip_evaluation to the given value, if it is of the type bool.
@@ -1975,7 +1975,7 @@ class IdeaSearcher:
     def set_initialization_cleanse_threshold(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter initialization_cleanse_threshold to the given value, if it is of the type float.
@@ -1993,7 +1993,7 @@ class IdeaSearcher:
     def set_delete_when_initial_cleanse(
         self,
         value: bool,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter delete_when_initial_cleanse to the given value, if it is of the type bool.
@@ -2011,7 +2011,7 @@ class IdeaSearcher:
     def set_idea_uid_length(
         self,
         value: int,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter idea_uid_length to the given value, if it is of the type int.
@@ -2029,7 +2029,7 @@ class IdeaSearcher:
     def set_record_prompt_in_diary(
         self,
         value: bool,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter record_prompt_in_diary to the given value, if it is of the type bool.
@@ -2047,7 +2047,7 @@ class IdeaSearcher:
     def set_filter_func(
         self,
         value: Optional[Callable[[str], str]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter filter_func to the given value, if it is of the type Optional[Callable[[str], str]].
@@ -2065,7 +2065,7 @@ class IdeaSearcher:
     def set_generation_bonus(
         self,
         value: float,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter generation_bonus to the given value, if it is of the type float.
@@ -2083,7 +2083,7 @@ class IdeaSearcher:
     def set_backup_path(
         self,
         value: Optional[str],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter backup_path to the given value, if it is of the type Optional[str].
@@ -2101,7 +2101,7 @@ class IdeaSearcher:
     def set_backup_on(
         self,
         value: bool,
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter backup_on to the given value, if it is of the type bool.
@@ -2119,7 +2119,7 @@ class IdeaSearcher:
     def set_generate_prompt_func(
         self,
         value: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]],
-    ) -> None:
+    )-> None:
     
         """
         Set the parameter generate_prompt_func to the given value, if it is of the type Optional[Callable[[List[str], List[float], List[Optional[str]]], str]].

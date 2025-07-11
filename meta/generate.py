@@ -152,7 +152,7 @@ def main():
         set_code += f'''    def set_{param_name}(
         self,
         value: {param_type},
-    ) -> None:
+    )-> None:
     
 {set_code_doc_string}
         if not {check}:
