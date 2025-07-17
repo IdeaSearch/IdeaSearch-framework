@@ -210,6 +210,7 @@ def main():
 import os
 import json
 import math
+import gettext
 import random
 import shutil
 import string
@@ -224,21 +225,20 @@ from typing import Callable
 from typing import Optional
 from typing import List
 from typing import Dict
+from pathlib import Path
 from os.path import basename
 from os.path import sep as seperator
-from IdeaSearch.utils import append_to_file
-from IdeaSearch.utils import guarantee_path_exist
-from IdeaSearch.utils import get_auto_markersize
-from IdeaSearch.utils import clear_file_content
-from IdeaSearch.utils import default_assess_func
-from IdeaSearch.utils import make_boltzmann_choice
-import gettext
-from pathlib import Path
-from IdeaSearch.sampler import Sampler
-from IdeaSearch.evaluator import Evaluator
-from IdeaSearch.island import Island
-from IdeaSearch.API4LLMs.model_manager import ModelManager
-from IdeaSearch.API4LLMs.get_answer import get_answer_online
+from pywheels.file_tools import append_to_file
+from pywheels.file_tools import guarantee_file_exist
+from pywheels.file_tools import clear_file
+from pywheels.llm_tools import ModelManager
+from .utils import get_auto_markersize
+from .utils import default_assess_func
+from .utils import make_boltzmann_choice
+from .sampler import Sampler
+from .evaluator import Evaluator
+from .island import Island
+
 
 # 国际化设置
 _LOCALE_DIR = Path(__file__).parent / "locales"
@@ -291,12 +291,12 @@ gettext.textdomain(_DOMAIN)
                 
             if self._first_time_add_island:
             
-                clear_file_content(diary_path)
+                clear_file(diary_path)
                 
                 if backup_on:
-                    guarantee_path_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
+                    guarantee_file_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
                     shutil.rmtree(f"{{backup_path}}")
-                    guarantee_path_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
+                    guarantee_file_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
                     
                 for item in os.listdir(f"{{database_path}}{{seperator}}ideas"):
                     full_path = os.path.join(f"{{database_path}}{{seperator}}ideas", item)
@@ -376,6 +376,7 @@ gettext.textdomain(_DOMAIN)
         with self._lock:
             
             diary_path = self._diary_path
+            assert diary_path is not None
             
             index = 0
             
@@ -401,7 +402,7 @@ gettext.textdomain(_DOMAIN)
                     with self._console_lock:    
                         append_to_file(
                             file_path = diary_path,
-                            content_str = self._("【IdeaSearcher】 模型 %s(T=%.2f) 此轮评分为 %.2f ，其总评分已被更新为 %.2f ！") % (model, model_temperature, self._model_recent_scores[index][-1], self._model_scores[index]),
+                            content = self._("【IdeaSearcher】 模型 %s(T=%.2f) 此轮评分为 %.2f ，其总评分已被更新为 %.2f ！") % (model, model_temperature, self._model_recent_scores[index][-1], self._model_scores[index]),
                         )
                     if model_assess_save_result:
                         self._sync_model_score_result()
@@ -412,7 +413,7 @@ gettext.textdomain(_DOMAIN)
             with self._console_lock:    
                 append_to_file(
                     file_path = diary_path,
-                    content_str = self._("【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！") % (model, model_temperature),
+                    content = self._("【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！") % (model, model_temperature),
                 )
                 
             exit()
@@ -447,7 +448,7 @@ gettext.textdomain(_DOMAIN)
                 
             append_to_file(
                 file_path = diary_path,
-                content_str = self._("【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！") % (program_name, additional_interaction_num)
+                content = self._("【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！") % (program_name, additional_interaction_num)
             )
                 
             self._total_interaction_num += len(self._islands) * additional_interaction_num
@@ -486,7 +487,7 @@ gettext.textdomain(_DOMAIN)
                     except Exception as e:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\\n%s\\nIdeaSearch意外终止！") % (island_id, sampler_id, e),
+                            content = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\\n%s\\nIdeaSearch意外终止！") % (island_id, sampler_id, e),
                         )
                         exit()
 """
@@ -533,12 +534,15 @@ gettext.textdomain(_DOMAIN)
         It helps to prevent local optima stagnation by enabling migration of high-quality ideas across islands.
         \"""
     
+        diary_path = self._diary_path
+        assert diary_path is not None
+        
         with self._user_lock:
         
             with self._console_lock:
                 append_to_file(
-                    file_path = self._diary_path,
-                    content_str = self._("【IdeaSearcher】 现在 ideas 开始在岛屿间重分布")
+                    file_path = diary_path,
+                    content = self._("【IdeaSearcher】 现在 ideas 开始在岛屿间重分布")
                 )
             
             island_ids = self._islands.keys()
@@ -563,37 +567,9 @@ gettext.textdomain(_DOMAIN)
                 
             with self._console_lock:
                 append_to_file(
-                    file_path = self._diary_path,
-                    content_str = self._("【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成")
+                    file_path = diary_path,
+                    content = self._("【IdeaSearcher】 此次 ideas 在岛屿间的重分布已完成")
                 )
-"""
-
-    shutdown_models = """    def shutdown_models(
-        self,
-    )-> None:
-    
-        \"""
-        Shut down all models managed by the ModelManager to release resources and gracefully terminate sessions.
-        \"""
-
-        with self._user_lock:
-        
-            self._model_manager.shutdown()
-"""
-
-    is_online_model = """    def _is_online_model(
-        self,
-        model_name: str,
-    )-> bool:
-    
-        return self._model_manager.is_online_model(model_name)
-"""
-
-    get_online_model_instance = """    def _get_online_model_instance(
-        self,
-        model_name: str,
-    )-> Tuple[str, str, str]:
-        return self._model_manager.get_online_model_instance(model_name)
 """
 
     get_answer = f"""    def _get_answer(
@@ -604,20 +580,12 @@ gettext.textdomain(_DOMAIN)
         prompt : str,
     ):
         
-        if self._is_online_model(model_name):
-            api_key, base_url, model = self._get_online_model_instance(model_name)
-            
-            return get_answer_online(
-                api_key = api_key,
-                base_url = base_url,
-                model = model,
-                temperature = model_temperature,
-                system_prompt = system_prompt,
-                prompt = prompt,
-            )
-        
-        else:
-            raise RuntimeError(self._("【IdeaSearcher】 get answer 过程报错：模型 %s 未被记录！") % model_name)
+        return self._model_manager.get_answer(
+            model_name = model_name,
+            prompt = prompt,
+            model_temperature = model_temperature,
+            system_prompt = system_prompt,
+        )
 """
 
     check_runnability = f"""    def _check_runnability(
@@ -759,6 +727,8 @@ gettext.textdomain(_DOMAIN)
         diary_path = self._diary_path
         models = self._models
         model_temperatures = self._model_temperatures
+        
+        assert diary_path is not None
         assert models is not None
         assert model_temperatures is not None
             
@@ -766,7 +736,7 @@ gettext.textdomain(_DOMAIN)
             
             append_to_file(
                 file_path = diary_path,
-                content_str = self._("【IdeaSearcher】 各模型目前评分情况如下："),
+                content = self._("【IdeaSearcher】 各模型目前评分情况如下："),
             )
             for index, model in enumerate(models):
                 
@@ -774,7 +744,7 @@ gettext.textdomain(_DOMAIN)
                 
                 append_to_file(
                     file_path = diary_path,
-                    content_str = (
+                    content = (
                         f"  {index+1}. {model}(T={model_temperature:.2f}): {self._model_scores[index]:.2f}"
                     ),
                 )
@@ -794,6 +764,7 @@ gettext.textdomain(_DOMAIN)
         assess_result_pic_path = self._assess_result_pic_path
         assess_baseline = self._assess_baseline
         
+        assert diary_path is not None
         assert assess_result_data_path is not None
         assert assess_result_pic_path is not None
         
@@ -846,13 +817,13 @@ gettext.textdomain(_DOMAIN)
             if is_initialization:
                 append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 初始质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
+                        content = self._("【IdeaSearcher】 初始质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
                     )
             else:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
+                        content = self._("【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
                     )
 """
 
@@ -867,6 +838,7 @@ gettext.textdomain(_DOMAIN)
         model_temperatures = self._model_temperatures
         score_range = self._score_range
         
+        assert diary_path is not None
         assert model_assess_result_data_path is not None
         assert model_assess_result_pic_path is not None
         assert models is not None
@@ -922,7 +894,7 @@ gettext.textdomain(_DOMAIN)
         with self._console_lock:
             append_to_file(
                 file_path=diary_path,
-                content_str=(
+                content=(
                     f"【IdeaSearcher】 "
                     f" {{basename(model_assess_result_data_path)}} 与 {{basename(model_assess_result_pic_path)}} 已更新！"
                 ),
@@ -938,7 +910,10 @@ gettext.textdomain(_DOMAIN)
         assess_interval = self._assess_interval
         assess_result_data_path = self._assess_result_data_path
         assess_result_pic_path = self._assess_result_pic_path
+        
         assert diary_path is not None
+        assert assess_result_data_path is not None
+        assert assess_result_pic_path is not None
         
         if assess_func is not None:
         
@@ -956,8 +931,8 @@ gettext.textdomain(_DOMAIN)
                 endpoint = True
             )
             
-            guarantee_path_exist(assess_result_data_path)
-            guarantee_path_exist(assess_result_pic_path)
+            guarantee_file_exist(assess_result_data_path)
+            guarantee_file_exist(assess_result_pic_path)
             
             ideas: list[str] = []
             scores: list[float] = []
@@ -986,7 +961,7 @@ gettext.textdomain(_DOMAIN)
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 初始 ideas 的整体质量评分为：%.2f！") % database_initial_score,
+                        content = self._("【IdeaSearcher】 初始 ideas 的整体质量评分为：%.2f！") % database_initial_score,
                     )
                     
             except Exception as error:
@@ -994,7 +969,7 @@ gettext.textdomain(_DOMAIN)
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\\n%s") % error,
+                        content = self._("【IdeaSearcher】 评估库中初始 ideas 的整体质量时遇到错误：\\n%s") % error,
                     )
                     
             self._assess_result_ndarray[0] = database_initial_score
@@ -1037,6 +1012,8 @@ gettext.textdomain(_DOMAIN)
             diary_path = self._diary_path
             assess_func = self._assess_func
             assess_interval = self._assess_interval
+            
+            assert diary_path is not None
             assert assess_func is not None
             assert assess_interval is not None
         
@@ -1048,7 +1025,7 @@ gettext.textdomain(_DOMAIN)
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = self._("【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！"),
+                    content = self._("【IdeaSearcher】 现在开始评估数据库中 ideas 的整体质量！"),
                 )
                 
             ideas: list[str] = []
@@ -1081,7 +1058,7 @@ gettext.textdomain(_DOMAIN)
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 数据库中 ideas 的整体质量评分为：%.2f！评估用时：%.2f秒。") % (database_score, total_time),
+                        content = self._("【IdeaSearcher】 数据库中 ideas 的整体质量评分为：%.2f！评估用时：%.2f秒。") % (database_score, total_time),
                     )
                     
             except Exception as error:
@@ -1089,7 +1066,7 @@ gettext.textdomain(_DOMAIN)
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\\n%s") % error,
+                        content = self._("【IdeaSearcher】 评估库中 ideas 的整体质量时遇到错误：\\n%s") % error,
                     )
                     
             self._assess_result_ndarray[self._assess_result_ndarray_length] = database_score
@@ -1199,7 +1176,7 @@ gettext.textdomain(_DOMAIN)
             
             if not backup_on: return
             
-            guarantee_path_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
+            guarantee_file_exist(f"{{backup_path}}{{seperator}}score_sheet_backup.json")
         
             for idea in ideas_to_record:
                 
@@ -1304,13 +1281,16 @@ gettext.textdomain(_DOMAIN)
             database_path = self._database_path
             assert database_path is not None
             
-            initial_ideas_path = f"{{database_path}}{{seperator}}ideas{{seperator}}initial_ideas{{seperator}}"
-            guarantee_path_exist(initial_ideas_path)
+            initial_ideas_path = f"{{database_path}}{{seperator}}ideas{{seperator}}initial_ideas"
+            guarantee_file_exist(
+                file_path = initial_ideas_path,
+                is_directory = True,
+            )
             
             for initial_idea in initial_ideas:
             
                 with open(
-                    file = f"{{initial_ideas_path}}added_initial_idea{{self._added_initial_idea_no}}.idea",
+                    file = f"{{initial_ideas_path}}{{seperator}}added_initial_idea{{self._added_initial_idea_no}}.idea",
                     mode = "w",
                     encoding = "UTF-8",
                 ) as file:
@@ -1338,10 +1318,6 @@ class IdeaSearcher:
     # ----------------------------- API4LLMs 相关 ----------------------------- 
 
 {load_models}  
-
-{is_online_model}
-        
-{get_online_model_instance}
 
 {get_answer}
     # ----------------------------- Ideas 管理相关 ----------------------------- 

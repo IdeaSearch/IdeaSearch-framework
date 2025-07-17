@@ -1,11 +1,11 @@
+import gettext
 from threading import Lock
 from typing import Optional
 from typing import List
 from math import isnan
-from os.path import basename
-from IdeaSearch.utils import append_to_file
 from pathlib import Path
-import gettext
+from os.path import basename
+from pywheels.file_tools import append_to_file
 
 
 # 国际化设置
@@ -86,7 +86,7 @@ class Evaluator:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(score)),
+                            content = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 应为一浮点数，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(score)),
                         )
                     return
                 
@@ -94,7 +94,7 @@ class Evaluator:
                     with self._console_lock:
                         append_to_file(
                             file_path = diary_path,
-                            content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！") % (self.island.id, self.id, program_name),
+                            content = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 score 不应为 NaN ！") % (self.island.id, self.id, program_name),
                         )
                     return
                 
@@ -103,7 +103,7 @@ class Evaluator:
                         with self._console_lock:
                             append_to_file(
                                 file_path = diary_path,
-                                content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(info)),
+                                content = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：返回结果中的 info 应为 None 或一字符串，不应为一个 %s 类型的对象！") % (self.island.id, self.id, program_name, type(info)),
                             )
                         return
                 
@@ -111,7 +111,7 @@ class Evaluator:
                 with self._console_lock:
                     append_to_file(
                         file_path = diary_path,
-                        content_str = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：\n%s\n评估终止！") % (self.island.id, self.id, program_name, e),
+                        content = self._("【%d号岛屿的%d号评估器】 调用 %s 的评估函数时发生错误：\n%s\n评估终止！") % (self.island.id, self.id, program_name, e),
                     )  
                 return
             
@@ -126,7 +126,7 @@ class Evaluator:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = self._("【%d号岛屿的%d号评估器】 已将 %d/%d 个满足条件的 idea 递交给岛屿！") % (self.island.id, self.id, len(accepted_ideas), len(generated_ideas)),
+                    content = self._("【%d号岛屿的%d号评估器】 已将 %d/%d 个满足条件的 idea 递交给岛屿！") % (self.island.id, self.id, len(accepted_ideas), len(generated_ideas)),
                 )
             
             if example_idea_paths is not None and example_idea_scores is not None and level is not None:
@@ -147,7 +147,7 @@ class Evaluator:
             with self._console_lock:
                 append_to_file(
                     file_path = diary_path,
-                    content_str = self._("【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！") % (self.island.id, self.id),
+                    content = self._("【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！") % (self.island.id, self.id),
                 )
                     
     
@@ -159,7 +159,7 @@ class Evaluator:
             if self.status != "Busy":
                 append_to_file(
                     file_path = diary_path,
-                    content_str = self._("【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！") % (self.island.id, self.id, self.status),
+                    content = self._("【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！") % (self.island.id, self.id, self.status),
                 )
                 exit()
 
