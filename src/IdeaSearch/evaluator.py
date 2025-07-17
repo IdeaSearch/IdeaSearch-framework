@@ -144,11 +144,15 @@ class Evaluator:
                 self.island.receive_result(accepted_ideas, self.id, source, 0)
         
         else:
+            
             with self._console_lock:
+                
                 append_to_file(
                     file_path = diary_path,
                     content = self._("【%d号岛屿的%d号评估器】 评估结束，此轮采样没有生成可递交给岛屿的满足条件的 idea ！") % (self.island.id, self.id),
                 )
+                
+            self.island.receive_result(accepted_ideas, self.id, "", 0)
                     
     
     def release(self):

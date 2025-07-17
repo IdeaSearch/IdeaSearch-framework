@@ -454,13 +454,18 @@ class Island:
         
     def receive_result(
         self, 
-        result: list[Tuple[str, float, str]], 
+        result: List[Tuple[str, float, str]], 
         evaluator_id: int,
         source: str,
         level: int,
     )-> None:
         
         with self._lock:
+            
+            if not result:
+                
+                self.ideasearcher.assess_database()
+                return
             
             diary_path = self.ideasearcher.get_diary_path()
     
