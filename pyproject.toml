@@ -39,6 +39,7 @@ dependencies = [
     "numpy>=1.21.0",
     "matplotlib>=3.5.0",
     "openai>=1.0.0",
+    "pywheels>=0.3.6",
 ]
 
 [project.urls]
