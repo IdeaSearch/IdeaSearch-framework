@@ -50,8 +50,6 @@ class Sampler:
         generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
         
         assert system_prompt is not None
-        assert prologue_section is not None
-        assert epilogue_section is not None
         
         with self.console_lock:
             append_to_file(
