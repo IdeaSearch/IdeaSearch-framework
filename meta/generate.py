@@ -67,7 +67,8 @@ def main():
         ("generation_bonus", "float", "0.0", "This parameter provides a bonus for ideas from more recent generations, which is then incorporated into their scores for softmax sampling."),
         ("backup_path", "Optional[str]", "None", "This parameter specifies the path for backups; if set to `None` at runtime, it will automatically default to `database_path` + 'ideas/backup/."),
         ("backup_on", "bool", "True", "This parameter indicates whether backups are enabled."),
-        ("generate_prompt_func", "Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]", "None", "This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos.")
+        ("generate_prompt_func", "Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]", "None", "This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos."),
+        ("explicit_prompt_structure", "bool", "False", "If True, the prompt will include auto-generated structural information.")
     ]
     
     init_code = f"""    def __init__(
@@ -203,6 +204,8 @@ def main():
         self._recorded_idea_names = set()
         self._added_initial_idea_no: int = 1
         self._models_loaded_from_api_keys_json: bool = False
+        
+        self._ideasearch_helper: Optional[object] = None
 """
 
 
@@ -593,15 +596,24 @@ gettext.textdomain(_DOMAIN)
     )-> Optional[str]:
         
         missing_param = None
+        has_helper = (self._ideasearch_helper is not None)
         
         if self._program_name is None:
             missing_param = "program_name"
             
         if self._prologue_section is None and self._generate_prompt_func is None:
-            missing_param = "prologue_section"
+        
+            if not has_helper:
+                missing_param = "prologue_section"
+            else:
+                self._prologue_section = self._ideasearch_helper.prologue_section # type: ignore
             
         if self._epilogue_section is None and self._generate_prompt_func is None:
-            missing_param = "epilogue_section"
+        
+            if not has_helper:
+                missing_param = "epilogue_section"
+            else:
+                self._epilogue_section = self._ideasearch_helper.epilogue_section # type: ignore
             
         if self._database_path is None:
             missing_param = "database_path"
@@ -610,11 +622,19 @@ gettext.textdomain(_DOMAIN)
             missing_param = "models"
             
         if self._evaluate_func is None:
-            missing_param = "evaluate_func"
+        
+            if not has_helper:
+                missing_param = "evaluate_func"
+            else:
+                self._evaluate_func = self._ideasearch_helper.evaluate_func # type: ignore
                
         if self._assess_func is not None:
             if self._assess_interval is None:
                 missing_param = "assess_interval"
+                
+        if has_helper and self._mutation_func is None:
+            if hasattr(self._ideasearch_helper, "mutation_func"):
+                self._mutation_func = self._ideasearch_helper.mutation_func # type: ignore
         
         if self._mutation_func is not None:
             if self._mutation_interval is None:
@@ -623,6 +643,10 @@ gettext.textdomain(_DOMAIN)
                 missing_param = "mutation_num"
             if self._mutation_temperature is None:
                 missing_param = "mutation_temperature"
+                
+        if has_helper and self._crossover_func is None:
+            if hasattr(self._ideasearch_helper, "crossover_func"):
+                self._crossover_func = self._ideasearch_helper.crossover_func # type: ignore
                 
         if self._crossover_func is not None:
             if self._crossover_interval is None:
@@ -649,8 +673,16 @@ gettext.textdomain(_DOMAIN)
         if self._diary_path is None:
             self._diary_path = f"{{database_path}}{{seperator}}log{{seperator}}diary.txt"
             
+        if has_helper and self._system_prompt is None:
+            if hasattr(self._ideasearch_helper, "system_prompt"):
+                self._system_prompt = self._ideasearch_helper.system_prompt # type: ignore
+            
         if self._system_prompt is None:
             self._system_prompt = "You're a helpful assistant."
+            
+        if has_helper and self._assess_func is None:
+            if hasattr(self._ideasearch_helper, "assess_func"):
+                self._assess_func = self._ideasearch_helper.assess_func # type: ignore
             
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
@@ -1299,6 +1331,34 @@ gettext.textdomain(_DOMAIN)
                     
                 self._added_initial_idea_no += 1
 """
+
+    bind_helper = f"""    def bind_helper(
+        self,
+        helper: object,
+    )-> None:
+    
+        with self._lock:
+        
+            if not hasattr(helper, "prologue_section"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `prologue_section` ！"
+                ))
+                
+            if not hasattr(helper, "epilogue_section"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `epilogue_section` ！"
+                ))
+                
+            if not hasattr(helper, "evaluate_func"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `evaluate_func` ！"
+                ))
+                
+            self._ideasearch_helper = helper
+"""
     
     ideasearcher_code = f"""{import_section}
 
@@ -1366,6 +1426,9 @@ class IdeaSearcher:
 {assess_database}
 
 {sync_database_assessment_result}
+    # ----------------------------- Helper 拓展相关 ----------------------------- 
+            
+{bind_helper}
     # ----------------------------- Getters and Setters ----------------------------- 
     
 {set_language}

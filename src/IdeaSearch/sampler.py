@@ -48,6 +48,7 @@ class Sampler:
         filter_func = self.ideasearcher.get_filter_func()
         record_prompt_in_diary = self.ideasearcher.get_record_prompt_in_diary()
         generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
+        explicit_prompt_structure = self.ideasearcher.get_explicit_prompt_structure()
         
         assert system_prompt is not None
         
@@ -89,11 +90,18 @@ class Sampler:
                 example_idea_levels = [current_idea[-1] for current_idea in examples]
                 level = max(example_idea_levels) + 1
                 
-                examples_section = f"举例部分（一共有{len(examples)}个例子）：\n"
+                examples_section = f"举例部分（一共有{len(examples)}个例子）：\n" \
+                    if explicit_prompt_structure else ""
+                    
                 for index, example in enumerate(examples):
+                    
                     idea, score, info, similar_num, similarity_prompt, path, _ = example
-                    examples_section += f"[第 {index + 1} 个例子]\n"
-                    examples_section += f"内容：\n"
+                    
+                    examples_section += f"[第 {index + 1} 个例子]\n" \
+                        if explicit_prompt_structure else ""
+                        
+                    examples_section += f"内容：\n" \
+                        if explicit_prompt_structure else ""
                     
                     if filter_func is not None:
                         try:
@@ -113,10 +121,16 @@ class Sampler:
                                 )
 
                     examples_section += f'{idea}\n'
-                    examples_section += f"评分：{score:.2f}\n"
+                    
+                    examples_section += f"评分：{score:.2f}\n" \
+                        if explicit_prompt_structure or info is None else ""
+                    
                     if info is not None:
-                        examples_section += f"评语：{info}\n"
-                    if similar_num is not None:
+                        examples_section += f"评语：{info}\n" \
+                            if explicit_prompt_structure else f"{info}\n"
+                        
+                    if explicit_prompt_structure and similar_num is not None:
+                        
                         examples_section += (
                             f"重复情况说明：{self.island.id}号岛屿里有{similar_num}个例子和这个例子相似\n"
                             f"{similarity_prompt}\n"

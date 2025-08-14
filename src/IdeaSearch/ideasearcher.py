@@ -103,6 +103,7 @@ class IdeaSearcher:
         self._backup_path: Optional[str] = None
         self._backup_on: bool = True
         self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]] = None
+        self._explicit_prompt_structure: bool = False
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -136,6 +137,8 @@ class IdeaSearcher:
         self._recorded_idea_names = set()
         self._added_initial_idea_no: int = 1
         self._models_loaded_from_api_keys_json: bool = False
+        
+        self._ideasearch_helper: Optional[object] = None
 
 
     def __dir__(self):
@@ -231,15 +234,24 @@ class IdeaSearcher:
     )-> Optional[str]:
         
         missing_param = None
+        has_helper = (self._ideasearch_helper is not None)
         
         if self._program_name is None:
             missing_param = "program_name"
             
         if self._prologue_section is None and self._generate_prompt_func is None:
-            missing_param = "prologue_section"
+        
+            if not has_helper:
+                missing_param = "prologue_section"
+            else:
+                self._prologue_section = self._ideasearch_helper.prologue_section # type: ignore
             
         if self._epilogue_section is None and self._generate_prompt_func is None:
-            missing_param = "epilogue_section"
+        
+            if not has_helper:
+                missing_param = "epilogue_section"
+            else:
+                self._epilogue_section = self._ideasearch_helper.epilogue_section # type: ignore
             
         if self._database_path is None:
             missing_param = "database_path"
@@ -248,11 +260,19 @@ class IdeaSearcher:
             missing_param = "models"
             
         if self._evaluate_func is None:
-            missing_param = "evaluate_func"
+        
+            if not has_helper:
+                missing_param = "evaluate_func"
+            else:
+                self._evaluate_func = self._ideasearch_helper.evaluate_func # type: ignore
                
         if self._assess_func is not None:
             if self._assess_interval is None:
                 missing_param = "assess_interval"
+                
+        if has_helper and self._mutation_func is None:
+            if hasattr(self._ideasearch_helper, "mutation_func"):
+                self._mutation_func = self._ideasearch_helper.mutation_func # type: ignore
         
         if self._mutation_func is not None:
             if self._mutation_interval is None:
@@ -261,6 +281,10 @@ class IdeaSearcher:
                 missing_param = "mutation_num"
             if self._mutation_temperature is None:
                 missing_param = "mutation_temperature"
+                
+        if has_helper and self._crossover_func is None:
+            if hasattr(self._ideasearch_helper, "crossover_func"):
+                self._crossover_func = self._ideasearch_helper.crossover_func # type: ignore
                 
         if self._crossover_func is not None:
             if self._crossover_interval is None:
@@ -287,8 +311,16 @@ class IdeaSearcher:
         if self._diary_path is None:
             self._diary_path = f"{database_path}{seperator}log{seperator}diary.txt"
             
+        if has_helper and self._system_prompt is None:
+            if hasattr(self._ideasearch_helper, "system_prompt"):
+                self._system_prompt = self._ideasearch_helper.system_prompt # type: ignore
+            
         if self._system_prompt is None:
             self._system_prompt = "You're a helpful assistant."
+            
+        if has_helper and self._assess_func is None:
+            if hasattr(self._ideasearch_helper, "assess_func"):
+                self._assess_func = self._ideasearch_helper.assess_func # type: ignore
             
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
@@ -1166,6 +1198,35 @@ class IdeaSearcher:
                         file_path = diary_path,
                         content = self._("【IdeaSearcher】 此轮质量评估结束， %s 与 %s 已更新！") % (basename(assess_result_data_path), basename(assess_result_pic_path)),
                     )
+
+    # ----------------------------- Helper 拓展相关 ----------------------------- 
+            
+    def bind_helper(
+        self,
+        helper: object,
+    )-> None:
+    
+        with self._lock:
+        
+            if not hasattr(helper, "prologue_section"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `prologue_section` ！"
+                ))
+                
+            if not hasattr(helper, "epilogue_section"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `epilogue_section` ！"
+                ))
+                
+            if not hasattr(helper, "evaluate_func"):
+            
+                raise ValueError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `evaluate_func` ！"
+                ))
+                
+            self._ideasearch_helper = helper
 
     # ----------------------------- Getters and Setters ----------------------------- 
     
@@ -2127,6 +2188,24 @@ class IdeaSearcher:
             self._generate_prompt_func = value
 
 
+    def set_explicit_prompt_structure(
+        self,
+        value: bool,
+    )-> None:
+    
+        """
+        Set the parameter explicit_prompt_structure to the given value, if it is of the type bool.
+        If True, the prompt will include auto-generated structural information.
+        Its default value is False.
+        """
+
+        if not isinstance(value, bool):
+            raise TypeError(self._("【IdeaSearcher】 参数`explicit_prompt_structure`类型应为bool，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._explicit_prompt_structure = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2749,4 +2828,16 @@ class IdeaSearcher:
         """
 
         return self._generate_prompt_func
+
+
+    def get_explicit_prompt_structure(
+        self,
+    )-> bool:
+        
+        """
+        Get the current value of the `explicit_prompt_structure` parameter.
+        If True, the prompt will include auto-generated structural information.
+        """
+
+        return self._explicit_prompt_structure
 
