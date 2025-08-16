@@ -1207,11 +1207,11 @@ class IdeaSearcher:
                 
             self._prologue_section = helper.prologue_section # type: ignore
             self._epilogue_section = helper.epilogue_section # type: ignore
-            self._evaluate_function = helper.evaluate_func # type: ignore
+            self._evaluate_func = helper.evaluate_func # type: ignore
             if hasattr(helper, "initial_ideas"): self._add_initial_ideas(helper.initial_ideas) # type: ignore
-            if hasattr(helper, "assess_func"): self._mutation_function = helper.assess_func # type: ignore
-            if hasattr(helper, "mutation_func"): self._mutation_function = helper.mutation_func # type: ignore
-            if hasattr(helper, "crossover_func"): self._crossover_function = helper.crossover_func # type: ignore
+            if hasattr(helper, "assess_func"): self._mutation_func = helper.assess_func # type: ignore
+            if hasattr(helper, "mutation_func"): self._mutation_func = helper.mutation_func # type: ignore
+            if hasattr(helper, "crossover_func"): self._crossover_func = helper.crossover_func # type: ignore
 
     # ----------------------------- Getters and Setters ----------------------------- 
     
