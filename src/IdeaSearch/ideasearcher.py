@@ -137,8 +137,6 @@ class IdeaSearcher:
         self._recorded_idea_names = set()
         self._added_initial_idea_no: int = 1
         self._models_loaded_from_api_keys_json: bool = False
-        
-        self._ideasearch_helper: Optional[object] = None
 
 
     def __dir__(self):
@@ -234,46 +232,29 @@ class IdeaSearcher:
     )-> Optional[str]:
         
         missing_param = None
-        has_helper = (self._ideasearch_helper is not None)
+        
+        if self._database_path is None:
+            missing_param = "database_path"
         
         if self._program_name is None:
             missing_param = "program_name"
             
         if self._prologue_section is None and self._generate_prompt_func is None:
-        
-            if not has_helper:
-                missing_param = "prologue_section"
-            else:
-                self._prologue_section = self._ideasearch_helper.prologue_section # type: ignore
-            
+            missing_param = "prologue_section"
+
         if self._epilogue_section is None and self._generate_prompt_func is None:
-        
-            if not has_helper:
-                missing_param = "epilogue_section"
-            else:
-                self._epilogue_section = self._ideasearch_helper.epilogue_section # type: ignore
-            
-        if self._database_path is None:
-            missing_param = "database_path"
-            
-        if self._models is None:
-            missing_param = "models"
+            missing_param = "epilogue_section"
             
         if self._evaluate_func is None:
-        
-            if not has_helper:
-                missing_param = "evaluate_func"
-            else:
-                self._evaluate_func = self._ideasearch_helper.evaluate_func # type: ignore
-               
+            missing_param = "evaluate_func"
+           
+        if self._models is None:
+            missing_param = "models"
+
         if self._assess_func is not None:
             if self._assess_interval is None:
                 missing_param = "assess_interval"
-                
-        if has_helper and self._mutation_func is None:
-            if hasattr(self._ideasearch_helper, "mutation_func"):
-                self._mutation_func = self._ideasearch_helper.mutation_func # type: ignore
-        
+
         if self._mutation_func is not None:
             if self._mutation_interval is None:
                 missing_param = "mutation_interval"
@@ -281,11 +262,7 @@ class IdeaSearcher:
                 missing_param = "mutation_num"
             if self._mutation_temperature is None:
                 missing_param = "mutation_temperature"
-                
-        if has_helper and self._crossover_func is None:
-            if hasattr(self._ideasearch_helper, "crossover_func"):
-                self._crossover_func = self._ideasearch_helper.crossover_func # type: ignore
-                
+         
         if self._crossover_func is not None:
             if self._crossover_interval is None:
                 missing_param = "crossover_interval"
@@ -310,18 +287,10 @@ class IdeaSearcher:
         
         if self._diary_path is None:
             self._diary_path = f"{database_path}{seperator}log{seperator}diary.txt"
-            
-        if has_helper and self._system_prompt is None:
-            if hasattr(self._ideasearch_helper, "system_prompt"):
-                self._system_prompt = self._ideasearch_helper.system_prompt # type: ignore
-            
+       
         if self._system_prompt is None:
             self._system_prompt = "You're a helpful assistant."
-            
-        if has_helper and self._assess_func is None:
-            if hasattr(self._ideasearch_helper, "assess_func"):
-                self._assess_func = self._ideasearch_helper.assess_func # type: ignore
-            
+    
         if self._assess_func is not None:
             if self._assess_result_data_path is None:
                 self._assess_result_data_path = f"{database_path}{seperator}data{seperator}database_assessment.npz"
@@ -437,37 +406,41 @@ class IdeaSearcher:
 
 
     # ⭐️ Important
+    def _add_initial_ideas(
+        self,
+        initial_ideas: List[str],
+    )-> None:
+    
+        database_path = self._database_path
+        if database_path is None:
+            raise RuntimeError(self._(
+                "【IdeaSearcher】 添加初始 ideas 失败：应先设置数据库路径！"
+            ))
+            
+        initial_ideas_path = f"{database_path}{seperator}ideas{seperator}initial_ideas"
+        guarantee_file_exist(
+            file_path = initial_ideas_path,
+            is_directory = True,
+        )
+        
+        for initial_idea in initial_ideas:
+        
+            with open(
+                file = f"{initial_ideas_path}{seperator}added_initial_idea{self._added_initial_idea_no}.idea",
+                mode = "w",
+                encoding = "UTF-8",
+            ) as file:
+            
+                file.write(initial_idea)
+                
+            self._added_initial_idea_no += 1
+    
+    
     def add_initial_ideas(
         self,
         initial_ideas: List[str],
     ):
-    
-        with self._user_lock:
-        
-            missing_param = self._check_runnability()
-            if missing_param is not None:
-                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_initial_ideas 动作！") % missing_param)
-            
-            database_path = self._database_path
-            assert database_path is not None
-            
-            initial_ideas_path = f"{database_path}{seperator}ideas{seperator}initial_ideas"
-            guarantee_file_exist(
-                file_path = initial_ideas_path,
-                is_directory = True,
-            )
-            
-            for initial_idea in initial_ideas:
-            
-                with open(
-                    file = f"{initial_ideas_path}{seperator}added_initial_idea{self._added_initial_idea_no}.idea",
-                    mode = "w",
-                    encoding = "UTF-8",
-                ) as file:
-                
-                    file.write(initial_idea)
-                    
-                self._added_initial_idea_no += 1
+        with self._user_lock: self._add_initial_ideas(initial_ideas)
 
     
     def get_idea_uid(
@@ -1208,6 +1181,12 @@ class IdeaSearcher:
     
         with self._lock:
         
+            if self._database_path is None:
+            
+                raise RuntimeError(self._(
+                    "【IdeaSearcher】 绑定 helper 失败：应先设置数据库路径！"
+                ))
+        
             if not hasattr(helper, "prologue_section"):
             
                 raise ValueError(self._(
@@ -1226,7 +1205,13 @@ class IdeaSearcher:
                     "【IdeaSearcher】 绑定 helper 失败：helper 缺失属性 `evaluate_func` ！"
                 ))
                 
-            self._ideasearch_helper = helper
+            self._prologue_section = helper.prologue_section # type: ignore
+            self._epilogue_section = helper.epilogue_section # type: ignore
+            self._evaluate_function = helper.evaluate_func # type: ignore
+            if hasattr(helper, "initial_ideas"): self._add_initial_ideas(helper.initial_ideas) # type: ignore
+            if hasattr(helper, "assess_func"): self._mutation_function = helper.assess_func # type: ignore
+            if hasattr(helper, "mutation_func"): self._mutation_function = helper.mutation_func # type: ignore
+            if hasattr(helper, "crossover_func"): self._crossover_function = helper.crossover_func # type: ignore
 
     # ----------------------------- Getters and Setters ----------------------------- 
     
