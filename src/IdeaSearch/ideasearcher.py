@@ -1209,6 +1209,7 @@ class IdeaSearcher:
             self._epilogue_section = helper.epilogue_section # type: ignore
             self._evaluate_func = helper.evaluate_func # type: ignore
             if hasattr(helper, "initial_ideas"): self._add_initial_ideas(helper.initial_ideas) # type: ignore
+            if hasattr(helper, "system_prompt"): self._system_prompt = helper.system_prompt # type: ignore
             if hasattr(helper, "assess_func"): self._mutation_func = helper.assess_func # type: ignore
             if hasattr(helper, "mutation_func"): self._mutation_func = helper.mutation_func # type: ignore
             if hasattr(helper, "crossover_func"): self._crossover_func = helper.crossover_func # type: ignore
