@@ -104,6 +104,7 @@ class IdeaSearcher:
         self._backup_on: bool = True
         self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]] = None
         self._explicit_prompt_structure: bool = False
+        self._shutdown_score: float = float('inf')
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -2192,6 +2193,24 @@ class IdeaSearcher:
             self._explicit_prompt_structure = value
 
 
+    def set_shutdown_score(
+        self,
+        value: float,
+    )-> None:
+    
+        """
+        Set the parameter shutdown_score to the given value, if it is of the type float.
+        IdeaSearch process will be shut down when best score across islands reaches shutdown score.
+        Its default value is float('inf').
+        """
+
+        if not isinstance(value, float):
+            raise TypeError(self._("【IdeaSearcher】 参数`shutdown_score`类型应为float，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._shutdown_score = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2826,4 +2845,16 @@ class IdeaSearcher:
         """
 
         return self._explicit_prompt_structure
+
+
+    def get_shutdown_score(
+        self,
+    )-> float:
+        
+        """
+        Get the current value of the `shutdown_score` parameter.
+        IdeaSearch process will be shut down when best score across islands reaches shutdown score.
+        """
+
+        return self._shutdown_score
 

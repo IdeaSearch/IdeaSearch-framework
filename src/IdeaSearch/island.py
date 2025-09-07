@@ -108,7 +108,7 @@ class Island:
         self._best_idea = None
         
         self._reset_ideas()
-        self.status = "Running"
+        self._status = "Running"
     
     # ----------------------------- 外部调用动作 ----------------------------- 
         
@@ -324,7 +324,7 @@ class Island:
                 raise RuntimeError(self._("【%d号岛屿】 fuel 动作的参数 `additional_interaction_num` 应为一正整数，不应为%d！") % (self.id, additional_interaction_num))
             
             self.interaction_num += additional_interaction_num
-            self.status = "Running"
+            self._status = "Running"
 
 
     def get_status(
@@ -332,7 +332,11 @@ class Island:
     )-> str:
         
         with self._lock:
-            return self.status
+            
+            if self.ideasearcher.get_best_score() >= self.ideasearcher.get_shutdown_score():
+                self._status = "Terminated"
+                
+            return self._status
         
     
     def get_examples(
@@ -341,7 +345,7 @@ class Island:
         
         with self._lock:
             
-            if self.status == "Terminated":
+            if self._status == "Terminated":
                 return None
             
             diary_path = self.ideasearcher.get_diary_path()
@@ -431,7 +435,7 @@ class Island:
     ):
         with self._lock:
             
-            if self.status == "Terminated":
+            if self._status == "Terminated":
                 return None
             
             diary_path = self.ideasearcher.get_diary_path()
@@ -648,7 +652,7 @@ class Island:
                     file_path = diary_path,
                     content = self._("【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。") % self.id,
                 )
-            self.status = "Terminated"
+            self._status = "Terminated"
 
     
     def _mutate(self)-> None:
