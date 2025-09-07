@@ -1104,7 +1104,27 @@ gettext.textdomain(_DOMAIN)
             return idea_uid
 """
 
-    get_best_score = f"""    def get_best_score(
+    get_best_score = f"""   def _get_best_score(
+        self,
+    )-> float:
+    
+        missing_param = self._check_runnability()
+        if missing_param is not None:
+            raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_score 动作！") % missing_param)
+        
+        scores: list[float] = []
+        
+        for island_id in self._islands:
+            island = self._islands[island_id]
+            for idea in island.ideas:
+                assert idea.score is not None
+                scores.append(idea.score)
+                
+        if not scores: raise RuntimeError(self._("【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"))
+            
+        return max(scores)
+    
+    def get_best_score(
         self,
     )-> float:
     
@@ -1114,22 +1134,7 @@ gettext.textdomain(_DOMAIN)
         \"""
     
         with self._user_lock:
-        
-            missing_param = self._check_runnability()
-            if missing_param is not None:
-                raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 get_best_score 动作！") % missing_param)
-            
-            scores: list[float] = []
-            
-            for island_id in self._islands:
-                island = self._islands[island_id]
-                for idea in island.ideas:
-                    assert idea.score is not None
-                    scores.append(idea.score)
-                    
-            if not scores: raise RuntimeError(self._("【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"))
-                
-            return max(scores)
+            return self._get_best_score()
 """
 
     get_best_idea = f"""    def get_best_idea(
