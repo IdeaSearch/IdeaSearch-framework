@@ -346,7 +346,7 @@ class IdeaSearcher:
     # ----------------------------- Ideas 管理相关 ----------------------------- 
     
     # ⭐️ Important
-   def _get_best_score(
+    def _get_best_score(
         self,
     )-> float:
     

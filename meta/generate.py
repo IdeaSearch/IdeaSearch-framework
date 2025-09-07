@@ -1104,7 +1104,7 @@ gettext.textdomain(_DOMAIN)
             return idea_uid
 """
 
-    get_best_score = f"""   def _get_best_score(
+    get_best_score = f"""    def _get_best_score(
         self,
     )-> float:
     
