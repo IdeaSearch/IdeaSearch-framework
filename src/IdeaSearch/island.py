@@ -333,7 +333,7 @@ class Island:
         
         with self._lock:
             
-            if self.ideasearcher.get_best_score() >= self.ideasearcher.get_shutdown_score():
+            if self.ideasearcher._get_best_score() >= self.ideasearcher.get_shutdown_score():
                 self._status = "Terminated"
                 
             return self._status
