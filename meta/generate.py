@@ -1350,6 +1350,7 @@ gettext.textdomain(_DOMAIN)
             if hasattr(helper, "assess_func"): self._mutation_func = helper.assess_func # type: ignore
             if hasattr(helper, "mutation_func"): self._mutation_func = helper.mutation_func # type: ignore
             if hasattr(helper, "crossover_func"): self._crossover_func = helper.crossover_func # type: ignore
+            if hasattr(helper, "filter_func"): self._filter_func = helper.filter_func # type: ignore
 """
     
     ideasearcher_code = f"""{import_section}
