@@ -105,6 +105,8 @@ class IdeaSearcher:
         self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]] = None
         self._explicit_prompt_structure: bool = False
         self._shutdown_score: float = float('inf')
+        self._top_p: Optional[float] = None
+        self._max_completion_tokens: Optional[int] = None
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -341,6 +343,8 @@ class IdeaSearcher:
             prompt = prompt,
             temperature = model_temperature,
             system_prompt = system_prompt,
+            top_p = self._top_p,
+            max_completion_tokens = self._max_completion_tokens,
         )
 
     # ----------------------------- Ideas 管理相关 ----------------------------- 
@@ -2217,6 +2221,42 @@ class IdeaSearcher:
             self._shutdown_score = value
 
 
+    def set_top_p(
+        self,
+        value: Optional[float],
+    )-> None:
+    
+        """
+        Set the parameter top_p to the given value, if it is of the type Optional[float].
+        top_p as top_p in OpenAI API.
+        Its default value is None.
+        """
+
+        if not (value is None or isinstance(value, float)):
+            raise TypeError(self._("【IdeaSearcher】 参数`top_p`类型应为Optional[float]，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._top_p = value
+
+
+    def set_max_completion_tokens(
+        self,
+        value: Optional[int],
+    )-> None:
+    
+        """
+        Set the parameter max_completion_tokens to the given value, if it is of the type Optional[int].
+        max_completion_tokens as max_completion_tokens in OpenAI API.
+        Its default value is None.
+        """
+
+        if not (value is None or isinstance(value, int)):
+            raise TypeError(self._("【IdeaSearcher】 参数`max_completion_tokens`类型应为Optional[int]，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._max_completion_tokens = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2863,4 +2903,28 @@ class IdeaSearcher:
         """
 
         return self._shutdown_score
+
+
+    def get_top_p(
+        self,
+    )-> Optional[float]:
+        
+        """
+        Get the current value of the `top_p` parameter.
+        top_p as top_p in OpenAI API.
+        """
+
+        return self._top_p
+
+
+    def get_max_completion_tokens(
+        self,
+    )-> Optional[int]:
+        
+        """
+        Get the current value of the `max_completion_tokens` parameter.
+        max_completion_tokens as max_completion_tokens in OpenAI API.
+        """
+
+        return self._max_completion_tokens
 
