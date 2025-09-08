@@ -69,7 +69,9 @@ def main():
         ("backup_on", "bool", "True", "This parameter indicates whether backups are enabled."),
         ("generate_prompt_func", "Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]", "None", "This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos."),
         ("explicit_prompt_structure", "bool", "False", "If True, the prompt will include auto-generated structural information."),
-        ("shutdown_score", "float", "float('inf')", "IdeaSearch process will be shut down when best score across islands reaches shutdown score.")
+        ("shutdown_score", "float", "float('inf')", "IdeaSearch process will be shut down when best score across islands reaches shutdown score."),
+        ("top_p", "Optional[float]", "None", "top_p as top_p in OpenAI API."),
+        ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API.")
     ]
     
     init_code = f"""    def __init__(
@@ -583,10 +585,12 @@ gettext.textdomain(_DOMAIN)
     ):
         
         return self._model_manager.get_answer(
-            model_name = model_name,
+            model = model_name,
             prompt = prompt,
-            model_temperature = model_temperature,
+            temperature = model_temperature,
             system_prompt = system_prompt,
+            top_p = self._top_p,
+            max_completion_tokens = self._max_completion_tokens,
         )
 """
 

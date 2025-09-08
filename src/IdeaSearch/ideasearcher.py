@@ -337,9 +337,9 @@ class IdeaSearcher:
     ):
         
         return self._model_manager.get_answer(
-            model_name = model_name,
+            model = model_name,
             prompt = prompt,
-            model_temperature = model_temperature,
+            temperature = model_temperature,
             system_prompt = system_prompt,
         )
 
