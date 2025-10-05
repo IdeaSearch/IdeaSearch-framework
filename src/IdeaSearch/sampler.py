@@ -92,17 +92,17 @@ class Sampler:
                 example_idea_levels = [current_idea[-1] for current_idea in examples]
                 level = max(example_idea_levels) + 1
                 
-                examples_section = f"举例部分（一共有{len(examples)}个例子）：\n" \
+                examples_section = f"Example Section\n" \
                     if explicit_prompt_structure else ""
                     
                 for index, example in enumerate(examples):
                     
-                    idea, score, info, similar_num, similarity_prompt, path, _ = example
+                    idea, score, info, raw_response, similar_num, similarity_prompt, path, _ = example
                     
-                    examples_section += f"[第 {index + 1} 个例子]\n" \
+                    examples_section += f"[Example {index + 1}]\n" \
                         if explicit_prompt_structure else ""
                         
-                    examples_section += f"内容：\n" \
+                    examples_section += f"Content: \n" \
                         if explicit_prompt_structure else ""
                     
                     if filter_func is not None:
@@ -130,6 +130,10 @@ class Sampler:
                     if info is not None:
                         examples_section += f"Info：{info}\n" \
                             if explicit_prompt_structure else f"{info}\n"
+                            
+                    if raw_response is not None and raw_response != "":
+                        examples_section += f"Raw response：{raw_response}\n" \
+                            if explicit_prompt_structure else f"{raw_response}\n"
                         
                     if explicit_prompt_structure and similar_num is not None:
                         examples_section += (

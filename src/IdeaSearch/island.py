@@ -426,6 +426,7 @@ class Island:
                     example_idea.content,
                     example_idea.score,
                     example_idea.info,
+                    example_idea.raw_response,
                     similar_num,
                     similarity_prompt,
                     example_idea.path,
