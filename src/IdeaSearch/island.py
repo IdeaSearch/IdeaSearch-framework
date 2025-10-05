@@ -426,7 +426,6 @@ class Island:
                     example_idea.content,
                     example_idea.score,
                     example_idea.info,
-                    example_idea.raw_response,
                     similar_num,
                     similarity_prompt,
                     example_idea.path,
@@ -434,8 +433,8 @@ class Island:
                 ))
 
             return selected_examples
-        
-        
+    
+    
     def get_ideas_called_when_generate_prompt_func_set(
         self,
     ):

@@ -51,6 +51,7 @@ class Sampler:
         record_prompt_in_diary = self.ideasearcher.get_record_prompt_in_diary()
         generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
         explicit_prompt_structure = self.ideasearcher.get_explicit_prompt_structure()
+        include_info_in_prompt = self.ideasearcher.get_include_info_in_prompt()
         
         assert system_prompt is not None
         
@@ -97,7 +98,7 @@ class Sampler:
                     
                 for index, example in enumerate(examples):
                     
-                    idea, score, info, raw_response, similar_num, similarity_prompt, path, _ = example
+                    idea, score, info, similar_num, similarity_prompt, path, _ = example
                     
                     examples_section += f"[Example {index + 1}]\n" \
                         if explicit_prompt_structure else ""
@@ -127,13 +128,9 @@ class Sampler:
                     examples_section += f"Score：{score:.2f}\n" \
                         if explicit_prompt_structure or info is None else ""
                     
-                    if info is not None:
+                    if info is not None and include_info_in_prompt:
                         examples_section += f"Info：{info}\n" \
                             if explicit_prompt_structure else f"{info}\n"
-                            
-                    if raw_response is not None and raw_response != "":
-                        examples_section += f"Raw response：{raw_response}\n" \
-                            if explicit_prompt_structure else f"{raw_response}\n"
                         
                     if explicit_prompt_structure and similar_num is not None:
                         examples_section += (

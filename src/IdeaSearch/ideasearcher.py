@@ -108,6 +108,7 @@ class IdeaSearcher:
         self._top_p: Optional[float] = None
         self._max_completion_tokens: Optional[int] = None
         self._postprocess_func: Optional[Callable[[str], str]] = None
+        self._include_info_in_prompt: bool = True
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -2277,6 +2278,24 @@ class IdeaSearcher:
             self._postprocess_func = value
 
 
+    def set_include_info_in_prompt(
+        self,
+        value: bool,
+    )-> None:
+    
+        """
+        Set the parameter include_info_in_prompt to the given value, if it is of the type bool.
+        This parameter controls whether info of sampled ideas is displayed in prompts handed to LLMs or not.
+        Its default value is True.
+        """
+
+        if not isinstance(value, bool):
+            raise TypeError(self._("【IdeaSearcher】 参数`include_info_in_prompt`类型应为bool，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._include_info_in_prompt = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2959,4 +2978,16 @@ class IdeaSearcher:
         """
 
         return self._postprocess_func
+
+
+    def get_include_info_in_prompt(
+        self,
+    )-> bool:
+        
+        """
+        Get the current value of the `include_info_in_prompt` parameter.
+        This parameter controls whether info of sampled ideas is displayed in prompts handed to LLMs or not.
+        """
+
+        return self._include_info_in_prompt
 

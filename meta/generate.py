@@ -73,6 +73,7 @@ def main():
         ("top_p", "Optional[float]", "None", "top_p as top_p in OpenAI API."),
         ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API."),
         ("postprocess_func", "Optional[Callable[[str], str]]", "None", "This parameter is a function for postprocessing after llm generation and before archiving ideas."),
+        ("include_info_in_prompt", "bool", "True", "This parameter controls whether info of sampled ideas is displayed in prompts handed to LLMs or not."),
     ]
     
     init_code = f"""    def __init__(
