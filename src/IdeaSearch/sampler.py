@@ -124,17 +124,16 @@ class Sampler:
 
                     examples_section += f'{idea}\n'
                     
-                    examples_section += f"评分：{score:.2f}\n" \
+                    examples_section += f"Score：{score:.2f}\n" \
                         if explicit_prompt_structure or info is None else ""
                     
                     if info is not None:
-                        examples_section += f"评语：{info}\n" \
+                        examples_section += f"Info：{info}\n" \
                             if explicit_prompt_structure else f"{info}\n"
                         
                     if explicit_prompt_structure and similar_num is not None:
-                        
                         examples_section += (
-                            f"重复情况说明：{self.island.id}号岛屿里有{similar_num}个例子和这个例子相似\n"
+                            f"Similarity Note: There are {similar_num} examples similar to this one.\n"
                             f"{similarity_prompt}\n"
                         )
                 

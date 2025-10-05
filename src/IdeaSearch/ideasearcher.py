@@ -103,7 +103,7 @@ class IdeaSearcher:
         self._backup_path: Optional[str] = None
         self._backup_on: bool = True
         self._generate_prompt_func: Optional[Callable[[List[str], List[float], List[Optional[str]]], str]] = None
-        self._explicit_prompt_structure: bool = False
+        self._explicit_prompt_structure: bool = True
         self._shutdown_score: float = float('inf')
         self._top_p: Optional[float] = None
         self._max_completion_tokens: Optional[int] = None
@@ -2195,7 +2195,7 @@ class IdeaSearcher:
         """
         Set the parameter explicit_prompt_structure to the given value, if it is of the type bool.
         If True, the prompt will include auto-generated structural information.
-        Its default value is False.
+        Its default value is True.
         """
 
         if not isinstance(value, bool):

@@ -68,7 +68,7 @@ def main():
         ("backup_path", "Optional[str]", "None", "This parameter specifies the path for backups; if set to `None` at runtime, it will automatically default to `database_path` + 'ideas/backup/."),
         ("backup_on", "bool", "True", "This parameter indicates whether backups are enabled."),
         ("generate_prompt_func", "Optional[Callable[[List[str], List[float], List[Optional[str]]], str]]", "None", "This parameter allows users to customize the generation of prompts based on given lists of ideas, their scores, and optional infos."),
-        ("explicit_prompt_structure", "bool", "False", "If True, the prompt will include auto-generated structural information."),
+        ("explicit_prompt_structure", "bool", "True", "If True, the prompt will include auto-generated structural information."),
         ("shutdown_score", "float", "float('inf')", "IdeaSearch process will be shut down when best score across islands reaches shutdown score."),
         ("top_p", "Optional[float]", "None", "top_p as top_p in OpenAI API."),
         ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API."),
