@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from pathlib import Path
 from pywheels.file_tools import append_to_file
+from .typing import *
 
 
 _LOCALE_DIR = Path(__file__).parent / "locales"
@@ -46,6 +47,7 @@ class Sampler:
         epilogue_section = self.ideasearcher.get_epilogue_section()
         generate_num = self.ideasearcher.get_generate_num()
         filter_func = self.ideasearcher.get_filter_func()
+        postprocess_func = self.ideasearcher.get_postprocess_func()
         record_prompt_in_diary = self.ideasearcher.get_record_prompt_in_diary()
         generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
         explicit_prompt_structure = self.ideasearcher.get_explicit_prompt_structure()
@@ -223,13 +225,36 @@ class Sampler:
                     content = self._("【%d号岛屿的%d号采样器】 已向 %s(T=%.2f) 发送prompt，正在等待回答！") % (self.island.id, self.id, model, model_temperature),
                 )
                 
+            def get_postprocessed_idea(
+                model: str, 
+                model_temperature: float,
+                system_prompt: str,
+                prompt: str,
+            )-> Tuple[str, str]:
+                
+                raw_response = self.ideasearcher._get_answer(
+                    model = model,
+                    model_temperature = model_temperature,
+                    system_prompt = system_prompt,
+                    prompt = prompt,
+                )
+                
+                if postprocess_func is not None:
+                    idea = postprocess_func(raw_response)
+                else:
+                    idea = raw_response
+                    raw_response = self._("Same as the idea.")
+                
+                return raw_response, idea
+            
+            generated_raw_responses = [None] * generate_num
             generated_ideas = [None] * generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
                     executor.submit(
-                        self.ideasearcher._get_answer, 
-                        model, 
+                        get_postprocessed_idea, 
+                        model,
                         model_temperature, 
                         system_prompt, 
                         prompt
@@ -240,16 +265,19 @@ class Sampler:
                 for future in as_completed(future_to_index):
                     i = future_to_index[future]
                     try:
-                        generated_ideas[i] = future.result()
+                        raw_response, idea = future.result()
+                        generated_raw_responses[i] = raw_response
+                        generated_ideas[i] = idea
                     except Exception as e:
                         with self.console_lock:
                             append_to_file(
                                 file_path = diary_path,
-                                content = self._("【%d号岛屿的%d号采样器】 尝试获取 %s(T=%.2f) 的回答时发生错误: \n%s\n此轮采样失败。。。") % (self.island.id, self.id, model, model_temperature, e),
+                                content = self._("【%d号岛屿的%d号采样器】 尝试获取 %s(T=%.2f) 的回答并进行后处理时发生错误: \n%s\n此轮采样失败。。。") % (self.island.id, self.id, model, model_temperature, e),
                             )
                         break
                             
-            if any(idea is None for idea in generated_ideas):
+            if any(idea is None for idea in generated_ideas) or \
+                any(raw_response is None for raw_response in generated_raw_responses):
                 
                 with self.console_lock:
                     append_to_file(
@@ -269,6 +297,7 @@ class Sampler:
             if evaluator:
                 
                 evaluator.evaluate(
+                    generated_raw_responses = generated_raw_responses,
                     generated_ideas = generated_ideas, 
                     model = model, 
                     model_temperature = model_temperature, 

@@ -71,7 +71,8 @@ def main():
         ("explicit_prompt_structure", "bool", "False", "If True, the prompt will include auto-generated structural information."),
         ("shutdown_score", "float", "float('inf')", "IdeaSearch process will be shut down when best score across islands reaches shutdown score."),
         ("top_p", "Optional[float]", "None", "top_p as top_p in OpenAI API."),
-        ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API.")
+        ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API."),
+        ("postprocess_func", "Optional[Callable[[str], str]]", "None", "This parameter is a function for postprocessing after llm generation and before archiving ideas."),
     ]
     
     init_code = f"""    def __init__(
@@ -1355,6 +1356,7 @@ gettext.textdomain(_DOMAIN)
             if hasattr(helper, "mutation_func"): self._mutation_func = helper.mutation_func # type: ignore
             if hasattr(helper, "crossover_func"): self._crossover_func = helper.crossover_func # type: ignore
             if hasattr(helper, "filter_func"): self._filter_func = helper.filter_func # type: ignore
+            if hasattr(helper, "postprocess_func"): self._postprocess_func = helper.postprocess_func # type: ignore
 """
     
     ideasearcher_code = f"""{import_section}

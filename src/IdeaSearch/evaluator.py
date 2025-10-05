@@ -54,8 +54,9 @@ class Evaluator:
         return False
 
     def evaluate(
-        self, 
-        generated_ideas: list[str],
+        self,
+        generated_raw_responses: List[str],
+        generated_ideas: List[str],
         model: str,
         model_temperature: float,
         example_idea_paths: Optional[List[str]],
@@ -73,7 +74,7 @@ class Evaluator:
         accepted_ideas = []
         score_result = []
         
-        for idea in generated_ideas:
+        for raw_response, idea in zip(generated_raw_responses, generated_ideas):
             
             try:
                 
@@ -118,7 +119,7 @@ class Evaluator:
             score_result.append(score)
             
             if score >= hand_over_threshold:
-                accepted_ideas.append((idea, score, info))
+                accepted_ideas.append((raw_response, idea, score, info))
                 
         self.ideasearcher.update_model_score(score_result, model, model_temperature)  
         

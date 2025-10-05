@@ -41,6 +41,7 @@ class Idea:
         evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]], 
         level: int,
         content: Optional[str] = None,
+        raw_response: Optional[str] = None,
         score: Optional[float] = None, 
         info: Optional[str] = None,
         source: Optional[str] = None,
@@ -50,6 +51,7 @@ class Idea:
         self.path = str(path)
         self.source = source
         self.level = level
+        self.raw_response = raw_response
         
         if created_at is not None:
             self.created_at = created_at
@@ -191,6 +193,7 @@ class Island:
                         source = recorded_item["source"]
                         level = recorded_item["level"]
                         created_at = recorded_item["created_at"]
+                        raw_response = recorded_item.get("raw_response", "")
                         
                         if info == "": info = None
                             
@@ -200,6 +203,7 @@ class Island:
                             evaluate_func = None,
                             content = content,
                             score = score,
+                            raw_response = raw_response,
                             info = info,
                             source = source, 
                             created_at = created_at,
@@ -279,6 +283,7 @@ class Island:
                 basename(idea.path): {
                     "score": idea.score,
                     "info": idea.info if idea.info is not None else "",
+                    "raw_response": idea.raw_response if idea.raw_response is not None else "",
                     "source": idea.source,
                     "level": idea.level,
                     "created_at": idea.created_at,
@@ -290,13 +295,13 @@ class Island:
                 file = idea_source_score_sheet_path, 
                 mode = "w", 
                 encoding = "UTF-8",
-            ) as file:
+            ) as file_pointer:
                 
                 json.dump(
-                    obj = new_score_sheet, 
-                    fp = file, 
+                    new_score_sheet, 
+                    file_pointer, 
                     ensure_ascii = False,
-                    indent = 4
+                    indent = 4,
                 )         
             self._sync_score_sheet()
             self._sync_best_score()
@@ -458,7 +463,7 @@ class Island:
         
     def receive_result(
         self, 
-        result: List[Tuple[str, float, str]], 
+        result: List[Tuple[str, str, float, str]], 
         evaluator_id: int,
         source: str,
         level: int,
@@ -473,9 +478,10 @@ class Island:
             
             diary_path = self.ideasearcher.get_diary_path()
     
-            for idea_content, score, info in result:
+            for raw_response, idea_content, score, info in result:
                 
                 self._store_idea(
+                    raw_response = raw_response,
                     idea = idea_content,
                     level = level,
                     score = score,
@@ -750,6 +756,7 @@ class Island:
                     score = score,
                     info = info, 
                     source = source,
+                    raw_response = "",
                     level = selected_idea.level + 1,
                 )
                 
@@ -884,6 +891,7 @@ class Island:
                     score = score,
                     info = info,
                     source = source,
+                    raw_response = "",
                     level = max(parent_1.level, parent_2.level) + 1,
                 )
 
@@ -920,6 +928,7 @@ class Island:
     
     def _store_idea(
         self, 
+        raw_response: str,
         idea: str,
         level: int,
         evaluate_func: Optional[Callable[[str], Tuple[float, Optional[str]]]] = None,
@@ -960,16 +969,17 @@ class Island:
                 level = level,
                 evaluate_func = evaluate_func,
                 content = idea,
+                raw_response = raw_response,
                 score = score,
                 info = info,
                 source = source,
             )
-                
+
             self.ideas.append(new_idea)
             self.ideasearcher.record_ideas_in_backup([new_idea])
-                
+
             return path
-        
+
         except Exception as error:
             self._store_idea_error_message = error
             return None

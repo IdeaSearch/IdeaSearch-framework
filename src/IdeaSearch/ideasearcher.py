@@ -107,6 +107,7 @@ class IdeaSearcher:
         self._shutdown_score: float = float('inf')
         self._top_p: Optional[float] = None
         self._max_completion_tokens: Optional[int] = None
+        self._postprocess_func: Optional[Callable[[str], str]] = None
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -1224,6 +1225,7 @@ class IdeaSearcher:
             if hasattr(helper, "mutation_func"): self._mutation_func = helper.mutation_func # type: ignore
             if hasattr(helper, "crossover_func"): self._crossover_func = helper.crossover_func # type: ignore
             if hasattr(helper, "filter_func"): self._filter_func = helper.filter_func # type: ignore
+            if hasattr(helper, "postprocess_func"): self._postprocess_func = helper.postprocess_func # type: ignore
 
     # ----------------------------- Getters and Setters ----------------------------- 
     
@@ -2257,6 +2259,24 @@ class IdeaSearcher:
             self._max_completion_tokens = value
 
 
+    def set_postprocess_func(
+        self,
+        value: Optional[Callable[[str], str]],
+    )-> None:
+    
+        """
+        Set the parameter postprocess_func to the given value, if it is of the type Optional[Callable[[str], str]].
+        This parameter is a function for postprocessing after llm generation and before archiving ideas.
+        Its default value is None.
+        """
+
+        if not (value is None or callable(value)):
+            raise TypeError(self._("【IdeaSearcher】 参数`postprocess_func`类型应为Optional[Callable[[str], str]]，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._postprocess_func = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2927,4 +2947,16 @@ class IdeaSearcher:
         """
 
         return self._max_completion_tokens
+
+
+    def get_postprocess_func(
+        self,
+    )-> Optional[Callable[[str], str]]:
+        
+        """
+        Get the current value of the `postprocess_func` parameter.
+        This parameter is a function for postprocessing after llm generation and before archiving ideas.
+        """
+
+        return self._postprocess_func
 
