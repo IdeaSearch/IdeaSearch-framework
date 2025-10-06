@@ -48,9 +48,6 @@ Repository = "https://github.com/ideasearch/ideasearch-framework"
 "Bug Tracker" = "https://github.com/ideasearch/ideasearch-framework/issues"
 Changelog = "https://github.com/ideasearch/ideasearch-framework/blob/main/CHANGELOG.md"
 
-[project.scripts]
-ideasearch = "src.scripts.new_framework_script:main"
-
 [tool.hatch.build.targets.wheel]
 packages = ["src/IdeaSearch"]
 
