@@ -12,11 +12,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from time import perf_counter
 from threading import Lock
-from typing import Tuple
-from typing import Callable
-from typing import Optional
-from typing import List
-from typing import Dict
 from pathlib import Path
 from os.path import basename
 from os.path import sep as seperator
@@ -30,6 +25,7 @@ from .utils import make_boltzmann_choice
 from .sampler import Sampler
 from .evaluator import Evaluator
 from .island import Island
+from .typing import *
 
 
 # 国际化设置
@@ -110,7 +106,7 @@ class IdeaSearcher:
         self._postprocess_func: Optional[Callable[[str], str]] = None
         self._include_info_in_prompt: bool = True
         self._images: List[Any] = []
-        self._image_placeholder: str = <image>
+        self._image_placeholder: str = "<image>"
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -336,16 +332,16 @@ class IdeaSearcher:
 
     def _get_answer(
         self,
-        model_name : str, 
-        model_temperature : Optional[float],
+        model: str, 
+        temperature: Optional[float],
         system_prompt: str,
-        prompt : str,
+        prompt: str,
     ):
         
         return self._model_manager.get_answer(
-            model = model_name,
+            model = model,
             prompt = prompt,
-            temperature = model_temperature,
+            temperature = temperature,
             system_prompt = system_prompt,
             top_p = self._top_p,
             max_completion_tokens = self._max_completion_tokens,
@@ -1247,10 +1243,7 @@ class IdeaSearcher:
             raise TypeError(self._("【IdeaSearcher】 参数`language`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
-            if value == "zh":
-                value = "zh_CN"
-            if value == "zh_TW":
-                raise ValueError(self._("【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"))
+            if value == "zh": value = "zh_CN"
             self._language = value
             self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
             self._ = self._translation.gettext
@@ -2324,7 +2317,7 @@ class IdeaSearcher:
         """
         Set the parameter image_placeholder to the given value, if it is of the type str.
         This parameter is the image placeholder.
-        Its default value is <image>.
+        Its default value is "<image>".
         """
 
         if not isinstance(value, str):

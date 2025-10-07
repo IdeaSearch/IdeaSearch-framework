@@ -229,14 +229,14 @@ class Sampler:
                 
             def get_postprocessed_idea(
                 model: str, 
-                model_temperature: float,
+                temperature: float,
                 system_prompt: str,
                 prompt: str,
             )-> Tuple[str, str]:
                 
                 raw_response = self.ideasearcher._get_answer(
-                    model_name = model,
-                    model_temperature = model_temperature,
+                    model = model,
+                    temperature = temperature,
                     system_prompt = system_prompt,
                     prompt = prompt,
                     images = images,

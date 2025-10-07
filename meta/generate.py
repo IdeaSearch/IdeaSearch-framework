@@ -578,16 +578,16 @@ gettext.textdomain(_DOMAIN)
 
     get_answer = f"""    def _get_answer(
         self,
-        model_name : str, 
-        model_temperature : Optional[float],
+        model: str, 
+        temperature: Optional[float],
         system_prompt: str,
-        prompt : str,
+        prompt: str,
     ):
         
         return self._model_manager.get_answer(
-            model = model_name,
+            model = model,
             prompt = prompt,
-            temperature = model_temperature,
+            temperature = temperature,
             system_prompt = system_prompt,
             top_p = self._top_p,
             max_completion_tokens = self._max_completion_tokens,
