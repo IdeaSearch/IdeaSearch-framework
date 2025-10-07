@@ -109,6 +109,8 @@ class IdeaSearcher:
         self._max_completion_tokens: Optional[int] = None
         self._postprocess_func: Optional[Callable[[str], str]] = None
         self._include_info_in_prompt: bool = True
+        self._images: List[Any] = []
+        self._image_placeholder: str = <image>
 
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
@@ -2296,6 +2298,42 @@ class IdeaSearcher:
             self._include_info_in_prompt = value
 
 
+    def set_images(
+        self,
+        value: List[Any],
+    )-> None:
+    
+        """
+        Set the parameter images to the given value, if it is of the type List[Any].
+        This parameter includes images you wanna hand to VLMs through prologue and epilogue sections.
+        Its default value is [].
+        """
+
+        if not hasattr(value, "__iter__") and not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`images`类型应为List[Any]，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._images = value
+
+
+    def set_image_placeholder(
+        self,
+        value: str,
+    )-> None:
+    
+        """
+        Set the parameter image_placeholder to the given value, if it is of the type str.
+        This parameter is the image placeholder.
+        Its default value is <image>.
+        """
+
+        if not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`image_placeholder`类型应为str，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._image_placeholder = value
+
+
     def get_language(
         self,
     )-> str:
@@ -2990,4 +3028,28 @@ class IdeaSearcher:
         """
 
         return self._include_info_in_prompt
+
+
+    def get_images(
+        self,
+    )-> List[Any]:
+        
+        """
+        Get the current value of the `images` parameter.
+        This parameter includes images you wanna hand to VLMs through prologue and epilogue sections.
+        """
+
+        return self._images
+
+
+    def get_image_placeholder(
+        self,
+    )-> str:
+        
+        """
+        Get the current value of the `image_placeholder` parameter.
+        This parameter is the image placeholder.
+        """
+
+        return self._image_placeholder
 

@@ -52,6 +52,8 @@ class Sampler:
         generate_prompt_func = self.ideasearcher.get_generate_prompt_func()
         explicit_prompt_structure = self.ideasearcher.get_explicit_prompt_structure()
         include_info_in_prompt = self.ideasearcher.get_include_info_in_prompt()
+        images = self.ideasearcher.get_images()
+        image_placeholder = self.ideasearcher.get_image_placeholder()
         
         assert system_prompt is not None
         
@@ -237,6 +239,8 @@ class Sampler:
                     model_temperature = model_temperature,
                     system_prompt = system_prompt,
                     prompt = prompt,
+                    images = images,
+                    image_placeholder = image_placeholder,
                 )
                 
                 if postprocess_func is not None:

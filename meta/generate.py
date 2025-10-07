@@ -74,6 +74,8 @@ def main():
         ("max_completion_tokens", "Optional[int]", "None", "max_completion_tokens as max_completion_tokens in OpenAI API."),
         ("postprocess_func", "Optional[Callable[[str], str]]", "None", "This parameter is a function for postprocessing after llm generation and before archiving ideas."),
         ("include_info_in_prompt", "bool", "True", "This parameter controls whether info of sampled ideas is displayed in prompts handed to LLMs or not."),
+        ("images", "List[Any]", "[]", "This parameter includes images you wanna hand to VLMs through prologue and epilogue sections."),
+        ("image_placeholder", "str", '"<image>"', "This parameter is the image placeholder.")
     ]
     
     init_code = f"""    def __init__(
@@ -226,11 +228,6 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from time import perf_counter
 from threading import Lock
-from typing import Tuple
-from typing import Callable
-from typing import Optional
-from typing import List
-from typing import Dict
 from pathlib import Path
 from os.path import basename
 from os.path import sep as seperator
@@ -244,6 +241,7 @@ from .utils import make_boltzmann_choice
 from .sampler import Sampler
 from .evaluator import Evaluator
 from .island import Island
+from .typing import *
 
 
 # 国际化设置
@@ -1246,10 +1244,7 @@ gettext.textdomain(_DOMAIN)
             raise TypeError(self._("【IdeaSearcher】 参数`language`类型应为str，实为%s") % str(type(value)))
 
         with self._user_lock:
-            if value == "zh":
-                value = "zh_CN"
-            if value == "zh_TW":
-                raise ValueError(self._("【IdeaSearcher】 语言`zh_TW`不受支持，请使用`zh_CN`代替。"))
+            if value == "zh": value = "zh_CN"
             self._language = value
             self._translation = gettext.translation(_DOMAIN, _LOCALE_DIR, languages=[self._language], fallback=True)
             self._ = self._translation.gettext
