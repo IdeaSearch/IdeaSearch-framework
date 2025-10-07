@@ -235,7 +235,7 @@ class Sampler:
             )-> Tuple[str, str]:
                 
                 raw_response = self.ideasearcher._get_answer(
-                    model = model,
+                    model_name = model,
                     model_temperature = model_temperature,
                     system_prompt = system_prompt,
                     prompt = prompt,
