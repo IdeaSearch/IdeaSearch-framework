@@ -336,6 +336,8 @@ class IdeaSearcher:
         temperature: Optional[float],
         system_prompt: str,
         prompt: str,
+        images: List[Any],
+        image_placeholder: str,
     ):
         
         return self._model_manager.get_answer(
@@ -343,6 +345,8 @@ class IdeaSearcher:
             prompt = prompt,
             temperature = temperature,
             system_prompt = system_prompt,
+            images = images,
+            image_placeholder = image_placeholder,
             top_p = self._top_p,
             max_completion_tokens = self._max_completion_tokens,
         )
