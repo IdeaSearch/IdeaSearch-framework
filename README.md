@@ -97,7 +97,7 @@ The following methods in the `IdeaSearcher` class constitute the primary user in
 
 - `bind_helper(helper: object)`: ⭐️ **Important**
 
-  - **Function**: Binds a "helper" object and uses its attributes to quickly configure multiple core parameters of the `IdeaSearcher`. This is a convenient end-to-end setup method, especially useful for building interface tools on top of the `IdeaSearch` framework (e.g., [IdeaSearch-Fitter](https://github.com/IdeaSearch/IdeasSearch-fit)).
+  - **Function**: Binds a "helper" object and uses its attributes to quickly configure multiple core parameters of the `IdeaSearcher`. This is a convenient end-to-end setup method, especially useful for building interface tools on top of the `IdeaSearch` framework (e.g., [IdeaSearch-Fitter](https://github.com/IdeaSearch/IdeaSearch-fit)).
   - **Helper Object Attributes**:
     - **Required**: `prologue_section` (str), `epilogue_section` (str), `evaluate_func` (Callable)
     - **Optional**: `initial_ideas` (List[str]), `system_prompt` (str), `assess_func` (Callable), `mutation_func` (Callable), `crossover_func` (Callable), `filter_func` (Callable), `postprocess_func` (Callable), etc.

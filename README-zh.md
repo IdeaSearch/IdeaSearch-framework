@@ -97,7 +97,7 @@
 
 - `bind_helper(helper: object)`: ⭐️ **重要**
 
-  - **功能**: 绑定一个 "helper" 对象，并使用其属性来快速配置 `IdeaSearcher` 的多个核心参数。这是一个便捷的端到端设置方法，尤其适用于构建基于 `IdeaSearch` 框架的接口工具（例如 [IdeaSearch-Fitter](https://github.com/IdeaSearch/IdeasSearch-fit)）。
+  - **功能**: 绑定一个 "helper" 对象，并使用其属性来快速配置 `IdeaSearcher` 的多个核心参数。这是一个便捷的端到端设置方法，尤其适用于构建基于 `IdeaSearch` 框架的接口工具（例如 [IdeaSearch-Fitter](https://github.com/IdeaSearch/IdeaSearch-fit)）。
   - **Helper 对象属性**:
     - **必需**: `prologue_section` (str), `epilogue_section` (str), `evaluate_func` (Callable)
     - **可选**: `initial_ideas` (List[str]), `system_prompt` (str), `assess_func` (Callable), `mutation_func` (Callable), `crossover_func` (Callable), `filter_func` (Callable), `postprocess_func` (Callable) 等。
