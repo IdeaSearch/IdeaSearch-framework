@@ -1,24 +1,4 @@
-import os
-import json
-import shutil
-import gettext
-import numpy as np
-from datetime import datetime
-from time import perf_counter
-from math import isnan
-from threading import Lock
-from pathlib import Path
-from typing import Tuple
-from typing import Callable
-from typing import Optional
-from typing import List
-from copy import deepcopy
-from os.path import basename
-from os.path import sep as seperator
-from pywheels.file_tools import append_to_file
-from pywheels.file_tools import guarantee_file_exist
-from IdeaSearch.utils import get_label
-from IdeaSearch.utils import make_boltzmann_choice
+from .utils import *
 
 
 # 国际化设置
@@ -56,7 +36,7 @@ class Idea:
         if created_at is not None:
             self.created_at = created_at
         else:        
-            self.created_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            self.created_at = get_time_stamp(show_minute=True, show_second=True)
         
         if evaluate_func is not None:
             with open(path, 'r', encoding = "UTF-8") as file:

@@ -38,7 +38,7 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.21.0",
     "matplotlib>=3.5.0",
-    "pywheels>=0.3.6",
+    "pywheels>=0.7.6.2",
 ]
 
 [project.urls]

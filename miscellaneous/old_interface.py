@@ -6,9 +6,9 @@ from typing import Optional
 from typing import Dict
 # from typing import List
 # from pathlib import Path
-from IdeaSearch.utils import guarantee_path_exist
-from IdeaSearch.utils import clear_file_content
-from IdeaSearch.utils import append_to_file
+from IdeaSearch.util import guarantee_path_exist
+from IdeaSearch.util import clear_file_content
+from IdeaSearch.util import append_to_file
 from API4LLMs.model_manager import init_model_manager
 from API4LLMs.model_manager import shutdown_model_manager
 # from IdeaSearch.island import Idea

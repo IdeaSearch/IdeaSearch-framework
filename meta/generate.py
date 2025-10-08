@@ -232,34 +232,10 @@ def main():
 """
 
 
-    import_section = """import concurrent.futures
-import os
-import json
-import math
-import gettext
-import random
-import shutil
-import string
-import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from time import perf_counter
-from threading import Lock
-from pathlib import Path
-from os.path import basename
-from os.path import sep as seperator
-from pywheels.file_tools import append_to_file
-from pywheels.file_tools import guarantee_file_exist
-from pywheels.file_tools import clear_file
-from pywheels.llm_tools import ModelManager
-from .utils import get_auto_markersize
-from .utils import default_assess_func
-from .utils import make_boltzmann_choice
-from .sampler import Sampler
+    import_section = """from .sampler import Sampler
 from .evaluator import Evaluator
 from .island import Island
-from .typing import *
+from .utils import *
 
 
 # 国际化设置
@@ -494,7 +470,7 @@ gettext.textdomain(_DOMAIN)
                 island = self._islands[island_id]
                 max_workers_num += len(island.samplers)
             
-            with concurrent.futures.ThreadPoolExecutor(
+            with ThreadPoolExecutor(
                 max_workers = max_workers_num
             ) as executor:
             
@@ -502,10 +478,10 @@ gettext.textdomain(_DOMAIN)
                     for island_id in self._islands
                     for sampler in self._islands[island_id].samplers
                 }}
-                for future in concurrent.futures.as_completed(futures):
+                for future in as_completed(futures):
                     island_id, sampler_id = futures[future]
                     try:
-                        _ = future.result() 
+                        _ = future.result()
                     except Exception as e:
                         append_to_file(
                             file_path = diary_path,
