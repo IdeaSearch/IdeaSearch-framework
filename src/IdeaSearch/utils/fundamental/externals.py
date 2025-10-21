@@ -6,6 +6,7 @@ import shutil
 import string
 import bisect
 import gettext
+import traceback
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib; matplotlib.use('Agg')
@@ -36,6 +37,7 @@ __all__ = [
     "gettext",
     "deepcopy",
     "basename",
+    "traceback",
     "seperator",
     "as_completed",
     "perf_counter",

@@ -111,11 +111,12 @@ class IdeaSearcher:
         self._total_interaction_num = 0
         self._first_time_run = True
         self._first_time_add_island = True
-        self._assigned_idea_uids = set()
+        self._assigned_idea_uids: Set[str] = set()
         self._recorded_ideas = []
-        self._recorded_idea_names = set()
-        self._added_initial_idea_no: int = 1
-        self._models_loaded_from_api_keys_json: bool = False
+        self._recorded_idea_names: Set[str] = set()
+        self._added_initial_idea_no = 1
+        self._models_loaded_from_api_keys_json = False
+        self._default_model_temperature = 0.9
 
 
     def __dir__(self):
@@ -156,10 +157,12 @@ class IdeaSearcher:
             diary_path = self._diary_path
             database_path = self._database_path
             program_name = self._program_name
+            models = self._models
             assert diary_path is not None
             assert database_path is not None
             assert program_name is not None
-                
+            assert models is not None
+            
             append_to_file(
                 file_path = diary_path,
                 content = self._("【IdeaSearcher】 %s 的 IdeaSearch 正在运行，此次运行每个岛屿会演化 %d 个 epoch ！") % (program_name, additional_interaction_num)
@@ -172,10 +175,18 @@ class IdeaSearcher:
                 island.fuel(additional_interaction_num)
                 
             if self._first_time_run:
+                self._models_backup = deepcopy(models)
+                self._load_model_score_config()
                 self._load_database_assessment_config()
-                self._load_model_score_config()        
                 self._first_time_run = False
             else:
+                if models != self._models_backup:
+                    self._load_model_score_config()
+                    if not self._model_temperatures or \
+                        len(self._model_temperatures) != len(models):
+                        self._model_temperatures = \
+                            [self._default_model_temperature] * len(models)
+                self._models_backup = deepcopy(models)
                 if self._assess_on:
                     self._expand_database_assessment_range()
                 if self._model_assess_save_result:
@@ -201,65 +212,70 @@ class IdeaSearcher:
                     except Exception as e:
                         append_to_file(
                             file_path = diary_path,
-                            content = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\n%s\nIdeaSearch意外终止！") % (island_id, sampler_id, e),
+                            content = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\n%s\n调用栈：\n%s\nIdeaSearch意外终止！") % (island_id, sampler_id, e, traceback.format_exc()),
                         )
                         exit()
 
 
     def _check_runnability(
         self,
+        exemptions: List[str] = [],
     )-> Optional[str]:
         
         missing_param = None
+        def _update_missing_param(candidate):
+            nonlocal missing_param
+            if missing_param is None and candidate not in exemptions:
+                missing_param = candidate
         
         if self._database_path is None:
-            missing_param = "database_path"
+            _update_missing_param("database_path")
         
         if self._program_name is None:
-            missing_param = "program_name"
+            _update_missing_param("program_name")
             
         if self._prologue_section is None and self._generate_prompt_func is None:
-            missing_param = "prologue_section"
+            _update_missing_param("prologue_section")
 
         if self._epilogue_section is None and self._generate_prompt_func is None:
-            missing_param = "epilogue_section"
+            _update_missing_param("epilogue_section")
             
         if self._evaluate_func is None:
-            missing_param = "evaluate_func"
+            _update_missing_param("evaluate_func")
            
         if self._models is None:
-            missing_param = "models"
+            _update_missing_param("models")
 
         if self._assess_func is not None:
             if self._assess_interval is None:
-                missing_param = "assess_interval"
+                _update_missing_param("assess_interval")
 
         if self._mutation_func is not None:
             if self._mutation_interval is None:
-                missing_param = "mutation_interval"
+                _update_missing_param("mutation_interval")
             if self._mutation_num is None:
-                missing_param = "mutation_num"
+                _update_missing_param("mutation_num")
             if self._mutation_temperature is None:
-                missing_param = "mutation_temperature"
+                _update_missing_param("mutation_temperature")
          
         if self._crossover_func is not None:
             if self._crossover_interval is None:
-                missing_param = "crossover_interval"
+                _update_missing_param("crossover_interval")
             if self._crossover_num is None:
-                missing_param = "crossover_num"
+                _update_missing_param("crossover_num")
             if self._crossover_temperature is None:
-                missing_param = "crossover_temperature"
+                _update_missing_param("crossover_temperature")
                 
         if missing_param is not None: return missing_param
         
         database_path = self._database_path
         models = self._models
         assert database_path is not None
-        assert models is not None
         
-        default_model_temperature = 0.9
-        if self._model_temperatures is None:
-            self._model_temperatures = [default_model_temperature] * len(models)
+        if "model" not in exemptions:
+            assert models is not None
+            if self._model_temperatures is None:
+                self._model_temperatures = [self._default_model_temperature] * len(models)
         
         if self._similarity_distance_func is None:
             self._similarity_distance_func = self._default_similarity_distance_func
@@ -529,7 +545,7 @@ class IdeaSearcher:
         
         with self._user_lock:
         
-            missing_param = self._check_runnability()
+            missing_param = self._check_runnability(exemptions=["models"])
             if missing_param is not None:
                 raise RuntimeError(self._("【IdeaSearcher】 参数`%s`未传入，在当前设置下无法进行 add_island 动作！") % missing_param)
                 
