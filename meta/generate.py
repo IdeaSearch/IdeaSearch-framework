@@ -658,7 +658,7 @@ gettext.textdomain(_DOMAIN)
         models = self._models
         assert database_path is not None
         
-        if "model" not in exemptions:
+        if "models" not in exemptions:
             assert models is not None
             if self._model_temperatures is None:
                 self._model_temperatures = [self._default_model_temperature] * len(models)
