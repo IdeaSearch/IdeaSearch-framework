@@ -864,6 +864,9 @@ gettext.textdomain(_DOMAIN)
         assert models is not None
         assert model_temperatures is not None
         
+        guarantee_file_exist(model_assess_result_data_path)
+        guarantee_file_exist(model_assess_result_pic_path)
+        
         self._scores_of_models[self._scores_of_models_length] = self._model_scores
         self._scores_of_models_length += 1
         
