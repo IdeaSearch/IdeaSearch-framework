@@ -48,7 +48,7 @@ class Sampler:
         images = self.ideasearcher.get_images()
         image_placeholder = self.ideasearcher.get_image_placeholder()
         
-        assert system_prompt is not None
+        assert system_prompt
         
         with self.console_lock:
             append_to_file(
@@ -63,7 +63,8 @@ class Sampler:
                     file_path = diary_path,
                     content = self._("【%d号岛屿的%d号采样器】 已开始新一轮采样！") % (self.island.id, self.id),
                 )
-                
+            
+            example_ideas = []
             if generate_prompt_func is None:
             
                 examples = self.island.get_examples()
@@ -94,6 +95,7 @@ class Sampler:
                 for index, example in enumerate(examples):
                     
                     idea, score, info, similar_num, similarity_prompt, path, _ = example
+                    example_ideas.append(idea)
                     
                     examples_section += f"[Example {index + 1}]\n" \
                         if explicit_prompt_structure else ""
@@ -275,14 +277,16 @@ class Sampler:
                             
             if any(idea is None for idea in generated_ideas) or \
                 any(raw_response is None for raw_response in generated_raw_responses):
-                
                 with self.console_lock:
                     append_to_file(
                         file_path = diary_path,
                         content = self._("【%d号岛屿的%d号采样器】 因异常没有获得应生成的全部idea，此次采样失败。。。") % (self.island.id, self.id),
                     )
-                    
                 continue
+            
+            for example_idea in example_ideas:
+                for generated_idea in generated_ideas:
+                    self.ideasearcher.communicate_with_graph_manager(example_idea, generated_idea)
                             
             with self.console_lock:
                 append_to_file(

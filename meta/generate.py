@@ -230,6 +230,8 @@ def main():
         self._added_initial_idea_no = 1
         self._models_loaded_from_api_keys_json = False
         self._default_model_temperature = 0.9
+        
+        self._oriented_edges: List[Tuple[str, str]] = [] 
 """
 
 
@@ -1371,6 +1373,23 @@ gettext.textdomain(_DOMAIN)
             if hasattr(helper, "filter_func"): self._filter_func = helper.filter_func # type: ignore
             if hasattr(helper, "postprocess_func"): self._postprocess_func = helper.postprocess_func # type: ignore
 """
+
+    communicate_with_graph_manager = """    def communicate_with_graph_manager(
+        self,
+        example_idea: str,
+        generated_idea: str,
+    )-> None:
+    
+        database_path = self._database_path
+        assert database_path
+
+        with self._lock:
+            self._oriented_edges.append((example_idea, generated_idea))
+            save_to_json(
+                json_path = f"{database_path}{seperator}data{seperator}oriented_edges.json",
+                obj = self._oriented_edges,
+            )
+"""
     
     ideasearcher_code = f"""{import_section}
 
@@ -1441,6 +1460,9 @@ class IdeaSearcher:
     # ----------------------------- Helper 拓展相关 ----------------------------- 
             
 {bind_helper}
+    # ----------------------------- Graph Manager 相关 ----------------------------- 
+            
+{communicate_with_graph_manager}
     # ----------------------------- Getters and Setters ----------------------------- 
     
 {set_language}
