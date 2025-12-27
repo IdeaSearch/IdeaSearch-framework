@@ -299,26 +299,6 @@ msgid "【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[floa
 msgstr "[IdeaSearcher] Parameter `crossover_temperature` should be of type Optional[float], but got %s"
 
 #, python-format
-msgid "【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s"
-msgstr "[IdeaSearcher] Parameter `similarity_threshold` should be of type float, but got %s"
-
-#, python-format
-msgid ""
-"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, "
-"str], float]]，实为%s"
-msgstr "[IdeaSearcher] Parameter `similarity_distance_func` should be of type Optional[Callable[[str, str], float]], but got %s"
-
-#, python-format
-msgid ""
-"【IdeaSearcher】 "
-"参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
-msgstr "[IdeaSearcher] Parameter `similarity_sys_info_thresholds` should be of type Optional[List[int]], but got %s"
-
-#, python-format
-msgid "【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s"
-msgstr "[IdeaSearcher] Parameter `similarity_sys_info_prompts` should be of type Optional[List[str]], but got %s"
-
-#, python-format
 msgid "【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s"
 msgstr "[IdeaSearcher] Parameter `load_idea_skip_evaluation` should be of type bool, but got %s"
 
@@ -341,10 +321,6 @@ msgstr "[IdeaSearcher] Parameter `record_prompt_in_diary` should be of type bool
 #, python-format
 msgid "【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s"
 msgstr "[IdeaSearcher] Parameter `filter_func` should be of type Optional[Callable[[str], str]], but got %s"
-
-#, python-format
-msgid "【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s"
-msgstr "[IdeaSearcher] Parameter `generation_bonus` should be of type float, but got %s"
 
 #, python-format
 msgid "【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s"
@@ -423,10 +399,6 @@ msgstr "[Island %d] %d new files submitted by Evaluator %d have been scored and 
 #, python-format
 msgid "【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！"
 msgstr "[Island %d] Score sheet for %s updated, took %.2f seconds!"
-
-#, python-format
-msgid "【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！"
-msgstr "[Island %d] Successfully synchronized idea_similar_nums with ideas, took %.2f seconds!"
 
 #, python-format
 msgid "【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。"

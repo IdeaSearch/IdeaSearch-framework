@@ -56,14 +56,12 @@ class Island:
         self,
         ideasearcher,
         island_id: int,
-        default_similarity_distance_func: Callable[[str, str], float],
         console_lock: Lock,
     )-> None:
         
         self.ideasearcher = ideasearcher
         self.id = island_id
         self.ideas = []
-        self.idea_similar_nums = []
         
         # 获取国际化函数
         self._ = ideasearcher._
@@ -83,7 +81,6 @@ class Island:
         self._lock = Lock()
         self._console_lock = console_lock
         
-        self.default_similarity_distance_func = default_similarity_distance_func
         self.random_generator = np.random.default_rng()
         
         self._best_score = -np.inf
@@ -285,7 +282,6 @@ class Island:
                 )         
             self._sync_score_sheet()
             self._sync_best_score()
-            self._sync_similar_num_list()
             
             
     def link_samplers(
@@ -338,10 +334,7 @@ class Island:
             mutation_interval = self.ideasearcher.get_mutation_interval()
             crossover_func = self.ideasearcher.get_crossover_func()
             crossover_interval = self.ideasearcher.get_crossover_interval()
-            similarity_sys_info_thresholds = self.ideasearcher.get_similarity_sys_info_thresholds()
-            similarity_sys_info_prompts = self.ideasearcher.get_similarity_sys_info_prompts()
             sample_temperature = self.ideasearcher.get_sample_temperature()
-            generation_bonus = self.ideasearcher.get_generation_bonus()
             
             self.interaction_count += 1
             
@@ -376,7 +369,7 @@ class Island:
                 exit()
             
             selected_indices = make_boltzmann_choice(
-                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                energies = np.array([idea.score for idea in self.ideas]),
                 temperature = sample_temperature,
                 size = min(len(self.ideas), self.ideasearcher.get_examples_num()),
                 replace = False,
@@ -387,27 +380,11 @@ class Island:
             for i in selected_indices:
                 selected_index = int(i)
                 example_idea = self.ideas[selected_index]
-                
-                if similarity_sys_info_thresholds is not None:
-                    
-                    assert similarity_sys_info_prompts is not None
-                    
-                    similar_num = self.idea_similar_nums[selected_index]
-                    similarity_prompt = get_label(
-                        x = similar_num,
-                        thresholds = similarity_sys_info_thresholds,
-                        labels = similarity_sys_info_prompts
-                    )
-                else:
-                    similar_num = None
-                    similarity_prompt = None
                     
                 selected_examples.append((
                     example_idea.content,
                     example_idea.score,
                     example_idea.info,
-                    similar_num,
-                    similarity_prompt,
                     example_idea.path,
                     example_idea.level,
                 ))
@@ -477,7 +454,6 @@ class Island:
             
             self._sync_score_sheet()
             self._sync_best_score()
-            self._sync_similar_num_list()
             
             self.ideasearcher.assess_database()
             
@@ -503,7 +479,6 @@ class Island:
                     
             self._sync_best_score()
             self._sync_score_sheet()
-            self._sync_similar_num_list()
             
             
     # ----------------------------- 内部调用动作 -----------------------------     
@@ -513,7 +488,6 @@ class Island:
     )-> None:
         
         self.ideas = []
-        self.idea_similar_nums = []  
         
         shutil.rmtree(self.path)
         guarantee_file_exist(
@@ -571,63 +545,6 @@ class Island:
             if idea.score > self._best_score:
                 self._best_score = idea.score
                 self._best_idea = idea
-            
-            
-    def _sync_similar_num_list(self):
-        
-        diary_path = self.ideasearcher.get_diary_path()
-        similarity_distance_func = self.ideasearcher.get_similarity_distance_func()
-        similarity_threshold = self.ideasearcher.get_similarity_threshold()
-        assert similarity_distance_func is not None
-        
-        
-        start_time = perf_counter()
-        
-        
-        self.idea_similar_nums = []
-        
-        if similarity_distance_func == self.default_similarity_distance_func:
-
-            scores = np.array([idea.score for idea in self.ideas])
-            diff_matrix = np.abs(scores[:, None] - scores[None, :])
-
-            for i, idea_i in enumerate(self.ideas):
-                score_similar_indices = set(np.where(diff_matrix[i] <= similarity_threshold)[0])
-                content_equal_indices = set(
-                    j for j, idea_j in enumerate(self.ideas)
-                    if idea_j.content == idea_i.content
-                )
-                total_similar_indices = score_similar_indices | content_equal_indices
-
-                self.idea_similar_nums.append(len(total_similar_indices))
-            
-        else:
-            for i, idea_i in enumerate(self.ideas):
-                
-                similar_count = 0
-                
-                for j, idea_j in enumerate(self.ideas):
-                    
-                    if i == j or idea_i.content == idea_j.content:
-                        similar_count += 1
-                        continue
-                    
-                    assert idea_i.content is not None
-                    assert idea_j.content is not None
-                        
-                    score_diff = similarity_distance_func(idea_i.content, idea_j.content) 
-                    if score_diff <= similarity_threshold: similar_count += 1
-                        
-                self.idea_similar_nums.append(similar_count)
-            
-        end_time = perf_counter()
-        total_time = end_time - start_time
-            
-        with self._console_lock:
-            append_to_file(
-                file_path = diary_path,
-                content = self._("【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！") % (self.id, total_time),
-            )
     
     
     def _check_threshold(self):
@@ -650,12 +567,10 @@ class Island:
         mutation_num = self.ideasearcher.get_mutation_num()
         mutation_temperature = self.ideasearcher.get_mutation_temperature()
         mutation_func = self.ideasearcher.get_mutation_func()
-        generation_bonus = self.ideasearcher.get_generation_bonus()
         assert evaluate_func is not None
         assert mutation_num is not None
         assert mutation_temperature is not None
         assert mutation_func is not None
-        assert generation_bonus is not None
         
         with self._console_lock:
             append_to_file(
@@ -666,7 +581,7 @@ class Island:
         for index in range(mutation_num):
             
             selected_index = make_boltzmann_choice(
-                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                energies = np.array([idea.score for idea in self.ideas]),
                 temperature = mutation_temperature,
             )
             assert isinstance(selected_index, int)
@@ -748,7 +663,6 @@ class Island:
                         )
                     self._sync_score_sheet()
                     self._sync_best_score()
-                    self._sync_similar_num_list()
                 else:
                     with self._console_lock:
                         append_to_file(
@@ -780,12 +694,10 @@ class Island:
         crossover_num = self.ideasearcher.get_crossover_num()
         crossover_temperature = self.ideasearcher.get_crossover_temperature()
         crossover_func = self.ideasearcher.get_crossover_func()
-        generation_bonus = self.ideasearcher.get_generation_bonus()
         assert evaluate_func is not None
         assert crossover_num is not None
         assert crossover_temperature is not None
         assert crossover_func is not None
-        assert generation_bonus is not None
     
         with self._console_lock:
             diary_path = self.ideasearcher.get_diary_path()
@@ -797,7 +709,7 @@ class Island:
         for index in range(crossover_num):
             
             parent_indices = make_boltzmann_choice(
-                energies = np.array([idea.score for idea in self.ideas]) + generation_bonus * np.array([idea.level for idea in self.ideas]),
+                energies = np.array([idea.score for idea in self.ideas]),
                 temperature = crossover_temperature,
                 size = 2,
                 replace = False,
@@ -883,7 +795,6 @@ class Island:
                         )
                     self._sync_score_sheet()
                     self._sync_best_score()
-                    self._sync_similar_num_list()
                 else:
                     with self._console_lock:
                         append_to_file(

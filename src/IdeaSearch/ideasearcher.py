@@ -37,7 +37,6 @@ class IdeaSearcher:
         self._delete_when_initial_cleanse: bool = False
         self._samplers_num: int = 3
         self._sample_temperature: float = 50.0
-        self._generation_bonus: float = 0.0
         self._system_prompt: Optional[str] = None
         self._explicit_prompt_structure: bool = True
         self._prologue_section: Optional[str] = None
@@ -75,10 +74,6 @@ class IdeaSearcher:
         self._crossover_interval: Optional[int] = None
         self._crossover_num: Optional[int] = None
         self._crossover_temperature: Optional[float] = None
-        self._similarity_threshold: float = -1.0
-        self._similarity_distance_func: Optional[Callable[[str, str], float]] = None
-        self._similarity_sys_info_thresholds: Optional[List[int]] = None
-        self._similarity_sys_info_prompts: Optional[List[str]] = None
         self._idea_uid_length: int = 6
         self._record_prompt_in_diary: bool = False
         self._backup_on: bool = True
@@ -92,12 +87,6 @@ class IdeaSearcher:
             idea: str,
         )-> Tuple[float, Optional[str]]:
             return 0.0, None
-    
-        # This will not be really executed, just its address used. 
-        def default_similarity_distance_func(idea1, idea2):
-            return abs(evaluate_func_example(idea1)[0] - evaluate_func_example(idea2)[0])
-            
-        self._default_similarity_distance_func = default_similarity_distance_func
 
         self._random_generator = np.random.default_rng()
         self._model_manager: ModelManager = ModelManager()
@@ -278,9 +267,6 @@ class IdeaSearcher:
             assert models is not None
             if self._model_temperatures is None:
                 self._model_temperatures = [self._default_model_temperature] * len(models)
-        
-        if self._similarity_distance_func is None:
-            self._similarity_distance_func = self._default_similarity_distance_func
         
         if self._diary_path is None:
             self._diary_path = f"{database_path}{seperator}log{seperator}diary.txt"
@@ -583,7 +569,6 @@ class IdeaSearcher:
             island = Island(
                 ideasearcher = self,
                 island_id = island_id,
-                default_similarity_distance_func = self._default_similarity_distance_func,
                 console_lock = self._console_lock,
             )
             
@@ -1506,24 +1491,6 @@ class IdeaSearcher:
             self._sample_temperature = value
 
 
-    def set_generation_bonus(
-        self,
-        value: float,
-    )-> None:
-    
-        """
-        Set the parameter generation_bonus to the given value, if it is of the type float.
-        A score bonus added to ideas from more recent generations during the sampling process. This encourages exploration of newer evolutionary paths.
-        Its default value is 0.0.
-        """
-
-        if not isinstance(value, float):
-            raise TypeError(self._("【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._generation_bonus = value
-
-
     def set_system_prompt(
         self,
         value: Optional[str],
@@ -2202,78 +2169,6 @@ class IdeaSearcher:
             self._crossover_temperature = value
 
 
-    def set_similarity_threshold(
-        self,
-        value: float,
-    )-> None:
-    
-        """
-        Set the parameter similarity_threshold to the given value, if it is of the type float.
-        The distance threshold below which two ideas are considered similar. A value of -1.0 disables similarity checks except for exact duplicates.
-        Its default value is -1.0.
-        """
-
-        if not isinstance(value, float):
-            raise TypeError(self._("【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._similarity_threshold = value
-
-
-    def set_similarity_distance_func(
-        self,
-        value: Optional[Callable[[str, str], float]],
-    )-> None:
-    
-        """
-        Set the parameter similarity_distance_func to the given value, if it is of the type Optional[Callable[[str, str], float]].
-        A custom function to calculate the 'distance' between two ideas. If `None`, defaults to the absolute difference of their scores.
-        Its default value is None.
-        """
-
-        if not (value is None or callable(value)):
-            raise TypeError(self._("【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, str], float]]，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._similarity_distance_func = value
-
-
-    def set_similarity_sys_info_thresholds(
-        self,
-        value: Optional[List[int]],
-    )-> None:
-    
-        """
-        Set the parameter similarity_sys_info_thresholds to the given value, if it is of the type Optional[List[int]].
-        A list of integer thresholds for the number of similar ideas found, which trigger corresponding system prompts.
-        Its default value is None.
-        """
-
-        if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
-            raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._similarity_sys_info_thresholds = value
-
-
-    def set_similarity_sys_info_prompts(
-        self,
-        value: Optional[List[str]],
-    )-> None:
-    
-        """
-        Set the parameter similarity_sys_info_prompts to the given value, if it is of the type Optional[List[str]].
-        A list of system prompts triggered when the count of similar ideas crosses the `similarity_sys_info_thresholds`. Must have `len(thresholds) + 1` elements.
-        Its default value is None.
-        """
-
-        if not (value is None or (hasattr(value, "__iter__") and not isinstance(value, str))):
-            raise TypeError(self._("【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s") % str(type(value)))
-
-        with self._user_lock:
-            self._similarity_sys_info_prompts = value
-
-
     def set_idea_uid_length(
         self,
         value: int,
@@ -2512,18 +2407,6 @@ class IdeaSearcher:
         """
 
         return self._sample_temperature
-
-
-    def get_generation_bonus(
-        self,
-    )-> float:
-        
-        """
-        Get the current value of the `generation_bonus` parameter.
-        A score bonus added to ideas from more recent generations during the sampling process. This encourages exploration of newer evolutionary paths.
-        """
-
-        return self._generation_bonus
 
 
     def get_system_prompt(
@@ -2968,54 +2851,6 @@ class IdeaSearcher:
         """
 
         return self._crossover_temperature
-
-
-    def get_similarity_threshold(
-        self,
-    )-> float:
-        
-        """
-        Get the current value of the `similarity_threshold` parameter.
-        The distance threshold below which two ideas are considered similar. A value of -1.0 disables similarity checks except for exact duplicates.
-        """
-
-        return self._similarity_threshold
-
-
-    def get_similarity_distance_func(
-        self,
-    )-> Optional[Callable[[str, str], float]]:
-        
-        """
-        Get the current value of the `similarity_distance_func` parameter.
-        A custom function to calculate the 'distance' between two ideas. If `None`, defaults to the absolute difference of their scores.
-        """
-
-        return self._similarity_distance_func
-
-
-    def get_similarity_sys_info_thresholds(
-        self,
-    )-> Optional[List[int]]:
-        
-        """
-        Get the current value of the `similarity_sys_info_thresholds` parameter.
-        A list of integer thresholds for the number of similar ideas found, which trigger corresponding system prompts.
-        """
-
-        return self._similarity_sys_info_thresholds
-
-
-    def get_similarity_sys_info_prompts(
-        self,
-    )-> Optional[List[str]]:
-        
-        """
-        Get the current value of the `similarity_sys_info_prompts` parameter.
-        A list of system prompts triggered when the count of similar ideas crosses the `similarity_sys_info_thresholds`. Must have `len(thresholds) + 1` elements.
-        """
-
-        return self._similarity_sys_info_prompts
 
 
     def get_idea_uid_length(

@@ -28,7 +28,6 @@ def main():
         # about sampling
         ("samplers_num", "int", "3", "The number of Sampler threads to run in parallel for each island."),
         ("sample_temperature", "float", "50.0", "The softmax temperature for sampling ideas to be used as context in the prompt. Higher values increase randomness."),
-        ("generation_bonus", "float", "0.0", "A score bonus added to ideas from more recent generations during the sampling process. This encourages exploration of newer evolutionary paths."),
 
         # about prompt: prompt = prologue + filtered ideas + epilogue, text-image intertwined format
         ("system_prompt", "Optional[str]", "None", "The system-level instruction for the large language model, setting the overall context and persona."),
@@ -82,12 +81,6 @@ def main():
         ("crossover_interval", "Optional[int]", "None", "The frequency (in rounds) at which the crossover operation is performed."),
         ("crossover_num", "Optional[int]", "None", "The number of new ideas to be generated via crossover each time the operation is triggered."),
         ("crossover_temperature", "Optional[float]", "None", "The softmax temperature for selecting parent ideas for crossover. Higher values increase randomness in parent selection."),
-
-        # about similarity (not often used)
-        ("similarity_threshold", "float", "-1.0", "The distance threshold below which two ideas are considered similar. A value of -1.0 disables similarity checks except for exact duplicates."),
-        ("similarity_distance_func", "Optional[Callable[[str, str], float]]", "None", "A custom function to calculate the 'distance' between two ideas. If `None`, defaults to the absolute difference of their scores."),
-        ("similarity_sys_info_thresholds", "Optional[List[int]]", "None", "A list of integer thresholds for the number of similar ideas found, which trigger corresponding system prompts."),
-        ("similarity_sys_info_prompts", "Optional[List[str]]", "None", "A list of system prompts triggered when the count of similar ideas crosses the `similarity_sys_info_thresholds`. Must have `len(thresholds) + 1` elements."),
 
         # miscellaneous
         ("idea_uid_length", "int", "6", "The character length of the Unique Identifier (UID) used in the filenames of `.idea` files."),
@@ -205,12 +198,6 @@ def main():
             idea: str,
         )-> Tuple[float, Optional[str]]:
             return 0.0, None
-    
-        # This will not be really executed, just its address used. 
-        def default_similarity_distance_func(idea1, idea2):
-            return abs(evaluate_func_example(idea1)[0] - evaluate_func_example(idea2)[0])
-            
-        self._default_similarity_distance_func = default_similarity_distance_func
 
         self._random_generator = np.random.default_rng()
         self._model_manager: ModelManager = ModelManager()
@@ -314,7 +301,6 @@ gettext.textdomain(_DOMAIN)
             island = Island(
                 ideasearcher = self,
                 island_id = island_id,
-                default_similarity_distance_func = self._default_similarity_distance_func,
                 console_lock = self._console_lock,
             )
             
@@ -664,9 +650,6 @@ gettext.textdomain(_DOMAIN)
             assert models is not None
             if self._model_temperatures is None:
                 self._model_temperatures = [self._default_model_temperature] * len(models)
-        
-        if self._similarity_distance_func is None:
-            self._similarity_distance_func = self._default_similarity_distance_func
         
         if self._diary_path is None:
             self._diary_path = f"{{database_path}}{{seperator}}log{{seperator}}diary.txt"

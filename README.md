@@ -14,8 +14,6 @@ Compared to FunSearch, `IdeaSearch` introduces several innovative features that 
 
 - **Crossover (`crossover`)**: Generates new hybrid Ideas by combining elements from two or more existing Ideas. This classic operation from genetic algorithms is enhanced in `IdeaSearch` to facilitate more complex evolutionary paths, capable of merging the strengths of different excellent Ideas to produce novel combinations that transcend the limitations of a single Idea.
 
-- **Generation Bonus (`generation_bonus`)**: Provides an additional score reward for newly generated Ideas. This mechanism encourages the system to continuously explore and produce novel, more vibrant Ideas, effectively preventing premature convergence to local optima and promoting a broad exploration of the Idea space.
-
 ## Key Features
 
 - **Multi-Island Parallel Search**: Supports the creation of multiple independent "islands," each equipped with its own Samplers and Evaluators, to explore the Idea space in parallel, enhancing search efficiency and diversity.
@@ -39,7 +37,7 @@ Compared to FunSearch, `IdeaSearch` introduces several innovative features that 
 
 - **Data Persistence and Backup**: Automatically manages Idea files and score data, with support for backup functionality to ensure data integrity during the search process.
 
-- **Highly Configurable**: Offers a rich set of parameters (via `set_` methods) for users to customize search behavior, including model temperatures, sampling strategies, evaluation intervals, and similarity thresholds.
+- **Highly Configurable**: Offers a rich set of parameters (via `set_` methods) for users to customize search behavior, including model temperatures, sampling strategies and evaluation intervals.
 
 - **Internationalization Support**: Includes a built-in `gettext` internationalization mechanism, supporting multiple languages (currently Simplified Chinese `zh_CN` and English `en`).
 
@@ -134,8 +132,6 @@ The following methods in the `IdeaSearcher` class constitute the primary user in
   - The number of parallel Sampler threads to run for each island.
 - **`sample_temperature`**: `float` (Default: `50.0`)
   - The softmax temperature used to control randomness when sampling historical ideas as examples for the prompt. Higher values increase randomness.
-- **`generation_bonus`**: `float` (Default: `0.0`)
-  - A score bonus added to ideas from more recent generations during sampling, encouraging the exploration of newer evolutionary paths.
 
 ### Prompt Engineering
 
@@ -257,12 +253,6 @@ This file should be a JSON object where each top-level key is a unique model ali
   - The number of new ideas to be generated via crossover each time the operation is triggered.
 - **`crossover_temperature`**: `Optional[float]` (Default: `None`)
   - The softmax temperature for selecting parent ideas for crossover. Higher values increase randomness in parent selection.
-
-### Similarity (Infrequently Used)
-
-- **`similarity_threshold`**: `float` (Default: `-1.0`)
-  - The distance threshold below which two ideas are considered similar. A value of `-1.0` disables similarity checks except for exact duplicates.
-- Other related parameters like `similarity_distance_func` are available for more complex similarity control.
 
 ### Miscellaneous
 

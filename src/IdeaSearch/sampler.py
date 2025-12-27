@@ -94,7 +94,7 @@ class Sampler:
                     
                 for index, example in enumerate(examples):
                     
-                    idea, score, info, similar_num, similarity_prompt, path, _ = example
+                    idea, score, info, path, _ = example
                     example_ideas.append(idea)
                     
                     examples_section += f"[Example {index + 1}]\n" \
@@ -128,12 +128,6 @@ class Sampler:
                     if info is not None and include_info_in_prompt:
                         examples_section += f"Info：{info}\n" \
                             if explicit_prompt_structure else f"{info}\n"
-                        
-                    if explicit_prompt_structure and similar_num is not None:
-                        examples_section += (
-                            f"Similarity Note: There are {similar_num} examples similar to this one.\n"
-                            f"{similarity_prompt}\n"
-                        )
                 
                 prompt = prologue_section + examples_section + epilogue_section
                 

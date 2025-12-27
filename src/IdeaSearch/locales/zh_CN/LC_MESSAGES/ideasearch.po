@@ -315,30 +315,6 @@ msgid "【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[floa
 msgstr "【IdeaSearcher】 参数`crossover_temperature`类型应为Optional[float]，实为%s"
 
 #, python-format
-msgid "【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s"
-msgstr "【IdeaSearcher】 参数`similarity_threshold`类型应为float，实为%s"
-
-#, python-format
-msgid ""
-"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, "
-"str], float]]，实为%s"
-msgstr ""
-"【IdeaSearcher】 参数`similarity_distance_func`类型应为Optional[Callable[[str, "
-"str], float]]，实为%s"
-
-#, python-format
-msgid ""
-"【IdeaSearcher】 "
-"参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
-msgstr ""
-"【IdeaSearcher】 "
-"参数`similarity_sys_info_thresholds`类型应为Optional[List[int]]，实为%s"
-
-#, python-format
-msgid "【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s"
-msgstr "【IdeaSearcher】 参数`similarity_sys_info_prompts`类型应为Optional[List[str]]，实为%s"
-
-#, python-format
 msgid "【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s"
 msgstr "【IdeaSearcher】 参数`load_idea_skip_evaluation`类型应为bool，实为%s"
 
@@ -361,10 +337,6 @@ msgstr "【IdeaSearcher】 参数`record_prompt_in_diary`类型应为bool，实�
 #, python-format
 msgid "【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s"
 msgstr "【IdeaSearcher】 参数`filter_func`类型应为Optional[Callable[[str], str]]，实为%s"
-
-#, python-format
-msgid "【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s"
-msgstr "【IdeaSearcher】 参数`generation_bonus`类型应为float，实为%s"
 
 #, python-format
 msgid "【IdeaSearcher】 参数`backup_path`类型应为Optional[str]，实为%s"
@@ -450,10 +422,6 @@ msgstr "【%d号岛屿】 %d 号评估器递交的 %d 个新文件已评分并�
 #, python-format
 msgid "【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！"
 msgstr "【%d号岛屿】 %s 的 score sheet 已更新，用时%.2f秒！"
-
-#, python-format
-msgid "【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！"
-msgstr "【%d号岛屿】 成功将idea_similar_nums与ideas同步，用时%.2f秒！"
 
 #, python-format
 msgid "【%d号岛屿】 采样次数已分发完毕，IdeaSearch将在各采样器完成手头任务后结束。"
