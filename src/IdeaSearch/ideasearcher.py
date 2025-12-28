@@ -74,6 +74,11 @@ class IdeaSearcher:
         self._crossover_interval: Optional[int] = None
         self._crossover_num: Optional[int] = None
         self._crossover_temperature: Optional[float] = None
+        self._identify_func: Optional[Callable[[str, str], bool]] = None
+        self._potential_weight: float = 0.0
+        self._potential_sample_threshold: int = 1
+        self._potential_normalization_mode: str = "low_reject"
+        self._potential_regularization_alpha: float = 1e-4
         self._idea_uid_length: int = 6
         self._record_prompt_in_diary: bool = False
         self._backup_on: bool = True
@@ -82,11 +87,6 @@ class IdeaSearcher:
         self._lock: Lock = Lock()
         self._user_lock: Lock = Lock()
         self._console_lock: Lock = Lock()
-
-        def evaluate_func_example(
-            idea: str,
-        )-> Tuple[float, Optional[str]]:
-            return 0.0, None
 
         self._random_generator = np.random.default_rng()
         self._model_manager: ModelManager = ModelManager()
@@ -107,7 +107,11 @@ class IdeaSearcher:
         self._models_loaded_from_api_keys_json = False
         self._default_model_temperature = 0.9
         
-        self._oriented_edges: List[Tuple[str, str]] = [] 
+        self._group_representatives: List[str] = []
+        self._idea_to_group_index: Dict[str, int] = {}
+        self._transition_counts: Dict[Tuple[int, int], int] = {}
+        self._group_source_counts: Dict[int, int] = {}
+        self._group_potentials: Dict[int, float] = {}
 
 
     def __dir__(self):
@@ -1212,23 +1216,204 @@ class IdeaSearcher:
             if hasattr(helper, "filter_func"): self._filter_func = helper.filter_func # type: ignore
             if hasattr(helper, "postprocess_func"): self._postprocess_func = helper.postprocess_func # type: ignore
 
-    # ----------------------------- Graph Manager 相关 ----------------------------- 
+    # ----------------------------- 分组与势函数计算相关 ----------------------------- 
             
-    def communicate_with_graph_manager(
+    def update_potential(
         self,
-        example_idea: str,
-        generated_idea: str,
+        example_ideas: List[str],
+        generated_ideas: List[str],
     )-> None:
     
-        database_path = self._database_path
-        assert database_path
+        diary_path = self._diary_path
+        assert diary_path is not None
 
         with self._lock:
-            self._oriented_edges.append((example_idea, generated_idea))
-            save_to_json(
-                json_path = f"{database_path}{seperator}data{seperator}oriented_edges.json",
-                obj = self._oriented_edges,
-            )
+        
+            src_indices = [self._get_or_create_group_index(idea) for idea in example_ideas]
+            dst_indices = [self._get_or_create_group_index(idea) for idea in generated_ideas]
+            
+            for s_idx in src_indices:
+                self._group_source_counts[s_idx] = self._group_source_counts.get(s_idx, 0) + len(dst_indices)
+                
+                for d_idx in dst_indices:
+                    if s_idx == d_idx: continue
+                    pair = (s_idx, d_idx)
+                    self._transition_counts[pair] = self._transition_counts.get(pair, 0) + 1
+            
+            start_time = perf_counter()
+            self._calculate_potential()
+            end_time = perf_counter()
+            total_time = end_time - start_time
+            with self._console_lock:
+                append_to_file(
+                    file_path = diary_path,
+                    content = self._("【IdeaSearcher】 potential calculation time cost: %s; group count: %d" % (f"{total_time:.2f} seconds", len(self._group_representatives))),
+                )
+    
+
+    def get_potentials(
+        self,
+        ideas: List[str],
+    )-> List[float]:
+    
+        with self._lock:
+            
+            results = []
+            for idea in ideas:
+                idx = self._get_or_create_group_index(idea)
+                results.append(self._group_potentials.get(idx, 0.0))
+
+            return results
+
+
+    def get_potential_group_sizes(
+        self, 
+        ideas: List[str],
+    )-> List[int]:
+
+        with self._lock:
+            
+            group_indices = [self._get_or_create_group_index(idea) for idea in ideas]
+            group_counts = Counter(group_indices)
+            results = [group_counts[idx] for idx in group_indices]
+            
+            return results
+
+    
+    def _get_or_create_group_index(
+        self,
+        idea: str,
+    )-> int:
+    
+        identify_func = self._identify_func
+        diary_path = self._diary_path
+        assert diary_path is not None
+    
+        if idea in self._idea_to_group_index:
+            return self._idea_to_group_index[idea]
+        
+        # 线性扫描代表元，性能敏感点
+        start_time = perf_counter()
+        try:
+            for idx, representative in enumerate(self._group_representatives):
+                idea_in_group = (identify_func is not None and identify_func(representative, idea)) \
+                    or representative == idea
+                if idea_in_group:
+                    self._idea_to_group_index[idea] = idx
+                    return idx
+            
+            new_idx = len(self._group_representatives)
+            self._group_representatives.append(idea)
+            self._idea_to_group_index[idea] = new_idx
+            self._group_potentials[new_idx] = 0.0 
+            return new_idx
+        finally:
+            end_time = perf_counter()
+            total_time = end_time - start_time
+            with self._console_lock:
+                append_to_file(
+                    file_path = diary_path,
+                    content = self._("【IdeaSearcher】 _get_or_create_group_index time cost (cache unhit): %s" % (f"{total_time:.2f} seconds")),
+                )
+            
+
+
+    def _calculate_potential(
+        self
+    )-> None:
+    
+        n_threshold = self._potential_sample_threshold
+        reject_mode = self._potential_normalization_mode
+        alpha = self._potential_regularization_alpha
+    
+        active_nodes = list(self._group_source_counts.keys())
+        if not active_nodes: return
+        
+        num_groups = len(self._group_representatives)
+        nodes = range(num_groups)
+        
+        n_0_map: Dict[int, float] = {}
+        filtered_nodes: Set[int] = set()
+        
+        if reject_mode == 'high_reject':
+            val = 20000.0 / num_groups if num_groups > 0 else 1.0
+            for node in nodes:
+                n_0_map[node] = val
+        else: # low_reject
+            for node in nodes:
+                cnt = self._group_source_counts.get(node, 0)
+                n_0_map[node] = float(cnt)
+                if cnt <= n_threshold:
+                    filtered_nodes.add(node)
+
+        edges_data = []
+        valid_source_count = 0
+        
+        for node in nodes:
+             if node not in filtered_nodes and n_0_map.get(node, 0) > n_threshold:
+                 valid_source_count += 1
+        
+        if valid_source_count == 0:
+            return
+
+        # 构建边列表
+        for (u, v), count in self._transition_counts.items():
+            if reject_mode == 'low_reject':
+                if u in filtered_nodes or v in filtered_nodes:
+                    continue
+            
+            n_0_u = n_0_map.get(u, 1.0)
+            if n_0_u > n_threshold:
+                # w(f->g) = min(1, N(f->g) / N_0(f))
+                weight = min(1.0, count / n_0_u)
+                edges_data.append({'u': u, 'v': v, 'w': weight})
+        
+        def K(x: Any) -> Any:
+            return np.exp(-x / 2)
+
+        def objective_and_grad(v_array: np.ndarray) -> Tuple[float, np.ndarray]:
+            action_numerator = 0.0
+            grads = np.zeros_like(v_array)
+            
+            for edge in edges_data:
+                u, v_idx, w = edge['u'], edge['v'], edge['w']
+                delta_v = v_array[u] - v_array[v_idx]
+                k_val = K(delta_v)
+                action_numerator += w * k_val
+                common_grad_term = w * (-0.5 * k_val)
+                grads[u] += common_grad_term
+                grads[v_idx] -= common_grad_term
+            
+            action_loss = action_numerator / valid_source_count
+            action_grads = grads / valid_source_count
+            current_mean = np.mean(v_array)
+            # 零均值正则项
+            reg_loss = alpha * (current_mean ** 2)
+            reg_grad_val = alpha * 2 * current_mean / len(v_array)
+            reg_grads = np.full_like(v_array, reg_grad_val)
+            total_loss = action_loss + reg_loss
+            total_grads = action_grads + reg_grads
+            return float(total_loss), total_grads
+
+        # 初始值使用上一轮的 potentials 以加速收敛
+        x0 = np.zeros(num_groups)
+        for i in range(num_groups):
+            x0[i] = self._group_potentials.get(i, 0.0)
+
+        res = minimize(
+            fun = objective_and_grad,
+            x0 = x0,
+            jac = True,
+            method = 'L-BFGS-B',
+            options = {'maxiter': 100, 'disp': False} 
+        )
+
+        optimized_v = res.x
+        # 零上界归一化
+        optimized_v -= np.mean(optimized_v)
+        
+        for i, val in enumerate(optimized_v):
+            self._group_potentials[i] = val
 
     # ----------------------------- Getters and Setters ----------------------------- 
     
@@ -2169,6 +2354,96 @@ class IdeaSearcher:
             self._crossover_temperature = value
 
 
+    def set_identify_func(
+        self,
+        value: Optional[Callable[[str, str], bool]],
+    )-> None:
+    
+        """
+        Set the parameter identify_func to the given value, if it is of the type Optional[Callable[[str, str], bool]].
+        A function that determines whether two ideas belong to the same group.
+        Its default value is None.
+        """
+
+        if not (value is None or callable(value)):
+            raise TypeError(self._("【IdeaSearcher】 参数`identify_func`类型应为Optional[Callable[[str, str], bool]]，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._identify_func = value
+
+
+    def set_potential_weight(
+        self,
+        value: float,
+    )-> None:
+    
+        """
+        Set the parameter potential_weight to the given value, if it is of the type float.
+        Weight of group potential in boltzmann sampling energies.
+        Its default value is 0.0.
+        """
+
+        if not isinstance(value, float):
+            raise TypeError(self._("【IdeaSearcher】 参数`potential_weight`类型应为float，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._potential_weight = value
+
+
+    def set_potential_sample_threshold(
+        self,
+        value: int,
+    )-> None:
+    
+        """
+        Set the parameter potential_sample_threshold to the given value, if it is of the type int.
+        The minimum number of times a group must act as a source to be considered statistically valid for potential calculation. Filters out noise from rare groups.
+        Its default value is 1.
+        """
+
+        if not isinstance(value, int):
+            raise TypeError(self._("【IdeaSearcher】 参数`potential_sample_threshold`类型应为int，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._potential_sample_threshold = value
+
+
+    def set_potential_normalization_mode(
+        self,
+        value: str,
+    )-> None:
+    
+        """
+        Set the parameter potential_normalization_mode to the given value, if it is of the type str.
+        The strategy for calculating the normalization factor N_0. Options: 'low_reject' (uses local transition counts, recommended) or 'high_reject' (uses a global constant).
+        Its default value is "low_reject".
+        """
+
+        if not isinstance(value, str):
+            raise TypeError(self._("【IdeaSearcher】 参数`potential_normalization_mode`类型应为str，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._potential_normalization_mode = value
+
+
+    def set_potential_regularization_alpha(
+        self,
+        value: float,
+    )-> None:
+    
+        """
+        Set the parameter potential_regularization_alpha to the given value, if it is of the type float.
+        The regularization strength to constrain the mean potential during optimization. Prevents numerical drift.
+        Its default value is 1e-4.
+        """
+
+        if not isinstance(value, float):
+            raise TypeError(self._("【IdeaSearcher】 参数`potential_regularization_alpha`类型应为float，实为%s") % str(type(value)))
+
+        with self._user_lock:
+            self._potential_regularization_alpha = value
+
+
     def set_idea_uid_length(
         self,
         value: int,
@@ -2851,6 +3126,66 @@ class IdeaSearcher:
         """
 
         return self._crossover_temperature
+
+
+    def get_identify_func(
+        self,
+    )-> Optional[Callable[[str, str], bool]]:
+        
+        """
+        Get the current value of the `identify_func` parameter.
+        A function that determines whether two ideas belong to the same group.
+        """
+
+        return self._identify_func
+
+
+    def get_potential_weight(
+        self,
+    )-> float:
+        
+        """
+        Get the current value of the `potential_weight` parameter.
+        Weight of group potential in boltzmann sampling energies.
+        """
+
+        return self._potential_weight
+
+
+    def get_potential_sample_threshold(
+        self,
+    )-> int:
+        
+        """
+        Get the current value of the `potential_sample_threshold` parameter.
+        The minimum number of times a group must act as a source to be considered statistically valid for potential calculation. Filters out noise from rare groups.
+        """
+
+        return self._potential_sample_threshold
+
+
+    def get_potential_normalization_mode(
+        self,
+    )-> str:
+        
+        """
+        Get the current value of the `potential_normalization_mode` parameter.
+        The strategy for calculating the normalization factor N_0. Options: 'low_reject' (uses local transition counts, recommended) or 'high_reject' (uses a global constant).
+        """
+
+        return self._potential_normalization_mode
+
+
+    def get_potential_regularization_alpha(
+        self,
+    )-> float:
+        
+        """
+        Get the current value of the `potential_regularization_alpha` parameter.
+        The regularization strength to constrain the mean potential during optimization. Prevents numerical drift.
+        """
+
+        return self._potential_regularization_alpha
 
 
     def get_idea_uid_length(

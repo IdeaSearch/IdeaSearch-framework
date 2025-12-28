@@ -1,5 +1,8 @@
 
 from .utils import *
+if TYPE_CHECKING: from .ideasearcher import IdeaSearcher
+if TYPE_CHECKING: from .island import Island
+if TYPE_CHECKING: from .evaluator import Evaluator
 
 
 _LOCALE_DIR = Path(__file__).parent / "locales"
@@ -16,10 +19,10 @@ __all__ = [
 class Sampler:
     def __init__(
         self, 
-        ideasearcher,
+        ideasearcher: IdeaSearcher,
         sampler_id: int, 
-        island,
-        evaluators,
+        island: Island,
+        evaluators: List[Evaluator],
         console_lock: Lock,
     ):
         
@@ -47,8 +50,8 @@ class Sampler:
         include_info_in_prompt = self.ideasearcher.get_include_info_in_prompt()
         images = self.ideasearcher.get_images()
         image_placeholder = self.ideasearcher.get_image_placeholder()
-        
-        assert system_prompt
+        assert diary_path is not None
+        assert system_prompt is not None
         
         with self.console_lock:
             append_to_file(
@@ -129,6 +132,9 @@ class Sampler:
                         examples_section += f"Info：{info}\n" \
                             if explicit_prompt_structure else f"{info}\n"
                 
+                assert isinstance(prologue_section, str)
+                assert isinstance(examples_section, str)
+                assert isinstance(epilogue_section, str)
                 prompt = prologue_section + examples_section + epilogue_section
                 
             else:
@@ -240,8 +246,8 @@ class Sampler:
                 
                 return raw_response, idea
             
-            generated_raw_responses = [None] * generate_num
-            generated_ideas = [None] * generate_num
+            generated_raw_responses: List[Optional[str]] = [None] * generate_num
+            generated_ideas: List[Optional[str]] = [None] * generate_num
             with ThreadPoolExecutor() as executor:
 
                 future_to_index = {
@@ -278,10 +284,9 @@ class Sampler:
                     )
                 continue
             
-            for example_idea in example_ideas:
-                for generated_idea in generated_ideas:
-                    self.ideasearcher.communicate_with_graph_manager(example_idea, generated_idea)
-                            
+            safe_generated_ideas: List[str] = [str(idea) for idea in generated_ideas]
+            self.ideasearcher.update_potential(example_ideas, safe_generated_ideas)
+            
             with self.console_lock:
                 append_to_file(
                     file_path = diary_path,
@@ -294,7 +299,7 @@ class Sampler:
                 evaluator.evaluate(
                     generated_raw_responses = generated_raw_responses,
                     generated_ideas = generated_ideas, 
-                    model = model, 
+                    model = model,
                     model_temperature = model_temperature, 
                     example_idea_paths = example_idea_paths, 
                     example_idea_scores = example_idea_scores,
@@ -326,6 +331,7 @@ class Sampler:
     ):
         
         diary_path = self.ideasearcher.get_diary_path()
+        assert diary_path is not None
         
         for evaluator in self.evaluators:
             if evaluator.try_acquire():

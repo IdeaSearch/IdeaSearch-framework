@@ -1,4 +1,5 @@
 from .utils import *
+if TYPE_CHECKING: from .ideasearcher import IdeaSearcher
 
 
 # 国际化设置
@@ -32,6 +33,7 @@ class Idea:
         self.source = source
         self.level = level
         self.raw_response = raw_response
+        self.content: str = ""
         
         if created_at is not None:
             self.created_at = created_at
@@ -43,6 +45,7 @@ class Idea:
                 self.content = file.read()
             self.score, self.info = evaluate_func(self.content)
         else:
+            assert isinstance(content, str)
             self.content = content
             self.score = score
             self.info = info
@@ -54,7 +57,7 @@ class Island:
 
     def __init__(
         self,
-        ideasearcher,
+        ideasearcher: IdeaSearcher,
         island_id: int,
         console_lock: Lock,
     )-> None:
@@ -105,6 +108,7 @@ class Island:
             delete_when_initial_cleanse = self.ideasearcher.get_delete_when_initial_cleanse()
             evaluate_func = self.ideasearcher.get_evaluate_func()
             assert database_path is not None
+            assert diary_path is not None
             
             idea_source_path = f"{database_path}{seperator}ideas{seperator}{folder_name}"
             idea_source_path_ideas = []
@@ -335,6 +339,9 @@ class Island:
             crossover_func = self.ideasearcher.get_crossover_func()
             crossover_interval = self.ideasearcher.get_crossover_interval()
             sample_temperature = self.ideasearcher.get_sample_temperature()
+            potential_weight = self.ideasearcher.get_potential_weight()
+            examples_num = self.ideasearcher.get_examples_num()
+            assert diary_path is not None
             
             self.interaction_count += 1
             
@@ -368,10 +375,15 @@ class Island:
                     )
                 exit()
             
+            idea_contents = [idea.content for idea in self.ideas]
+            energies = np.array([idea.score for idea in self.ideas]) \
+                + potential_weight * sample_temperature * np.array(self.ideasearcher.get_potentials(idea_contents))
+            energies /= np.array(self.ideasearcher.get_potential_group_sizes(idea_contents))
+            
             selected_indices = make_boltzmann_choice(
-                energies = np.array([idea.score for idea in self.ideas]),
+                energies = energies,
                 temperature = sample_temperature,
-                size = min(len(self.ideas), self.ideasearcher.get_examples_num()),
+                size = min(len(self.ideas), examples_num),
                 replace = False,
             )
             assert not isinstance(selected_indices, int)
@@ -401,6 +413,7 @@ class Island:
                 return None
             
             diary_path = self.ideasearcher.get_diary_path()
+            assert diary_path is not None
             
             self.interaction_count += 1
             
@@ -434,6 +447,7 @@ class Island:
                 return
             
             diary_path = self.ideasearcher.get_diary_path()
+            assert diary_path is not None
     
             for raw_response, idea_content, score, info in result:
                 
@@ -500,6 +514,7 @@ class Island:
         
         diary_path = self.ideasearcher.get_diary_path()
         program_name = self.ideasearcher.get_program_name()
+        assert diary_path is not None
         
         score_sheet_path = f"{self.path}{seperator}score_sheet_island{self.id}.json"
         
@@ -549,6 +564,7 @@ class Island:
     
     def _check_threshold(self):
         diary_path = self.ideasearcher.get_diary_path()
+        assert diary_path is not None
         if self.interaction_count >= self.interaction_num:
             with self._console_lock:
                 append_to_file(
@@ -571,6 +587,7 @@ class Island:
         assert mutation_num is not None
         assert mutation_temperature is not None
         assert mutation_func is not None
+        assert diary_path is not None
         
         with self._console_lock:
             append_to_file(
@@ -698,9 +715,9 @@ class Island:
         assert crossover_num is not None
         assert crossover_temperature is not None
         assert crossover_func is not None
+        assert diary_path is not None
     
         with self._console_lock:
-            diary_path = self.ideasearcher.get_diary_path()
             append_to_file(
                 file_path = diary_path,
                 content = self._("【%d号岛屿】 现在开始进行交叉变异！") % self.id,
@@ -720,6 +737,8 @@ class Island:
             parent_2 = self.ideas[parent_indices[1]]
 
             try:
+                assert parent_1.content is not None
+                assert parent_2.content is not None
                 crossover_idea = crossover_func(
                     parent_1.content, parent_2.content
                 )

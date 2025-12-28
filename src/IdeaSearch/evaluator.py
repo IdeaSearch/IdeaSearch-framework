@@ -1,4 +1,6 @@
 from .utils import *
+if TYPE_CHECKING: from .ideasearcher import IdeaSearcher
+if TYPE_CHECKING: from .island import Island
 
 
 # 国际化设置
@@ -19,9 +21,9 @@ class Evaluator:
     
     def __init__(
         self, 
-        ideasearcher,
+        ideasearcher: IdeaSearcher,
         evaluator_id: int,
-        island,
+        island: Island,
         console_lock : Lock,
     ):
         
@@ -48,8 +50,8 @@ class Evaluator:
 
     def evaluate(
         self,
-        generated_raw_responses: List[str],
-        generated_ideas: List[str],
+        generated_raw_responses: List[Optional[str]],
+        generated_ideas: List[Optional[str]],
         model: str,
         model_temperature: float,
         example_idea_paths: Optional[List[str]],
@@ -61,7 +63,7 @@ class Evaluator:
         evaluate_func = self.ideasearcher.get_evaluate_func()
         diary_path = self.ideasearcher.get_diary_path()
         program_name = self.ideasearcher.get_program_name()
-        
+        assert diary_path is not None
         assert evaluate_func is not None
         
         accepted_ideas = []
@@ -69,8 +71,10 @@ class Evaluator:
         
         for raw_response, idea in zip(generated_raw_responses, generated_ideas):
             
+            assert isinstance(raw_response, str)
+            assert isinstance(idea, str)
+            
             try:
-                
                 score, info = evaluate_func(idea)
                 
                 score = float(score)
@@ -152,6 +156,7 @@ class Evaluator:
     def release(self):
         
         diary_path = self.ideasearcher.get_diary_path()
+        assert diary_path is not None
         
         with self._console_lock:
             if self.status != "Busy":

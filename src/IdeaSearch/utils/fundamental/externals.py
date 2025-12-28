@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib; matplotlib.use('Agg')
 from math import isnan
 from copy import deepcopy
+from scipy import minimize
+from collections import Counter
 from pathlib import Path
 from threading import Lock
 from time import perf_counter
@@ -34,7 +36,9 @@ __all__ = [
     "shutil",
     "string",
     "bisect",
+    "Counter",
     "gettext",
+    "minimize",
     "deepcopy",
     "basename",
     "traceback",

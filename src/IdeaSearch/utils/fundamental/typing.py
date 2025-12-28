@@ -9,6 +9,7 @@ from typing import Literal
 from typing import Callable
 from typing import Optional
 from typing import Sequence
+from typing import TYPE_CHECKING
 
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "Callable",
     "Optional",
     "Sequence",
+    "TYPE_CHECKING",
 ]
