@@ -83,7 +83,6 @@ def make_boltzmann_choice(
     num_energies = len(energies_ndarray)
 
     if temperature == np.inf:
-        print("i am here~")
         # 高温：完全随机
         if size is None:
             return boltzmann_random_generator.choice(
