@@ -21,9 +21,9 @@ class Evaluator:
     
     def __init__(
         self, 
-        ideasearcher: IdeaSearcher,
+        ideasearcher: "IdeaSearcher",
         evaluator_id: int,
-        island: Island,
+        island: "Island",
         console_lock : Lock,
     ):
         

@@ -19,10 +19,10 @@ __all__ = [
 class Sampler:
     def __init__(
         self, 
-        ideasearcher: IdeaSearcher,
+        ideasearcher: "IdeaSearcher",
         sampler_id: int, 
-        island: Island,
-        evaluators: List[Evaluator],
+        island: "Island",
+        evaluators: List["Evaluator"],
         console_lock: Lock,
     ):
         

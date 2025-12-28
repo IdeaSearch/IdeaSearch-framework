@@ -57,7 +57,7 @@ class Island:
 
     def __init__(
         self,
-        ideasearcher: IdeaSearcher,
+        ideasearcher: "IdeaSearcher",
         island_id: int,
         console_lock: Lock,
     )-> None:
