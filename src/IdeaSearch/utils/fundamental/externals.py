@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib; matplotlib.use('Agg')
 from math import isnan
 from copy import deepcopy
-from scipy import minimize
+from scipy.optimize import minimize
 from collections import Counter
 from pathlib import Path
 from threading import Lock
