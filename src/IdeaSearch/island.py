@@ -341,6 +341,7 @@ class Island:
             sample_temperature = self.ideasearcher.get_sample_temperature()
             potential_weight = self.ideasearcher.get_potential_weight()
             examples_num = self.ideasearcher.get_examples_num()
+            k = self.ideasearcher.get_potential_confidence_ratio()
             assert diary_path is not None
             
             self.interaction_count += 1
@@ -376,8 +377,14 @@ class Island:
                 exit()
             
             idea_contents = [idea.content for idea in self.ideas]
-            energies = np.array([idea.score for idea in self.ideas]) \
-                + potential_weight * sample_temperature * np.array(self.ideasearcher.get_potentials(idea_contents))
+            scores = np.array([idea.score for idea in self.ideas])
+            potentials = np.array(self.ideasearcher.get_potentials(idea_contents))
+            mean_potential = np.mean(potentials)
+            confidence_scale = np.log(self.ideasearcher.ideas_num)
+            min_potential = mean_potential - k * confidence_scale
+            max_potential = mean_potential + k * confidence_scale
+            potentials = np.clip(potentials, min_potential, max_potential)
+            energies = scores + potential_weight * sample_temperature * potentials
             energies /= np.array(self.ideasearcher.get_potential_group_sizes(idea_contents))
             
             selected_indices = make_boltzmann_choice(
@@ -392,7 +399,7 @@ class Island:
             for i in selected_indices:
                 selected_index = int(i)
                 example_idea = self.ideas[selected_index]
-                    
+                
                 selected_examples.append((
                     example_idea.content,
                     example_idea.score,

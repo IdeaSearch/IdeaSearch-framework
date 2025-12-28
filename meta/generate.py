@@ -88,6 +88,7 @@ def main():
         ("potential_sample_threshold", "int", "1", "The minimum number of times a group must act as a source to be considered statistically valid for potential calculation. Filters out noise from rare groups."),
         ("potential_normalization_mode", "str", '"low_reject"', "The strategy for calculating the normalization factor N_0. Options: 'low_reject' (uses local transition counts, recommended) or 'high_reject' (uses a global constant)."),
         ("potential_regularization_alpha", "float", "1e-4", "The regularization strength to constrain the mean potential during optimization. Prevents numerical drift."),
+        ("potential_confidence_ratio", "float", "0.5", "The ratio k in the potential confidence interval formula `mean_potential ± k * ln(N).`"),
 
         # miscellaneous
         ("idea_uid_length", "int", "6", "The character length of the Unique Identifier (UID) used in the filenames of `.idea` files."),
@@ -1462,7 +1463,6 @@ gettext.textdomain(_DOMAIN)
                 )
             
 
-
     def _calculate_potential(
         self
     )-> None:
@@ -1470,6 +1470,8 @@ gettext.textdomain(_DOMAIN)
         n_threshold = self._potential_sample_threshold
         reject_mode = self._potential_normalization_mode
         alpha = self._potential_regularization_alpha
+        database_path = self._database_path
+        assert database_path is not None
     
         active_nodes = list(self._group_source_counts.keys())
         if not active_nodes: return
@@ -1544,6 +1546,8 @@ gettext.textdomain(_DOMAIN)
         x0 = np.zeros(num_groups)
         for i in range(num_groups):
             x0[i] = self._group_potentials.get(i, 0.0)
+        # 零上界 -> 零均值
+        x0 -= np.mean(x0)
 
         res = minimize(
             fun = objective_and_grad,
@@ -1555,10 +1559,61 @@ gettext.textdomain(_DOMAIN)
 
         optimized_v = res.x
         # 零上界归一化
-        optimized_v -= np.mean(optimized_v)
+        optimized_v -= np.max(optimized_v)
         
         for i, val in enumerate(optimized_v):
             self._group_potentials[i] = val
+        
+        self._sync_group_potential_result(f"{database_path}{seperator}ideas{seperator}group_potential.json")
+        
+    
+    def _sync_group_potential_result(
+        self,
+        save_path: str,
+    )-> None:
+        
+        group_sizes = Counter(self._idea_to_group_index.values())
+        
+        transitions_nested: Dict[int, Dict[int, int]] = {}
+        for (u, v), count in self._transition_counts.items():
+            if u not in transitions_nested:
+                transitions_nested[u] = {}
+            transitions_nested[u][v] = count
+
+        output_data = []
+        num_groups = len(self._group_representatives)
+        
+        for idx in range(num_groups):
+            group_info = {
+                "group_index": idx,
+                "representative": self._group_representatives[idx],
+                "member_count": group_sizes.get(idx, 0),
+                "potential": float(self._group_potentials.get(idx, 0.0)),
+                "transitions_out": transitions_nested.get(idx, {})
+            }
+            output_data.append(group_info)
+            
+        time_stamp = get_time_stamp(show_minute=True, show_second=True)
+        temp_path = f"{save_path}.halfway_{time_stamp}"
+        try:
+            with open(temp_path, 'w', encoding='utf-8') as f:
+                json.dump(output_data, f, ensure_ascii=False, indent=4)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(temp_path, save_path)
+        except:
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+             
+               
+    @property
+    def ideas_num(
+        self
+    )-> int:
+        return len(self._idea_to_group_index)
 """
     
     ideasearcher_code = f"""{import_section}
