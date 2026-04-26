@@ -1,5 +1,5 @@
 ---
-name: ideasearch
+name: ideasearch-runner
 description: Run an IdeaSearch evolutionary search on the Magnus cloud. Triggers when the user wants to evolve text-based artifacts (math expressions, short programs, prompts, model parameter sets, designs) by LLM sampling against a programmatic evaluator. Requires the caller to supply non-empty seed ideas and the id of an evaluator blueprint that scores each candidate. Skip when the scoring function is too expensive / proprietary to be packaged as its own Magnus blueprint, or when no LLM access is configured.
 ---
 

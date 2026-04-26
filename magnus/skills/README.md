@@ -8,7 +8,7 @@ Each skill is a directory containing a `SKILL.md` (frontmatter + workflow). Skil
 
 | Skill | Description |
 |---|---|
-| [`ideasearch`](ideasearch/) | 在 Magnus 云上跑 IdeaSearch 进化搜索：将每个候选 idea 的打分委托给用户自备的评估器蓝图 |
+| [`ideasearch-runner`](ideasearch-runner/) | 在 Magnus 云上跑 IdeaSearch 进化搜索：将每个候选 idea 的打分委托给用户自备的评估器蓝图 |
 
 ## Syncing with Magnus
 
