@@ -21,7 +21,6 @@ from IdeaSearch import IdeaSearcher
 
 
 _INITIAL_IDEAS_SEPARATOR = "\n---\n"
-_DATABASE_DOWNLOAD_NAME = "ideasearch_database"
 
 
 def _read_text(path: str) -> str:
@@ -88,12 +87,13 @@ def _custody_database(database_path: Path) -> Optional[str]:
     )
 
 
-def _write_action(secret: str, target_name: str = _DATABASE_DOWNLOAD_NAME) -> None:
+def _write_action(secret: str, target_path: str) -> None:
     action_path = os.environ.get("MAGNUS_ACTION")
     if not action_path:
         return
+    safe_target = target_path.replace("'", "'\\''")
     Path(action_path).write_text(
-        f"magnus receive {secret} --output {target_name}\n",
+        f"magnus receive {secret} --output '{safe_target}'\n",
         encoding = "utf-8",
     )
 
@@ -115,6 +115,7 @@ def main() -> int:
     parser.add_argument("--system-prompt", required = True, help = "path to system prompt text file")
     parser.add_argument("--initial-ideas", default = None, help = "path to initial ideas text file (--- separated, optional)")
     parser.add_argument("--database", required = True, help = "database root path")
+    parser.add_argument("--output", required = True, help = "target path on the caller's machine for the database download")
     parser.add_argument("--models", nargs = "+", required = True)
     parser.add_argument("--model-temperatures", nargs = "+", type = float, required = True,
                         help = "per-model temperatures; same length as --models (broadcast handled in the blueprint)")
@@ -173,7 +174,7 @@ def main() -> int:
 
         secret = _custody_database(database_path)
         if secret:
-            _write_action(secret)
+            _write_action(secret, target_path = args.output)
 
     except BaseException as exception:
         # `BaseException` rather than `Exception`: IdeaSearcher.run() calls the

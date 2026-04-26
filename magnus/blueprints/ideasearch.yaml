@@ -31,6 +31,13 @@ code: |
       "placeholder": "114514-apple-banana-cat",
   }]
 
+  Output = Annotated[str, {
+      "label": "Output",
+      "description": "搜索完成后，IdeaSearch database 目录在调用端的落盘路径（仅 CLI/SDK 调用时生效，web 端作下载文件名提示）",
+      "placeholder": "e.g. ./out/run42",
+      "allow_empty": False,
+  }]
+
   Models = Annotated[List[str], {
       "label": "Models",
       "description": "使用的模型别名（须为 API Keys JSON 顶层 key 的子集）",
@@ -89,6 +96,7 @@ code: |
       epilogue: Epilogue,
       api_keys: ApiKeys,
       models: Models,
+      output: Output,
       model_temperatures: ModelTemperatures = None,
       system_prompt: SystemPrompt = "You are a domain expert. Output ONLY the requested artifact, nothing else.",
       islands: Islands = 3,
@@ -112,6 +120,7 @@ code: |
 
       safe_blueprint_id = evaluator_blueprint_id.replace("'", "'\\''")
       safe_keys = api_keys.replace("'", "'\\''")
+      safe_output = output.replace("'", "'\\''")
       safe_models = " ".join("'" + m.replace("'", "'\\''") + "'" for m in models)
       safe_temperatures = " ".join(repr(t) for t in resolved_temperatures)
 
@@ -174,6 +183,7 @@ code: |
       --islands {islands} \\
       --cycles {cycles} \\
       --interactions {interactions} \\
+      --output '{safe_output}' \\
       {initial_ideas_arg}
   """
 

@@ -354,7 +354,8 @@ magnus run ideasearch -- \
     --evaluator_blueprint_id <your-evaluator-blueprint> \
     --api_keys api_keys.json \
     --prologue prologue.txt --epilogue epilogue.txt \
-    --models Deepseek_V3 --islands 5 --cycles 10 --interactions 15
+    --models Deepseek_V3 --output ./my-run \
+    --islands 5 --cycles 10 --interactions 15
 ```
 
 The blueprint definition and its container image live under [`magnus/`](magnus/); the evaluator blueprint contract — what `IdeaSearch` expects every `evaluator_blueprint_id` to honor — is documented in [`magnus/blueprints/README.md`](magnus/blueprints/README.md).

@@ -354,7 +354,8 @@ magnus run ideasearch -- \
     --evaluator_blueprint_id <你的评估器蓝图> \
     --api_keys api_keys.json \
     --prologue prologue.txt --epilogue epilogue.txt \
-    --models Deepseek_V3 --islands 5 --cycles 10 --interactions 15
+    --models Deepseek_V3 --output ./my-run \
+    --islands 5 --cycles 10 --interactions 15
 ```
 
 蓝图定义及其容器镜像位于仓库的 [`magnus/`](magnus/) 目录下；`IdeaSearch` 对每一个 `evaluator_blueprint_id` 所要求的接口约定，则记录于 [`magnus/blueprints/README.md`](magnus/blueprints/README.md)。
