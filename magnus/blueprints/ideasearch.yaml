@@ -34,15 +34,13 @@ code: |
   Models = Annotated[List[str], {
       "label": "Models",
       "description": "使用的模型别名（须为 API Keys JSON 顶层 key 的子集）",
-      "scope": "Models",
+      "allow_empty": False,
   }]
 
-  ModelTemperature = Annotated[float, {
-      "label": "Model Temperature",
-      "description": "LLM 采样温度，广播到所有模型",
+  ModelTemperatures = Annotated[Optional[List[float]], {
+      "label": "Model Temperatures",
+      "description": "LLM 采样温度。留空 → 默认 1.0 广播到所有模型；单元素 → 该值广播到所有模型；否则长度必须等于 models 长度。",
       "scope": "Models",
-      "min": 0.0,
-      "max": 2.0,
   }]
 
   SystemPrompt = Annotated[str, {
@@ -90,17 +88,32 @@ code: |
       prologue: Prologue,
       epilogue: Epilogue,
       api_keys: ApiKeys,
-      models: Models = ["Deepseek_V3"],
-      model_temperature: ModelTemperature = 1.0,
+      models: Models,
+      model_temperatures: ModelTemperatures = None,
       system_prompt: SystemPrompt = "You are a domain expert. Output ONLY the requested artifact, nothing else.",
-      islands: Islands = 5,
+      islands: Islands = 3,
       cycles: Cycles = 10,
       interactions: Interactions = 15,
       initial_ideas: InitialIdeas = None,
   ):
+      _DEFAULT_TEMPERATURE = 1.0
+      _n_models = len(models)
+      if model_temperatures is None:
+          resolved_temperatures = [_DEFAULT_TEMPERATURE] * _n_models
+      elif len(model_temperatures) == 1:
+          resolved_temperatures = list(model_temperatures) * _n_models
+      elif len(model_temperatures) == _n_models:
+          resolved_temperatures = list(model_temperatures)
+      else:
+          raise ValueError(
+              f"model_temperatures has length {len(model_temperatures)}, "
+              f"expected None, 1, or {_n_models} (the length of models)"
+          )
+
       safe_blueprint_id = evaluator_blueprint_id.replace("'", "'\\''")
       safe_keys = api_keys.replace("'", "'\\''")
       safe_models = " ".join("'" + m.replace("'", "'\\''") + "'" for m in models)
+      safe_temperatures = " ".join(repr(t) for t in resolved_temperatures)
 
       # Multi-line text params (prologue/epilogue/system_prompt/initial_ideas) are
       # hex-encoded into temp files inside the container to bypass shell escaping.
@@ -126,7 +139,7 @@ code: |
           "|---|---|\n"
           f"| Evaluator Blueprint | `{evaluator_blueprint_id}` |\n"
           f"| Models | {', '.join(models)} |\n"
-          f"| Model Temperature | {model_temperature} |\n"
+          f"| Model Temperatures | {', '.join(repr(t) for t in resolved_temperatures)} |\n"
           f"| Islands × Cycles × Interactions | {islands} × {cycles} × {interactions} |\n"
           f"| Approximate LLM calls | ~{islands * cycles * interactions} |\n"
           f"| Approximate evaluator calls | ~{islands * cycles * interactions} |\n"
@@ -149,7 +162,7 @@ code: |
   # while the search runs. Subshell + & detaches it without holding `set -e`.
   ( tail -F $DB/log/diary.txt 2>/dev/null & )
 
-  python3 $REPO/magnus/scripts/run_ideasearch.py \\
+  python3 -u $REPO/magnus/scripts/run_ideasearch.py \\
       --evaluator-blueprint-id '{safe_blueprint_id}' \\
       --api-keys $WS/api_keys.json \\
       --prologue $WS/prologue.txt \\
@@ -157,7 +170,7 @@ code: |
       --system-prompt $WS/system_prompt.txt \\
       --database $DB \\
       --models {safe_models} \\
-      --model-temperature {model_temperature} \\
+      --model-temperatures {safe_temperatures} \\
       --islands {islands} \\
       --cycles {cycles} \\
       --interactions {interactions} \\
@@ -167,7 +180,7 @@ code: |
       submit_job(
           task_name="[Blueprint] IdeaSearch",
           description=description,
-          namespace="Rise-AGI",
+          namespace="IdeaSearch",
           repo_name="IdeaSearch-framework",
           entry_command=entry_command,
           container_image="docker://git.pku.edu.cn/rise-agi/ideasearch:latest",

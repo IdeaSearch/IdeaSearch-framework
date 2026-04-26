@@ -40,7 +40,7 @@ code: |
               "fork and replace the scoring block with your own logic."
           ),
           repo_name="IdeaSearch-framework",
-          namespace="Rise-AGI",
+          namespace="IdeaSearch",
           entry_command=entry_command,
           container_image="docker://python:3.11-slim",
           job_type=JobType.A2,

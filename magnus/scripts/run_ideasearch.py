@@ -116,7 +116,8 @@ def main() -> int:
     parser.add_argument("--initial-ideas", default = None, help = "path to initial ideas text file (--- separated, optional)")
     parser.add_argument("--database", required = True, help = "database root path")
     parser.add_argument("--models", nargs = "+", required = True)
-    parser.add_argument("--model-temperature", type = float, default = 1.0)
+    parser.add_argument("--model-temperatures", nargs = "+", type = float, required = True,
+                        help = "per-model temperatures; same length as --models (broadcast handled in the blueprint)")
     parser.add_argument("--islands", type = int, default = 5)
     parser.add_argument("--cycles", type = int, default = 10)
     parser.add_argument("--interactions", type = int, default = 15)
@@ -139,7 +140,13 @@ def main() -> int:
         searcher.set_database_path(str(database_path))
         searcher.set_api_keys_path(args.api_keys)
         searcher.set_models(args.models)
-        searcher.set_model_temperatures([args.model_temperature] * len(args.models))
+        if len(args.model_temperatures) != len(args.models):
+            raise ValueError(
+                f"--model-temperatures has length {len(args.model_temperatures)}, "
+                f"expected {len(args.models)} (the length of --models); the blueprint "
+                "is responsible for broadcasting before invoking this script"
+            )
+        searcher.set_model_temperatures(args.model_temperatures)
         searcher.set_system_prompt(_read_text(args.system_prompt))
         searcher.set_prologue_section(_read_text(args.prologue))
         searcher.set_epilogue_section(_read_text(args.epilogue))
@@ -168,11 +175,27 @@ def main() -> int:
         if secret:
             _write_action(secret)
 
-    except Exception as exception:
+    except BaseException as exception:
+        # `BaseException` rather than `Exception`: IdeaSearcher.run() calls the
+        # built-in `exit()` (raising SystemExit) on sampler-thread errors —
+        # without catching SystemExit here, the process would exit 0 with an
+        # empty MAGNUS_RESULT, swallowing the real error from the user.
+        # KeyboardInterrupt is left to propagate as usual.
+        if isinstance(exception, KeyboardInterrupt):
+            raise
         traceback.print_exc()
+        # IdeaSearch records the actual sampler / evaluator failure in its
+        # diary, not in the SystemExit. Surface its tail so `magnus logs`
+        # shows the real cause.
+        diary_path = Path(args.database) / "log" / "diary.txt"
+        if diary_path.exists():
+            sys.stderr.write("--- IdeaSearch diary tail ---\n")
+            tail = diary_path.read_text(encoding = "utf-8").splitlines()[-40:]
+            sys.stderr.write("\n".join(tail) + "\n")
+            sys.stderr.write("--- end diary tail ---\n")
         verdict = {
             "success": False,
-            "message": f"IdeaSearch crashed: {exception}",
+            "message": f"{type(exception).__name__}: {exception}",
         }
 
     _write_result(verdict)
