@@ -1,0 +1,47 @@
+id: ideasearch-demo-eval
+title: IdeaSearch Evaluator (demo)
+description: 演示用的 IdeaSearch 评估器蓝图——把 idea 当成一个 Python 数学表达式求值，按它和 π 的距离打分。一个最小的 symbolic regression 玩具，可作为新评估器的起点模板。
+code: |
+  Idea = Annotated[str, {
+      "label": "Idea",
+      "description": "候选 idea 的全文（由 ideasearch 蓝图自动传入）",
+      "multi_line": True,
+      "allow_empty": False,
+  }]
+
+
+  def blueprint(idea: Idea):
+      # Hex-encode the idea so the heredoc body sees arbitrary multi-line /
+      # quote-bearing text losslessly, with no shell escaping concerns.
+      idea_hex = idea.encode().hex()
+
+      entry_command = f"""set -e
+  python3 - '{idea_hex}' > "$MAGNUS_RESULT" <<'PY'
+  import json, sys, math
+  idea = bytes.fromhex(sys.argv[1]).decode().strip()
+  try:
+      val = float(eval(idea, {{"__builtins__": {{}}}}, {{"math": math, "pi": math.pi, "e": math.e}}))
+      err = abs(val - math.pi)
+      score = 100.0 / (1.0 + err)
+      info = f"value={{val:g}}, |value - pi|={{err:.4g}}"
+  except Exception as exc:
+      score = 0.0
+      info = f"eval failed: {{exc.__class__.__name__}}: {{exc}}"
+  print(json.dumps({{"score": score, "info": info}}, ensure_ascii=False))
+  PY
+  """
+
+      submit_job(
+          task_name="[Blueprint] IdeaSearch Evaluator (demo)",
+          description=(
+              "Demo evaluator for IdeaSearch. Treats `idea` as a Python math "
+              "expression (with `math`, `pi`, `e` in scope) and scores by closeness "
+              "to π via 100/(1+|value-π|). A toy symbolic-regression evaluator — "
+              "fork and replace the scoring block with your own logic."
+          ),
+          repo_name="IdeaSearch-framework",
+          namespace="Rise-AGI",
+          entry_command=entry_command,
+          container_image="docker://python:3.11-slim",
+          job_type=JobType.A2,
+      )

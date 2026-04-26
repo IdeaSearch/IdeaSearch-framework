@@ -1,0 +1,177 @@
+id: ideasearch
+title: IdeaSearch
+description: 跑一整轮 IdeaSearch 进化搜索：在云端协调多岛屿、多模型 LLM 采样，每个生成的 idea 经由用户指定的 evaluator 蓝图打分。
+code: |
+  EvaluatorBlueprintId = Annotated[str, {
+      "label": "Evaluator Blueprint ID",
+      "description": "评估器蓝图的 ID。该蓝图签名应为 (idea: str) -> 写 JSON 到 $MAGNUS_RESULT，至少含 `score: float`，可选 `info: str`。",
+      "placeholder": "e.g. ideasearch-eval-symbolic-regression",
+      "allow_empty": False,
+  }]
+
+  Prologue = Annotated[str, {
+      "label": "Prologue",
+      "description": "Prompt 前言：问题陈述、可用变量与函数、上下文背景",
+      "multi_line": True,
+      "min_lines": 6,
+      "allow_empty": False,
+  }]
+
+  Epilogue = Annotated[str, {
+      "label": "Epilogue",
+      "description": "Prompt 尾声：输出格式与生成指令",
+      "multi_line": True,
+      "min_lines": 3,
+      "allow_empty": False,
+  }]
+
+  ApiKeys = Annotated[FileSecret, {
+      "label": "API Keys",
+      "description": "LLM API 密钥 JSON（格式见 IdeaSearch README）",
+      "placeholder": "114514-apple-banana-cat",
+  }]
+
+  Models = Annotated[List[str], {
+      "label": "Models",
+      "description": "使用的模型别名（须为 API Keys JSON 顶层 key 的子集）",
+      "scope": "Models",
+  }]
+
+  ModelTemperature = Annotated[float, {
+      "label": "Model Temperature",
+      "description": "LLM 采样温度，广播到所有模型",
+      "scope": "Models",
+      "min": 0.0,
+      "max": 2.0,
+  }]
+
+  SystemPrompt = Annotated[str, {
+      "label": "System Prompt",
+      "description": "LLM system prompt",
+      "scope": "Models",
+      "multi_line": True,
+      "min_lines": 2,
+  }]
+
+  Islands = Annotated[int, {
+      "label": "Islands",
+      "description": "并行岛屿数",
+      "scope": "Search",
+      "min": 1,
+      "max": 20,
+  }]
+
+  Cycles = Annotated[int, {
+      "label": "Cycles",
+      "description": "进化循环数（每个 cycle 之间执行 repopulate_islands 迁移）",
+      "scope": "Search",
+      "min": 1,
+      "max": 100,
+  }]
+
+  Interactions = Annotated[int, {
+      "label": "Interactions per Cycle",
+      "description": "每个 cycle 内每个岛屿的 LLM 交互轮数",
+      "scope": "Search",
+      "min": 1,
+      "max": 100,
+  }]
+
+  InitialIdeas = Annotated[Optional[str], {
+      "label": "Initial Ideas",
+      "description": "种子 idea，多个用 '---' 单独成行分隔；留空则从空种群起步",
+      "scope": "Initial Ideas",
+      "multi_line": True,
+  }]
+
+
+  def blueprint(
+      evaluator_blueprint_id: EvaluatorBlueprintId,
+      prologue: Prologue,
+      epilogue: Epilogue,
+      api_keys: ApiKeys,
+      models: Models = ["Deepseek_V3"],
+      model_temperature: ModelTemperature = 1.0,
+      system_prompt: SystemPrompt = "You are a domain expert. Output ONLY the requested artifact, nothing else.",
+      islands: Islands = 5,
+      cycles: Cycles = 10,
+      interactions: Interactions = 15,
+      initial_ideas: InitialIdeas = None,
+  ):
+      safe_blueprint_id = evaluator_blueprint_id.replace("'", "'\\''")
+      safe_keys = api_keys.replace("'", "'\\''")
+      safe_models = " ".join("'" + m.replace("'", "'\\''") + "'" for m in models)
+
+      # Multi-line text params (prologue/epilogue/system_prompt/initial_ideas) are
+      # hex-encoded into temp files inside the container to bypass shell escaping.
+      prologue_hex = prologue.encode().hex()
+      epilogue_hex = epilogue.encode().hex()
+      system_prompt_hex = system_prompt.encode().hex()
+
+      initial_ideas_block = ""
+      initial_ideas_arg = ""
+      if initial_ideas is not None and initial_ideas.strip():
+          initial_ideas_hex = initial_ideas.encode().hex()
+          initial_ideas_block = (
+              f"python3 -c \"import sys; sys.stdout.buffer.write(bytes.fromhex('{initial_ideas_hex}'))\" > $WS/initial_ideas.txt\n"
+          )
+          initial_ideas_arg = "--initial-ideas $WS/initial_ideas.txt"
+
+      description = (
+          "## IdeaSearch evolutionary search\n\n"
+          "Driven by the IdeaSearch framework. "
+          "Each candidate idea is scored by the evaluator blueprint `"
+          f"{evaluator_blueprint_id}`.\n\n"
+          "| Param | Value |\n"
+          "|---|---|\n"
+          f"| Evaluator Blueprint | `{evaluator_blueprint_id}` |\n"
+          f"| Models | {', '.join(models)} |\n"
+          f"| Model Temperature | {model_temperature} |\n"
+          f"| Islands × Cycles × Interactions | {islands} × {cycles} × {interactions} |\n"
+          f"| Approximate LLM calls | ~{islands * cycles * interactions} |\n"
+          f"| Approximate evaluator calls | ~{islands * cycles * interactions} |\n"
+      )
+
+      entry_command = f"""set -e
+  WS=$MAGNUS_HOME/workspace
+  DB=$WS/database
+  REPO=$WS/repository
+  mkdir -p $DB/ideas/initial_ideas $DB/log
+  cd $WS
+
+  magnus receive '{safe_keys}' -o $WS/api_keys.json
+
+  python3 -c "import sys; sys.stdout.buffer.write(bytes.fromhex('{prologue_hex}'))" > $WS/prologue.txt
+  python3 -c "import sys; sys.stdout.buffer.write(bytes.fromhex('{epilogue_hex}'))" > $WS/epilogue.txt
+  python3 -c "import sys; sys.stdout.buffer.write(bytes.fromhex('{system_prompt_hex}'))" > $WS/system_prompt.txt
+  {initial_ideas_block}
+  # Stream IdeaSearch's diary into the job log so progress is visible
+  # while the search runs. Subshell + & detaches it without holding `set -e`.
+  ( tail -F $DB/log/diary.txt 2>/dev/null & )
+
+  python3 $REPO/magnus/scripts/run_ideasearch.py \\
+      --evaluator-blueprint-id '{safe_blueprint_id}' \\
+      --api-keys $WS/api_keys.json \\
+      --prologue $WS/prologue.txt \\
+      --epilogue $WS/epilogue.txt \\
+      --system-prompt $WS/system_prompt.txt \\
+      --database $DB \\
+      --models {safe_models} \\
+      --model-temperature {model_temperature} \\
+      --islands {islands} \\
+      --cycles {cycles} \\
+      --interactions {interactions} \\
+      {initial_ideas_arg}
+  """
+
+      submit_job(
+          task_name="[Blueprint] IdeaSearch",
+          description=description,
+          namespace="Rise-AGI",
+          repo_name="IdeaSearch-framework",
+          entry_command=entry_command,
+          container_image="docker://git.pku.edu.cn/rise-agi/ideasearch:latest",
+          job_type=JobType.A2,
+          cpu_count=4,
+          memory_demand="8G",
+      )

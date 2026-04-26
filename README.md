@@ -340,6 +340,27 @@ if __name__ == "__main__":
     main()
 ```
 
+## Run on Magnus
+
+For users with access to a [Magnus](https://github.com/Rise-AGI/magnus) cluster, `IdeaSearch` ships a ready-to-use blueprint named `ideasearch`. The blueprint runs the full evolutionary search remotely and fans out per-idea scoring to a second blueprint that you supply. This keeps the `IdeaSearch` container image minimal and lets a single domain-specific evaluator be reused across many searches, without packaging it back into the framework itself.
+
+A typical invocation:
+
+```bash
+pip install magnus-sdk
+magnus login
+magnus blueprint schema ideasearch                              # inspect parameters
+magnus run ideasearch -- \
+    --evaluator_blueprint_id <your-evaluator-blueprint> \
+    --api_keys api_keys.json \
+    --prologue prologue.txt --epilogue epilogue.txt \
+    --models Deepseek_V3 --islands 5 --cycles 10 --interactions 15
+```
+
+The blueprint definition and its container image live under [`magnus/`](magnus/); the evaluator blueprint contract — what `IdeaSearch` expects every `evaluator_blueprint_id` to honor — is documented in [`magnus/blueprints/README.md`](magnus/blueprints/README.md).
+
+Magnus is an open-source job platform from the [Rise-AGI](https://github.com/Rise-AGI/magnus) initiative that supplies the cluster orchestration, file custody, and blueprint registry the integration above relies on.
+
 ## Internationalization
 
 `IdeaSearch` supports the internationalization of its interface text.

@@ -340,6 +340,27 @@ if __name__ == "__main__":
     main()
 ```
 
+## 在 Magnus 平台上运行
+
+如果你接入了 [Magnus](https://github.com/Rise-AGI/magnus) 集群，`IdeaSearch` 提供了一个开箱即用的蓝图 `ideasearch`。该蓝图在云端跑完整的进化搜索循环，并将逐个 idea 的打分工作扇出给你另行准备的「评估器蓝图」完成。这一拆分让 `IdeaSearch` 自身的镜像保持极轻，也让面向具体问题的评估器可以在多次搜索之间复用，而不必反过来塞回框架里。
+
+典型调用流程：
+
+```bash
+pip install magnus-sdk
+magnus login
+magnus blueprint schema ideasearch                              # 查看参数
+magnus run ideasearch -- \
+    --evaluator_blueprint_id <你的评估器蓝图> \
+    --api_keys api_keys.json \
+    --prologue prologue.txt --epilogue epilogue.txt \
+    --models Deepseek_V3 --islands 5 --cycles 10 --interactions 15
+```
+
+蓝图定义及其容器镜像位于仓库的 [`magnus/`](magnus/) 目录下；`IdeaSearch` 对每一个 `evaluator_blueprint_id` 所要求的接口约定，则记录于 [`magnus/blueprints/README.md`](magnus/blueprints/README.md)。
+
+Magnus 是 [Rise-AGI](https://github.com/Rise-AGI/magnus) 推出的开源任务平台，它提供了上述集成所依赖的集群调度、文件托管与蓝图注册能力。
+
 ## 国际化
 
 `IdeaSearch` 支持其界面文本的国际化。
