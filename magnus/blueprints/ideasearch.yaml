@@ -100,8 +100,8 @@ code: |
       model_temperatures: ModelTemperatures = None,
       system_prompt: SystemPrompt = "You are a domain expert. Output ONLY the requested artifact, nothing else.",
       islands: Islands = 3,
-      cycles: Cycles = 10,
-      interactions: Interactions = 15,
+      cycles: Cycles = 5,
+      interactions: Interactions = 10,
       initial_ideas: InitialIdeas = None,
   ):
       _DEFAULT_TEMPERATURE = 1.0

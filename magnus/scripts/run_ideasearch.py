@@ -119,9 +119,9 @@ def main() -> int:
     parser.add_argument("--models", nargs = "+", required = True)
     parser.add_argument("--model-temperatures", nargs = "+", type = float, required = True,
                         help = "per-model temperatures; same length as --models (broadcast handled in the blueprint)")
-    parser.add_argument("--islands", type = int, default = 5)
-    parser.add_argument("--cycles", type = int, default = 10)
-    parser.add_argument("--interactions", type = int, default = 15)
+    parser.add_argument("--islands", type = int, default = 3)
+    parser.add_argument("--cycles", type = int, default = 5)
+    parser.add_argument("--interactions", type = int, default = 10)
     args = parser.parse_args()
 
     # The verdict written to $MAGNUS_RESULT is intentionally minimal: a boolean

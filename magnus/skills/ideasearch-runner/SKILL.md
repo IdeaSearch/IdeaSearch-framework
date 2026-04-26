@@ -1,165 +1,143 @@
 ---
 name: ideasearch-runner
-description: Run an IdeaSearch evolutionary search on the Magnus cloud. Triggers when the user wants to evolve text-based artifacts (math expressions, short programs, prompts, model parameter sets, designs) by LLM sampling against a programmatic evaluator. Requires the caller to supply non-empty seed ideas and the id of an evaluator blueprint that scores each candidate. Skip when the scoring function is too expensive / proprietary to be packaged as its own Magnus blueprint, or when no LLM access is configured.
+description: Run an IdeaSearch evolutionary search on the Magnus cloud — multi-island LLM sampling with each candidate scored by a separate user-supplied evaluator blueprint. Triggers when the user wants to evolve text artifacts (math expressions, short programs, prompts, parameter sets) under a programmatic score. Skip when no evaluator blueprint is registered, or when the scoring function cannot be packaged as its own Magnus blueprint.
 ---
 
 # IdeaSearch
 
-## Overview
+## What this is
 
-This skill runs the `ideasearch` Magnus blueprint, a FunSearch-style evolutionary search:
+`ideasearch` is a Magnus blueprint that runs FunSearch-style evolutionary search:
 
-1. Multiple parallel **islands** seeded with `initial_ideas`
-2. Per island, parallel **sampler** threads ask LLMs to propose new ideas using accepted ones as in-context examples
-3. Every proposed idea is scored by a **separate user-supplied evaluator blueprint** via `magnus.run_blueprint(evaluator_blueprint_id, args={"idea": <text>})`
-4. Best ideas migrate between islands between cycles (`repopulate_islands`)
-5. On completion the full `database/` directory (ideas, scores, diary, plots) is downloaded to the caller's machine
+- **Multi-island parallelism.** Each island is an independent population, evolved in parallel within one Magnus job by its own sampler/evaluator threadpool.
+- **Sampler proposes with examples.** Per cycle per island, the sampler runs `interactions` rounds. Each round shows the LLM a small set of historical accepted ideas (softmax-weighted by score) as in-context examples, then asks for a new candidate.
+- **Evaluator scores out-of-process.** Every candidate is scored by a *separate* evaluator blueprint via `magnus.run_blueprint(<evaluator_id>, args={"idea": ...})`. Returns `score` (required, numeric) and optional `info` (string fed back into subsequent prompts as diagnostic rubric — use it).
+- **Migration between cycles.** When `cycles > 1` and `islands > 1`, the top-half islands' best ideas are copied to the bottom half between cycles (`repopulate_islands`), preventing local-optima stagnation.
+- **Multi-model dynamics.** Pass >1 model to `--models` and IdeaSearch dynamically weights model selection by recent performance — better-performing models get more calls in subsequent rounds.
 
-The IdeaSearch framework lives in the blueprint's container; per-idea scoring is decoupled into a separate blueprint so the same evaluator can be reused across many searches without packaging it back into the framework.
+On success the full `database/` (every accepted idea per island with score sheets, the full diary, plots) is delivered to the caller.
 
-## Prerequisites
+This skill assumes the general `magnus` skill is loaded — for CLI semantics, config, and reconnect-after-Ctrl-C, look there first.
 
-- **An evaluator blueprint registered on the Magnus station.** For a turnkey template, use `ideasearch-demo-eval` (scores ideas by closeness to π — useful as a smoke test, not for real work). To author one, see [Evaluator Contract](#evaluator-contract).
-- **An `api_keys.json`** for the LLMs you want to use; format is documented in the IdeaSearch framework README.
-- **At least one seed idea.** IdeaSearch's sampler always pulls existing ideas as in-context examples; an empty island cannot bootstrap a first generation. `--initial_ideas` is technically optional but practically required.
+## Canonical invocation
 
-## Workflow
+For most searches, `magnus run` is the right tool: it submits the job, blocks until completion, and auto-downloads `database/` to `--output`.
 
 ```bash
 magnus run ideasearch -- \
   --evaluator_blueprint_id <evaluator_id> \
   --api_keys path/to/api_keys.json \
   --prologue "<problem statement, allowed primitives, evaluation criteria>" \
-  --epilogue "<output format instruction>" \
-  --models <Model_A> [<Model_B> ...] \
-  --output path/to/local/database \
+  --epilogue "<output format instruction, e.g. 'Output ONLY ...'>" \
+  --models Deepseek_V3 \
+  --output ./out/run1 \
   --initial_ideas "<seed_1>
 ---
-<seed_2>
----
-<seed_3>" \
-  --islands 3 --cycles 10 --interactions 15
+<seed_2>" \
+  --islands 3 --cycles 5 --interactions 10
 ```
 
-## Parameters
+If your session disconnects mid-run, the job keeps going server-side. **Do not re-submit.** Use `magnus jobs -l 5` to recover the id, then `magnus status <job_id>` / `magnus job result <job_id>` once it finishes.
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--evaluator_blueprint_id` | Yes | ID of the evaluator blueprint that scores each candidate idea. |
-| `--api_keys` | Yes | Path to the LLM API keys JSON; uploaded as a FileSecret. |
-| `--prologue` | Yes | Prompt prologue: problem statement and the primitives the LLM may use. |
-| `--epilogue` | Yes | Prompt epilogue: output format instruction (e.g. `Output ONLY ...`). |
-| `--models` | Yes | One or more model aliases; each must be a top-level key of the api_keys JSON. |
-| `--output` | Yes | Local target path for the downloaded `database/` directory. |
-| `--initial_ideas` | No (but practically required) | Seed ideas separated by a `---` line. See Prerequisites. |
-| `--model_temperatures` | No | Per-model LLM temperature. Empty → `1.0` broadcast; length-1 → broadcast that value; otherwise length must equal `--models`. |
-| `--system_prompt` | No | LLM system prompt; defaults to a generic "Output ONLY the requested artifact" line. |
-| `--islands` | No | Parallel island count (default 3). |
-| `--cycles` | No | Evolution cycles, with `repopulate_islands` between them (default 10). |
-| `--interactions` | No | LLM interactions per cycle per island (default 15). |
+## When the search is heavy: launch + poll
 
-Total LLM calls ≈ evaluator-blueprint calls ≈ `islands × cycles × interactions`. Each evaluator call is its own Magnus job, so cluster scheduling overhead is the dominant cost when the evaluator itself is fast.
+Total LLM calls ≈ evaluator jobs ≈ `islands × cycles × interactions`. Each evaluator call is its own Magnus job; on a busy cluster, scheduling overhead — not the evaluator's runtime — usually dominates. If your search will take many minutes (or you're chaining several rounds, see below), don't sit blocked in `magnus run` and burn your prompt cache.
 
-## Result
+Switch to `magnus launch` + scheduled polling:
 
-`MAGNUS_RESULT` is a concise verdict:
+1. **Launch** with the same flags but `magnus launch ideasearch -- ...`. Stdout has a decorated `Job submitted. ID: <job_id>` line — read the id off it (`JOB_ID=$(magnus launch ...)` won't work; stdout is rich-text, not bare).
+
+2. **Poll on a wall-clock cadence**, not in a tight `while sleep` loop. Use a scheduled wake-up (`ScheduleWakeup` or your harness's equivalent) every 2–5 min for short searches, 10–20 min for heavy ones. Each wake-up runs `magnus status <job_id>`; only `Success` / `Failed` / `Terminated` are terminal. For machine-readable polling, `magnus jobs -f json -n <job_id>`.
+
+3. **On Success** — fetch the verdict and trigger the download manually:
+
+   ```bash
+   magnus job result <job_id>      # the {"success": true, "best_score": ...} verdict
+   magnus job action <job_id> -e   # downloads database/ to --output
+   ```
+
+   The second command is **mandatory under `magnus launch`** — `MAGNUS_ACTION` does NOT auto-execute the way it does under `magnus run`. Skip it and your `--output` directory stays empty even though the job succeeded.
+
+4. **On Failed / Terminated** — `magnus job result <job_id>` for the verdict, `magnus logs <job_id>` for the chained traceback + diary tail.
+
+## Cost before you launch
+
+| Shape | ~Jobs | Use for |
+|---|---|---|
+| `2 × 2 × 3` | 12 | Smoke test the wiring |
+| `3 × 5 × 10` (default) | 150 | Typical real run |
+| `5 × 10 × 20` | 1000 | Heavy search; commit to it before launching |
+
+If the evaluator does real work (e.g. a 60 s simulation), multiply by that. IdeaSearch imposes no per-evaluator timeout — the evaluator must cap itself or one stuck call hangs the whole search.
+
+## Required parameters
+
+The six you'll touch every time:
+
+- `--evaluator_blueprint_id` — id of the scoring blueprint (see Evaluator Contract below).
+- `--api_keys` — path to LLM API keys JSON; uploaded as a FileSecret.
+- `--prologue` / `--epilogue` — prompt fore/aft text. Prologue: problem + allowed primitives. Epilogue: "Output ONLY …" format instruction.
+- `--models` — one or more aliases; each must be a top-level key in the api_keys JSON.
+- `--output` — local path for the downloaded `database/` directory.
+- `--initial_ideas` — `---`-separated seeds. **Practically required** — the sampler always pulls existing ideas as in-context examples; an empty island cannot bootstrap.
+
+For the rest (`--model_temperatures`, `--system_prompt`, `--islands`, `--cycles`, `--interactions`), run `magnus blueprint schema ideasearch` — the schema is the source of truth.
+
+## Iterative improvement: agent-driven multi-round chaining
+
+A single `magnus run` / `launch` is *one* search. The blueprint itself is single-shot — no resume. To keep evolving from where the last search left off, the agent chains externally:
+
+1. Run a search → fetch `database/`.
+2. Read `database/ideas/island*/` (or the `score_sheet*.json` per island), pick top-K ideas by score.
+3. Concatenate them with `---` separators as the new `--initial_ideas`.
+4. Re-launch. Optionally adjust `--prologue` / `--system_prompt` to bias the next round.
+
+Each round resets inter-island state (all islands seed from the same pool), but the best-of-best carries across. Cheap and effective for "I want better answers, take another pass."
+
+## Result shape
+
+`MAGNUS_RESULT` is a small verdict:
 
 ```json
 {"success": true, "best_score": 100.0, "best_idea": "math.pi"}
 ```
 
-On failure:
-
 ```json
 {"success": false, "message": "SamplerThreadError: ..."}
 ```
 
-`MAGNUS_ACTION` is auto-executed by `magnus run`, unpacking the full `database/` directory to `--output`. The directory contains:
+The `database/` directory delivered via `MAGNUS_ACTION` contains:
 
-- `ideas/island{N}/` — every accepted idea per island, with per-island score sheets
-- `log/diary.txt` — full run log (per-thread events, model-score updates, error context)
-- `pic/` — model-score and database-quality plots over time
+- `ideas/island{N}/` — accepted ideas per island, with score sheets
+- `log/diary.txt` — full per-thread event log (sampler events, model-score updates, errors)
+- `pic/` — score and database-quality plots over time
 
-## Evaluator Contract
+## Evaluator contract (essentials)
 
 The blueprint named by `--evaluator_blueprint_id` must:
 
-1. Accept a single string parameter named **`idea`** containing the candidate idea text.
-2. Write a JSON object to `$MAGNUS_RESULT` with at least a numeric `score` field. An optional `info: str` field is surfaced back into subsequent prompts as additional context. Extra fields are ignored by IdeaSearch.
-3. Set its own time and resource budget — IdeaSearch does not impose a per-call timeout. A misbehaving evaluator can stall the entire search; cap long-running scoring code yourself (e.g. `signal.alarm`, subprocess `timeout=`, or child-process isolation).
+1. Take a single string parameter named **`idea`**.
+2. Write JSON to `$MAGNUS_RESULT` with at least `score` (numeric). Optional `info: str` is fed back into subsequent prompts. Extra fields are ignored.
+3. Cap its own runtime — IdeaSearch has no per-call timeout, so a hung evaluator hangs the whole search.
 
-A complete working evaluator lives at `magnus/blueprints/ideasearch-demo-eval.yaml` — fork it as a template. Sketch:
+If `ideasearch-demo-eval` is registered on the station (`magnus list -s ideasearch-demo-eval`), use it as a turnkey smoke test — it scores ideas by closeness to π. For the full authoring walkthrough — template, hex-pipe pattern, error-handling idioms — see [`references/evaluator-contract.md`](references/evaluator-contract.md).
 
-```yaml
-def blueprint(idea: Idea):
-    idea_hex = idea.encode().hex()
-    entry_command = f"""set -e
-python3 - '{idea_hex}' > "$MAGNUS_RESULT" <<'PY'
-import json, sys
-idea = bytes.fromhex(sys.argv[1]).decode().strip()
-# ... your scoring logic ...
-print(json.dumps({{"score": <float>, "info": "<optional>"}}))
-PY
-"""
-    submit_job(
-        task_name="[Blueprint] My Evaluator",
-        repo_name="<your-repo>",
-        namespace="<your-github-org>",
-        entry_command=entry_command,
-        container_image="docker://...",
-        job_type=JobType.A2,
-    )
-```
+## Failure modes
 
-The hex-pipe pattern keeps arbitrary multi-line / quote-bearing idea text round-trip-safe through the shell.
+Read `magnus logs <job_id>` for everything. The chained traceback shows the immediate cause; the `--- IdeaSearch diary tail ---` block in stderr shows what was happening just before the crash.
 
-## Examples
-
-### Symbolic regression toward π (uses the bundled demo evaluator)
-
-```bash
-magnus run ideasearch -- \
-  --evaluator_blueprint_id ideasearch-demo-eval \
-  --api_keys api_keys.json \
-  --prologue "Find a Python expression that evaluates to pi as accurately as possible. Allowed symbols: math, pi, e, integers, and operators (+ - * / ** parentheses)." \
-  --epilogue "Output ONLY the Python expression on a single line, no explanation, no code fences." \
-  --models Deepseek_V3 \
-  --output ./pi_search \
-  --initial_ideas "3.14
----
-22/7" \
-  --islands 2 --cycles 3 --interactions 5
-```
-
-### Multi-model ensemble with per-model temperatures
-
-```bash
-magnus run ideasearch -- \
-  --evaluator_blueprint_id my-evaluator \
-  --api_keys api_keys.json \
-  --prologue "..." --epilogue "..." \
-  --models Deepseek_V3 GPT-5 \
-  --model_temperatures 1.0 0.7 \
-  --output ./out \
-  --initial_ideas "<seed>" \
-  --islands 4 --cycles 10 --interactions 10
-```
-
-## Failure Modes
-
-| Symptom | Likely cause |
+| Symptom (in MAGNUS_RESULT or logs) | Likely cause |
 |---|---|
-| `magnus.exceptions.ResourceNotFoundError: Blueprint not found` chained inside `SamplerThreadError` | `--evaluator_blueprint_id` typo, or the evaluator blueprint isn't registered on this station — check `magnus list -s <id>`. |
-| `SamplerThreadError ← IdeaSearchInternalError: Island N reached get_examples with an empty ideas list` | `--initial_ideas` was empty. Provide at least one seed. |
-| Job marked Failed with the evaluator's own stdout in the chained traceback | The evaluator blueprint crashed or wrote non-JSON to `$MAGNUS_RESULT`. Inspect the evaluator's job logs separately via `magnus logs <evaluator_job_id>`. |
-| Job ran forever / didn't progress | An evaluator hung. IdeaSearch does not impose a timeout — fix the evaluator's resource budget or `magnus kill` the parent job. |
-| Job exits 0 with empty `MAGNUS_RESULT` (legacy) | Image is older than `IdeaSearch>=0.1.2`. Run `magnus image refresh <id>` for the `ideasearch` image (silent-exit was a pre-0.1.2 bug). |
+| `ResourceNotFoundError: Blueprint not found` inside `SamplerThreadError` | `--evaluator_blueprint_id` typo or not registered on this station — check `magnus list -s <id>`. |
+| `IdeaSearchInternalError: Island N reached get_examples with an empty ideas list` | `--initial_ideas` was empty/whitespace. Provide at least one seed. |
+| Failed with the evaluator's own traceback chained in | The evaluator crashed or wrote non-JSON to `$MAGNUS_RESULT`. Find the failing evaluator job id and `magnus logs` it directly. |
+| Status stuck on Running far past expected wall-clock | An evaluator hung. `magnus kill <job_id>` and fix the evaluator's timeout. |
 
-For any failure: read `magnus logs <job_id>`. The chained traceback shows the immediate cause; the `--- IdeaSearch diary tail ---` block in stderr shows what was happening before the crash (which sampler, which model, how many ideas had been generated).
+(Pre-0.1.2 image had a silent-exit-with-empty-result bug; if you see it, `magnus image refresh` for the `ideasearch` image. Rare on current stations.)
 
-## Reference Documentation
+## When to dig deeper
 
-- [IdeaSearch framework README](https://github.com/IdeaSearch/IdeaSearch-framework) — multi-island concept, evaluator info, mutation/crossover, model assessment.
-- `magnus/blueprints/ideasearch.yaml` — full blueprint definition, including the (rarely-needed) `system_prompt` parameter and the in-blueprint temperature broadcast logic.
-- `magnus/blueprints/ideasearch-demo-eval.yaml` — turnkey evaluator template.
-- `magnus/blueprints/README.md` — evaluator contract spec, including the timeout responsibility note.
+- Full parameter schema, bounds, defaults: `magnus blueprint schema ideasearch`
+- Blueprint source (entry command, container image, resource budget): `magnus/blueprints/ideasearch.yaml`
+- Evaluator authoring guide: [`references/evaluator-contract.md`](references/evaluator-contract.md)
+- IdeaSearch framework concepts: https://github.com/IdeaSearch/IdeaSearch-framework
