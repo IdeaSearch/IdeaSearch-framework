@@ -1,4 +1,5 @@
 from .utils import *
+from .errors import IdeaSearchInternalError
 if TYPE_CHECKING: from .ideasearcher import IdeaSearcher
 if TYPE_CHECKING: from .island import Island
 
@@ -164,7 +165,9 @@ class Evaluator:
                     file_path = diary_path,
                     content = self._("【%d号岛屿的%d号评估器】 发生异常，状态应为Busy，实为%s！") % (self.island.id, self.id, self.status),
                 )
-                exit()
+                raise IdeaSearchInternalError(
+                    f"Evaluator {self.id} on island {self.island.id} expected status 'Busy' but found {self.status!r}."
+                )
 
         self.status = "Vacant"
         self._lock.release()

@@ -176,18 +176,13 @@ def main() -> int:
         if secret:
             _write_action(secret, target_path = args.output)
 
-    except BaseException as exception:
-        # `BaseException` rather than `Exception`: IdeaSearcher.run() calls the
-        # built-in `exit()` (raising SystemExit) on sampler-thread errors —
-        # without catching SystemExit here, the process would exit 0 with an
-        # empty MAGNUS_RESULT, swallowing the real error from the user.
-        # KeyboardInterrupt is left to propagate as usual.
-        if isinstance(exception, KeyboardInterrupt):
-            raise
+    except Exception as exception:
+        # IdeaSearch >=0.1.2 raises typed exceptions (rooted at Exception) on
+        # sampler/evaluator errors, so a plain `except Exception` is sufficient
+        # here. Surface the cause to MAGNUS_RESULT and the run-progress diary
+        # tail to stderr — the chained traceback shows the immediate failure,
+        # the diary shows what was happening before it.
         traceback.print_exc()
-        # IdeaSearch records the actual sampler / evaluator failure in its
-        # diary, not in the SystemExit. Surface its tail so `magnus logs`
-        # shows the real cause.
         diary_path = Path(args.database) / "log" / "diary.txt"
         if diary_path.exists():
             sys.stderr.write("--- IdeaSearch diary tail ---\n")

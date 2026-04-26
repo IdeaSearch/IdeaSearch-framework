@@ -21,7 +21,7 @@ blueprint, so this image does not need any project-specific scientific stack
 
 | Image | Bundled tooling |
 |---|---|
-| `ideasearch:latest` | `python:3.11-slim`, `IdeaSearch>=0.1.1`, `magnus-sdk>=0.8.0` |
+| `ideasearch:latest` | `python:3.11-slim`, `IdeaSearch>=0.1.2`, `magnus-sdk>=0.8.0` |
 
 `magnus-sdk` is baked in so that the blueprint entry command can use both the
 `magnus` CLI (for custody at job exit) and `import magnus` (for the per-idea

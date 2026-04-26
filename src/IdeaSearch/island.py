@@ -1,4 +1,5 @@
 from .utils import *
+from .errors import IdeaSearchInternalError
 if TYPE_CHECKING: from .ideasearcher import IdeaSearcher
 
 
@@ -318,7 +319,14 @@ class Island:
         
         with self._lock:
             
-            if self.ideasearcher._get_best_score() >= self.ideasearcher.get_shutdown_score():
+            # Skip the shutdown-score check when no island holds any idea yet:
+            # a freshly-seeded search starts empty, and the sampler is the
+            # producer that fills it. Calling _get_best_score() against an
+            # empty population would raise — the public get_best_score()
+            # contract is intentionally strict, but this status check is an
+            # internal poll that must tolerate the seed-from-scratch case.
+            if self.ideasearcher._has_any_idea() \
+                and self.ideasearcher._get_best_score() >= self.ideasearcher.get_shutdown_score():
                 self._status = "Terminated"
                 
             return self._status
@@ -374,7 +382,9 @@ class Island:
                         file_path = diary_path,
                         content = self._("【%d号岛屿】 发生异常： ideas 列表为空！") % self.id,
                     )
-                exit()
+                raise IdeaSearchInternalError(
+                    f"Island {self.id} reached get_examples with an empty ideas list."
+                )
             
             idea_contents = [idea.content for idea in self.ideas]
             scores = np.array([idea.score for idea in self.ideas])

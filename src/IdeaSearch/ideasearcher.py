@@ -1,6 +1,7 @@
 from .sampler import Sampler
 from .evaluator import Evaluator
 from .island import Island
+from .errors import IdeaSearchInternalError, SamplerThreadError
 from .utils import *
 
 
@@ -210,7 +211,9 @@ class IdeaSearcher:
                             file_path = diary_path,
                             content = self._("【IdeaSearcher】 %d号岛屿的%d号采样器在运行过程中出现错误：\n%s\n调用栈：\n%s\nIdeaSearch意外终止！") % (island_id, sampler_id, e, traceback.format_exc()),
                         )
-                        exit()
+                        raise SamplerThreadError(
+                            f"Sampler {sampler_id} on island {island_id} crashed: {type(e).__name__}: {e}"
+                        ) from e
 
 
     def _check_runnability(
@@ -358,6 +361,24 @@ class IdeaSearcher:
         if not scores: raise RuntimeError(self._("【IdeaSearcher】 目前各岛屿均无 ideas ，无法进行 get_best_score 动作！"))
             
         return max(scores)
+
+    def _has_any_idea(
+        self,
+    )-> bool:
+        """
+        Return whether any island currently holds at least one idea.
+
+        Internal predicate used by status checks that must tolerate the
+        seed-from-scratch case (no seed ideas at start of run). Public
+        callers wanting a score should still use ``get_best_score`` —
+        which intentionally raises on an empty population, since asking
+        for a best score in that state is a programming error.
+        """
+
+        for island_id in self._islands:
+            if self._islands[island_id].ideas:
+                return True
+        return False
     
     def get_best_score(
         self,
@@ -782,7 +803,9 @@ class IdeaSearcher:
                     content = self._("【IdeaSearcher】 出现错误！未知的模型名称及温度： %s(T=%.2f) ！") % (model, model_temperature),
                 )
                 
-            exit()
+            raise IdeaSearchInternalError(
+                f"update_model_score received unknown (model, temperature) pair: ({model!r}, {model_temperature!r})."
+            )
 
 
     def _sync_model_score_result(self):

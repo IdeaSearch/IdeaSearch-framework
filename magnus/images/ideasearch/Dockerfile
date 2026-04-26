@@ -21,7 +21,7 @@ ENV PIP_NO_CACHE_DIR=1
 # (for custody at job exit) and `import magnus` (for run_blueprint fanout
 # to the evaluator blueprint) without a per-job pip install.
 RUN pip install --no-cache-dir \
-        "IdeaSearch>=0.1.1" \
+        "IdeaSearch>=0.1.2" \
         "magnus-sdk>=0.8.0"
 
 WORKDIR /work
