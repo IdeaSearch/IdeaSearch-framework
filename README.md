@@ -1,26 +1,45 @@
-# About IdeaSearch
+# IdeaSearch
 
 ## Project Overview
 
-`IdeaSearch` is an **AI-powered system for research idea generation and optimization**. It is an open-source project concurrent with Google's AlphaEvolve framework, launched in 2025. Within `IdeaSearch`, an **Idea** specifically refers to a text file with the `.idea` extension, containing creative content that can be read and processed by the system. It is **inspired by the FunSearch framework**, introduced in 2023. FunSearch pioneered the discovery of new mathematical structures and algorithms by combining large language models with evaluation programs. Building on this foundation, `IdeaSearch` aims to construct a more user-friendly, streamlined, and highly extensible integrated framework to support various fields in scientific research and education.
+`IdeaSearch` is an open-source Python framework for constructing iterative LLM-agent workflows with user-defined evaluation, persistent candidate memory, and multi-island search. An **Idea** is a text candidate stored in a `.idea` file; it may represent a hypothesis, program, plan, formula, or any other object accepted by the evaluator.
 
-Compared to FunSearch, `IdeaSearch` introduces several innovative features that significantly enhance the system's flexibility and exploratory capabilities, including:
+## Quick Start
 
-- **Prompt Prologue (`prologue_section`) and Epilogue (`epilogue_section`)**: Allow users to define the opening and closing parts of prompts sent to the LLM in a more flexible and modular way. This enables users to easily provide context, set task objectives, or guide output formatting without rewriting the entire prompt each time. Furthermore, users can opt for complete control over the prompt generation logic via a custom `generate_prompt_func`, offering immense flexibility for complex scenarios.
+```bash
+pip install IdeaSearch
+```
 
-- **Evaluator Information (`evaluator_info`)**: In addition to a quantitative score, the evaluation function can now return supplementary string information. This allows users to understand not just _how good_ an Idea is, but also _why_ it is good, _where it can be improved_, or _what makes it unique_. This provides richer context and deeper insights for subsequent Idea optimization and system analysis.
+The complete setup and execution example is provided in [Workflow Overview](#workflow-overview).
 
-- **Mutation (`mutation`)**: Introduces stochasticity by allowing minor modifications and perturbations to existing Ideas. This injects serendipity and diversity into the search process, helping to discover unexpected new directions or optimize existing Ideas, even in seemingly saturated search spaces.
+## Scope
 
-- **Crossover (`crossover`)**: Generates new hybrid Ideas by combining elements from two or more existing Ideas. This classic operation from genetic algorithms is enhanced in `IdeaSearch` to facilitate more complex evolutionary paths, capable of merging the strengths of different excellent Ideas to produce novel combinations that transcend the limitations of a single Idea.
+Use `IdeaSearch` when the generation–evaluation loop itself must be configured, recorded, or compared. For a one-off prompt or a task already handled by a general-purpose agent, a direct model or agent call is usually simpler. The framework produces evaluated candidates; it does not independently validate scientific claims.
+
+## Experimental Model
+
+The table below maps experimental concepts to the public `IdeaSearcher` interface.
+
+| Concept | Main interface | Function |
+| --- | --- | --- |
+| Task and measurement | `set_evaluate_func()`, `set_score_range()`, `set_assess_func()` | Score candidates and optionally assess the database |
+| Initial condition | `add_initial_ideas()`, `set_prologue_section()`, `set_epilogue_section()`, `set_models()` | Define starting candidates, task context, and generation models |
+| Memory | `set_examples_num()`, `set_include_info_in_prompt()` | Select historical Ideas and feedback for later prompts |
+| Exploration | `set_sample_temperature()`, `set_model_temperatures()`, mutation and crossover setters | Control candidate sampling and variation |
+| Parallel topology | `add_island()`, `set_samplers_num()`, `set_evaluators_num()`, `repopulate_islands()` | Configure parallel search and migration |
+| Interaction budget | `run(additional_interaction_num)` | Add a specified number of generations to every island |
+| Persistence | `set_database_path()`, `set_backup_on()`, `set_record_prompt_in_diary()` | Store Ideas, scores, backups, logs, and optional prompt records |
+| Result access | `get_best_idea()`, `get_best_score()` | Return the current highest-scoring candidate and score |
+
+Change one or more controls while holding the others fixed to compare agent behavior across runs. Record model versions and stochastic settings separately when external model APIs are used. [IdeaSearch-fit](https://github.com/IdeaSearch/IdeaSearch-fit) provides a symbolic-regression application of this interface. See [ideasearch.cn](https://www.ideasearch.cn/) for the documentation.
 
 ## Key Features
 
-- **Multi-Island Parallel Search**: Supports the creation of multiple independent "islands," each equipped with its own Samplers and Evaluators, to explore the Idea space in parallel, enhancing search efficiency and diversity.
+- **Multi-Island Parallel Search**: Runs separate Idea populations with configurable Sampler and Evaluator counts and explicit inter-island migration.
 
 - **Large Language Model (LLM) Integration**: Automatically manages API key loading and concurrent requests for multiple LLM models via a `ModelManager`.
 
-- **Vision Language Model (VLM) Support**: Supports embedding images within prompts for multi-modal interaction with VLMs, significantly expanding the dimensions of Idea generation.
+- **Vision Language Model (VLM) Support**: Resolves configured image inputs and inserts them at prompt placeholders for compatible VLM endpoints.
 
 - **Evolutionary Strategies**:
 
@@ -35,7 +54,7 @@ Compared to FunSearch, `IdeaSearch` introduces several innovative features that 
 
 - **Modularity and Extensibility**: Through custom callback functions like `filter_func` and `postprocess_func`, and the `bind_helper` interface, users can easily integrate their own logic into the core workflow or build higher-level applications on top of `IdeaSearch`.
 
-- **Data Persistence and Backup**: Automatically manages Idea files and score data, with support for backup functionality to ensure data integrity during the search process.
+- **Data Persistence and Backup**: Stores Idea files and score sheets under `database_path` and can create backups before a run.
 
 - **Highly Configurable**: Offers a rich set of parameters (via `set_` methods) for users to customize search behavior, including model temperatures, sampling strategies and evaluation intervals.
 
@@ -99,7 +118,7 @@ The following methods in the `IdeaSearcher` class constitute the primary user in
   - **Helper Object Attributes**:
     - **Required**: `prologue_section` (str), `epilogue_section` (str), `evaluate_func` (Callable)
     - **Optional**: `initial_ideas` (List[str]), `system_prompt` (str), `assess_func` (Callable), `mutation_func` (Callable), `crossover_func` (Callable), `filter_func` (Callable), `postprocess_func` (Callable), etc.
-  - **Importance**: Greatly simplifies parameter configuration and provides a standard interface for extending the framework.
+  - **Importance**: Provides a standard interface for configuring higher-level applications.
 
 ## Configuration Parameters
 

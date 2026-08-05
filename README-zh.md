@@ -1,26 +1,45 @@
-# 关于 IdeaSearch
+# IdeaSearch
 
 ## 项目概述
 
-`IdeaSearch` 框架是一个**由人工智能驱动的研究思路生成与优化系统**，是 **Google 在 2025 年推出的 AlphaEvolve 框架的同期开源工作**。在 `IdeaSearch` 中，一个**思路 (Idea)** 特指一个以 `.idea` 为扩展名的文本文件，其中包含了可被系统读取和处理的创造性内容。它的**灵感来源于 2023 年的 FunSearch 框架**。FunSearch 框架开创性地通过结合大型语言模型和评估程序，来发现新的数学结构和算法。`IdeaSearch` 在此基础上，旨在构建一个用户友好、流程简便、高开放性的集成框架，以期为科学研究和教育的各个领域提供支持。
+`IdeaSearch` 是一个开源 Python 框架，用于构建包含用户自定义评价、持久候选记忆和多岛屿搜索的迭代式大模型智能体工作流。一个**思路 (Idea)** 是保存在 `.idea` 文件中的文本候选；它可以表示假说、程序、方案、公式，或评价器能够接收的其他对象。
 
-与 FunSearch 相比，`IdeaSearch` 引入了多项创新特性，显著增强了系统的灵活性和探索能力，包括：
+## 快速开始
 
-- **提示词序言 (prologue_section) 和跋语 (epilogue_section)**: 允许用户更灵活、模块化地定义发送给大语言模型提示的开头和结尾部分。这使用户可以轻松地提供上下文、设定任务目标或指导输出格式，而无需每次都重写整个提示。此外，如果用户选择，他们可以通过自定义的 `generate_prompt_func` 函数完全控制提示生成逻辑，为各种复杂场景提供了极大的灵活性。
+```bash
+pip install IdeaSearch
+```
 
-- **评估器信息 (evaluator info)**: 除了为思路提供量化分数外，评估函数现在还可以返回额外的字符串信息。这使用户不仅能知道一个思路的定量“好坏”，还能通过这些补充信息了解“它为什么好”、“可以在哪里改进”或“它有何独特之处”，为后续的思路优化和系统分析提供了更丰富的背景和更深入的洞察。
+完整的配置和运行示例见[工作流程概览](#工作流程概览)。
 
-- **变异 (mutation)**: 引入随机性，允许对现有思路进行微小的修改和扰动。这为思路搜索过程注入了偶然性和多样性，有助于发现意想不到的新方向或优化现有思路，即使在看似饱和的思路空间中也是如此。
+## 适用范围
 
-- **交叉 (crossover)**: 通过组合两个或多个现有思路的元素来生成新的混合思路。这一遗传算法中的经典操作在 `IdeaSearch` 中得到了增强；它促进了更复杂的进化路径，能够融合不同优秀思路的优点，产生超越单个思路局限的新颖组合。
+当生成—评价循环本身需要配置、记录或比较时，使用 `IdeaSearch`。对于一次性提示，或通用智能体已经能够直接完成的任务，直接调用模型或智能体通常更简单。框架产生经过评价的候选，但不独立验证科学论断。
+
+## 实验模型
+
+下表将实验概念对应到 `IdeaSearcher` 的公开接口。
+
+| 概念 | 主要接口 | 功能 |
+| --- | --- | --- |
+| 任务与测量 | `set_evaluate_func()`、`set_score_range()`、`set_assess_func()` | 为候选评分，并可选评估整个数据库 |
+| 初始条件 | `add_initial_ideas()`、`set_prologue_section()`、`set_epilogue_section()`、`set_models()` | 定义起始候选、任务上下文和生成模型 |
+| 记忆 | `set_examples_num()`、`set_include_info_in_prompt()` | 为后续提示词选择历史思路与反馈 |
+| 探索 | `set_sample_temperature()`、`set_model_temperatures()`、变异与交叉设置方法 | 控制候选采样与变化 |
+| 并行拓扑 | `add_island()`、`set_samplers_num()`、`set_evaluators_num()`、`repopulate_islands()` | 配置并行搜索与迁徙 |
+| 交互预算 | `run(additional_interaction_num)` | 为每个岛屿增加指定轮数 |
+| 持久化 | `set_database_path()`、`set_backup_on()`、`set_record_prompt_in_diary()` | 保存思路、分数、备份、日志和可选提示词记录 |
+| 结果访问 | `get_best_idea()`、`get_best_score()` | 返回当前最高分候选及其分数 |
+
+比较不同运行时，应只改变待研究的控制量，并固定其他设置。使用外部模型 API 时，还应另行记录模型版本和随机采样条件。[IdeaSearch-fit](https://github.com/IdeaSearch/IdeaSearch-fit) 提供了该接口的符号回归应用。完整文档见 [ideasearch.cn](https://www.ideasearch.cn/)。
 
 ## 关键特性
 
-- **多岛屿并行搜索**: 支持创建多个独立的“岛屿”，每个岛屿都配备自己的采样器 (Sampler) 和评估器 (Evaluator)，以并行方式探索思路空间，提高搜索效率和多样性。
+- **多岛屿并行搜索**: 运行相互分离的思路种群，分别配置采样器和评价器数量，并显式执行岛屿间迁徙。
 
 - **大型语言模型 (LLM) 集成**: 通过 `ModelManager` 自动管理多种 LLM 模型的 API 密钥加载与并发请求。
 
-- **视觉语言模型 (VLM) 支持**: 支持在提示词中嵌入图像，与 VLM 进行多模态交互，极大地扩展了思路生成的维度。
+- **视觉语言模型 (VLM) 支持**: 解析配置的图像输入，并在提示词占位符处插入图像，供兼容的 VLM 端点使用。
 
 - **进化策略**:
 
@@ -35,7 +54,7 @@
 
 - **模块化与可扩展性**: 通过 `filter_func`、`postprocess_func` 等自定义回调函数，以及 `bind_helper` 接口，用户可以轻松地将自己的逻辑集成到系统核心流程中，或基于 `IdeaSearch` 构建更上层的应用。
 
-- **数据持久化与备份**: 自动管理思路文件和分数数据，支持备份功能，确保搜索过程中数据的安全。
+- **数据持久化与备份**: 在 `database_path` 下保存思路文件和分数表，并可在运行前创建备份。
 
 - **高度可配置**: 提供丰富的参数设置（通过 `set_` 方法），供用户定制搜索行为，包括模型温度、采样策略、评估间隔、相似度阈值等。
 
@@ -99,7 +118,7 @@
   - **Helper 对象属性**:
     - **必需**: `prologue_section` (str), `epilogue_section` (str), `evaluate_func` (Callable)
     - **可选**: `initial_ideas` (List[str]), `system_prompt` (str), `assess_func` (Callable), `mutation_func` (Callable), `crossover_func` (Callable), `filter_func` (Callable), `postprocess_func` (Callable) 等。
-  - **重要性**: 极大地简化了参数配置，并为框架的二次开发提供了标准接口。
+  - **重要性**: 为上层应用提供标准配置接口。
 
 ## 配置参数详解
 
